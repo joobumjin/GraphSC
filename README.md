@@ -1,7 +1,6 @@
 # SLab-GNN
 This was done using python version 3.9.19
 
-
 ## Helpful Links
 
 ### Cellpose
