@@ -120,8 +120,8 @@ def load_dataset_from_pickle(pickle_file):
 def main(args):
     data_dirs = {}
     for data_type in ['TER', 'VEGF', 'Both']:
-        data_dirs[f"Train_{data_type}"] = f"{args.data}/Data/{data_type}/Train_{data_type}.pkl"
-        data_dirs[f"Test_{data_type}"] = f"{args.data}/Data/{data_type}/Test_{data_type}.pkl"
+        data_dirs[f"Train_{data_type}"] = f"{args.data}/{data_type}/Train_{data_type}.pkl"
+        data_dirs[f"Test_{data_type}"] = f"{args.data}/{data_type}/Test_{data_type}.pkl"
 
     target = args.pred #when validating TER, check the really small values
     #the model might end up predicting the exact same TER value for all smaller values
