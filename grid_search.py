@@ -26,8 +26,9 @@ def parse_args(args=None):
     parser = argparse.ArgumentParser(description="Specify Hyperparameters for Grid Searching the hyperparameters of the GNN", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--data',           required=True,              help='File path to the assignment data file.')
     parser.add_argument('--pred',           required=True,              choices=['TER', 'VEGF', 'Both'],    help='Type of Value being Predicted from QBAMs')
-    parser.add_argument('--chkpt_path',     default='',                     help='where the model checkpoint is')
-    parser.add_argument('--batch_size',     type=int,   default=20,         help='Model\'s batch size.')
+    parser.add_argument('--chkpt_path',     default='',                 help='where the model checkpoint is')
+    parser.add_argument('--img_path',       default='',                 help='where the model saves loss graphs')
+    parser.add_argument('--batch_size',     type=int,   default=20,     help='Model\'s batch size.')
 
     if args is None: 
         return parser.parse_args()      ## For calling through command line
@@ -60,7 +61,7 @@ def test(model, loader, criterion, print_met=False):
     avg_loss = total_loss / len(loader.dataset)
     return math.sqrt(avg_loss)
 
-def train_model(train_loader, val_loader, model, output_filepath, learning_rate, num_epochs, num_gcn, num_dense):
+def train_model(train_loader, val_loader, model, output_filepath, img_path, learning_rate, num_epochs, num_gcn, num_dense):
 
     best_rmse = 99999999999
 
@@ -97,7 +98,7 @@ def train_model(train_loader, val_loader, model, output_filepath, learning_rate,
     plt.ylabel('RMSE')
     plt.title('Training and Validation RMSE')
     plt.legend()
-    plt.savefig(f"RMSE_e{num_epochs}_lr{learning_rate}_g{num_gcn}_d{num_dense}.jpg")
+    plt.savefig(f"{img_path}/RMSE_e{num_epochs}_lr{learning_rate}_g{num_gcn}_d{num_dense}.jpg")
     plt.close()
 
 
@@ -189,7 +190,7 @@ def main(args):
             output_filepath = f'{args.chkpt_path}/{args.pred}_Abs_model_e{num_epochs}_lr{learning_rate}_g{num_gcn}_d{num_dense}.pth'
 
             model = Modular_GCN(num_features, num_targets, num_dense = num_dense, num_gcn = num_gcn)
-            train_model(train_loader, val_loader, model, output_filepath, learning_rate, num_epochs)
+            train_model(train_loader, val_loader, model, output_filepath, args.img_path, learning_rate, num_epochs)
 
     test_pickle_file = data_dirs[f"Test_{target}"]
 
