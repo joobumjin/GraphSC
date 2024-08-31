@@ -1,0 +1,208 @@
+import argparse
+from tqdm import tqdm
+
+import math
+import os
+
+import matplotlib.pyplot as plt
+import pickle
+import torch
+from torch.nn import MSELoss
+from torch_geometric.data import Data
+from torch_geometric.loader import DataLoader
+
+from GNN.src.gnn_modular import Modular_GCN
+from GNN.src import test_acc
+
+
+def parse_args(args=None):
+    """ 
+    Perform command-line argument parsing (other otherwise parse arguments with defaults). 
+    To parse in an interative context (i.e. in notebook), add required arguments.
+    These will go into args and will generate a list that can be passed in.
+    For example: 
+        parse_args('--type', 'rnn', ...)
+    """
+    parser = argparse.ArgumentParser(description="Specify Hyperparameters for Grid Searching the hyperparameters of the GNN", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--data',           required=True,              help='File path to the assignment data file.')
+    parser.add_argument('--pred',           required=True,              choices=['TER', 'VEGF', 'Both'],    help='Type of Value being Predicted from QBAMs')
+    parser.add_argument('--chkpt_path',     default='',                     help='where the model checkpoint is')
+    parser.add_argument('--epochs',         type=int,   default=100,        help='Number of epochs used in training.')
+    parser.add_argument('--lr',             type=float, default=1e-3,       help='Model\'s learning rate')
+    parser.add_argument('--batch_size',     type=int,   default=20,         help='Model\'s batch size.')
+    parser.add_argument('--num_gcn',        type=int,   default=3,          help='Number of GAT layers in the model.')
+    parser.add_argument('--num_dense',      type=int,   default=2,          help='Number of Dense layers in the model.')
+
+    if args is None: 
+        return parser.parse_args()      ## For calling through command line
+    return parser.parse_args(args)      ## For calling through notebook.
+
+
+def train(model, train_loader, optimizer, criterion):
+    model.train()
+    for data in tqdm(train_loader, desc="Training", leave=False):
+        data = data.to(model.device)  # Move data to the same device as the model
+        out = model(data)
+        loss = criterion(out, data.y)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+def test(model, loader, criterion, print_met=False):
+    model.eval()
+    total_loss = 0.0
+    with torch.no_grad():
+        for data in tqdm(loader, desc="Testing", leave=False):
+            data = data.to(model.device)
+            out = model(data)
+            loss = criterion(out, data.y)
+            total_loss += loss.item()
+
+            if print_met:
+                print(f"Predicted: {out}, True: {data.y}, RMSE: {math.sqrt(loss.item())}")
+
+    avg_loss = total_loss / len(loader.dataset)
+    return math.sqrt(avg_loss)
+
+def train_model(train_loader, val_loader, model, output_filepath, learning_rate, num_epochs, num_gcn, num_dense):
+
+    best_rmse = 99999999999
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print("Using,", device)
+    model = model.to(device)
+    model.device = device
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    criterion = MSELoss()
+
+    train_losses = []
+    val_losses = []
+
+    for epoch in range(1, num_epochs + 1):
+        print(f"Epoch {epoch}/{num_epochs}")
+        train(model, train_loader, optimizer, criterion)
+        train_rmse = test(model, train_loader, criterion, False)
+        val_rmse = test(model, val_loader, criterion, False)
+
+        train_losses.append(train_rmse)
+        val_losses.append(val_rmse)
+
+        if epoch % 20 == 0:
+          print(f'Epoch: {epoch:03d}, Train RMSE: {train_rmse:.4f}, Val RMSE: {val_rmse:.4f}')
+          print()
+
+    torch.save(model.state_dict(), output_filepath)
+    print("Saved the model to:", output_filepath)
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(train_losses, label='Training RMSE')
+    plt.plot(val_losses, label='Validation RMSE')
+    plt.xlabel('Epoch')
+    plt.ylabel('RMSE')
+    plt.title('Training and Validation RMSE')
+    plt.legend()
+    plt.savefig(f"RMSE_e{num_epochs}_lr{learning_rate}_g{num_gcn}_d{num_dense}.jpg")
+    plt.close()
+
+
+def check_for_nan(dataset):
+    for i, data in enumerate(dataset):
+        if torch.isnan(data.x).any():
+            print(f"NaN found in features at index {i}")
+        if torch.isnan(data.y).any():
+            print(f"NaN found in target at index {i}")
+
+def load_dataset_from_pickle(pickle_file):
+    with open(pickle_file, 'rb') as f:
+        dataset = pickle.load(f)
+    if isinstance(dataset, list) and all(isinstance(d, Data) for d in dataset):
+        return dataset
+    else:
+        raise ValueError("The loaded dataset is not a list of Data objects).")
+
+def main(args):
+    data_dirs = {}
+    for data_type in ['TER', 'VEGF', 'Both']:
+        data_dirs[f"Train_{data_type}"] = f"{args.data}/Data/{data_type}/Train_{data_type}.pkl"
+        data_dirs[f"Test_{data_type}"] = f"{args.data}/Data/{data_type}/Test_{data_type}.pkl"
+
+    target = args.pred #when validating TER, check the really small values
+    #the model might end up predicting the exact same TER value for all smaller values
+    train_pickle_file = data_dirs[f"Train_{target}"]
+    dataset = load_dataset_from_pickle(train_pickle_file)
+
+    train_index = int(len(dataset) * 0.95)
+    train_dataset = dataset[:train_index]
+    val_dataset = dataset[train_index:]
+
+    check_for_nan(train_dataset)
+
+    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
+
+    num_features = train_dataset[0].x.shape[1]  # Number of features per node
+    num_targets = train_dataset[0].y.shape[0]
+
+
+    print("###################################")
+    print()
+    print(f'Number of training graphs: {len(train_dataset)}')
+    print(f'Number of test graphs: {len(val_dataset)}')
+    print(f'Number of features: {num_features}')
+    print(f'Number of targets: {num_targets}')
+    print("###################################")
+
+    # data = dataset[0]
+    # print()
+    # print(data)
+    # print('=============================================================')
+    # print(f'Number of nodes: {data.num_nodes}')
+    # print(f'Number of edges: {data.num_edges}')
+    # print(f'Average node degree: {data.num_edges / data.num_nodes:.2f}')
+    # print(f'Has isolated nodes: {data.has_isolated_nodes()}')
+    # print(f'Has self-loops: {data.has_self_loops()}')
+    # print(f'Is undirected: {data.is_undirected()}')
+    # print('=============================================================')
+    # print()
+    # print(f'Number of training graphs: {len(train_dataset)}')
+    # print(f'Number of test graphs: {len(val_dataset)}')
+    # print('=============================================================')
+    # print()
+    # # for step, data in enumerate(train_loader):
+    # #     print(f'Step {step + 1}:')
+    # #     print('=======')
+    # #     print(f'Number of graphs in the current batch: {data.num_graphs}')
+    # #     print(data)
+    # #     print()
+    # print()
+    # exit()
+
+
+    print("___________________________________")
+    print()
+    print("Learning Rate:", args.lr)
+    print("Epochs:", args.epochs)
+    print(f"Num GCN Layers {args.num_gcn}")
+    print(f"Num Dense Layers {args.num_dense}")
+    print("___________________________________")
+
+    model = Modular_GCN(num_features, num_targets, num_dense = args.num_dense, num_gcn = args.num_gcn)
+    train_model(train_loader, val_loader, model, args.chkpt_path, args.lr, args.epochs)
+
+    test_pickle_file = data_dirs[f"Test_{target}"]
+
+    test_dataset = load_dataset_from_pickle(test_pickle_file)
+    test_loader = DataLoader(test_dataset)
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    model = Modular_GCN(num_features, num_targets, num_dense = args.num_dense, num_gcn = args.num_gcn)
+    model.load_state_dict(torch.load(args.chkpt_path, map_location=torch.device(device)))
+
+    test_acc.test_model(test_loader, model)
+
+## END UTILITY METHODS
+##############################################################################
+
+if __name__ == '__main__':
+    main(parse_args())
