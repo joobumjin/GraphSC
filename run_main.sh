@@ -15,4 +15,4 @@ conda activate qbam
 
 # Run program
 cd /users/bjoo2/data/bjoo2/QBAM/qbam_fork
-python3 grid_search.py --data ./Data --pred TER --chkpt_path ./chkpts --img_path ./graphs
+python3 grid_search.py --data /users/bjoo2/data/bjoo2/qbam/data --pred TER --chkpt_path /users/bjoo2/data/bjoo2/qbam/checkpoints --img_path /users/bjoo2/data/bjoo2/qbam/graphs
