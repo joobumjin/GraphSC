@@ -190,7 +190,7 @@ def main(args):
             output_filepath = f'{args.chkpt_path}/{args.pred}_Abs_model_e{num_epochs}_lr{learning_rate}_g{num_gcn}_d{num_dense}.pth'
 
             model = Modular_GCN(num_features, num_targets, num_dense = num_dense, num_gcn = num_gcn)
-            train_model(train_loader, val_loader, model, output_filepath, args.img_path, learning_rate, num_epochs)
+            train_model(train_loader, val_loader, model, output_filepath, args.img_path, learning_rate, num_epochs, num_gcn, num_dense)
 
     test_pickle_file = data_dirs[f"Test_{target}"]
 
