@@ -27,11 +27,7 @@ def parse_args(args=None):
     parser.add_argument('--data',           required=True,              help='File path to the assignment data file.')
     parser.add_argument('--pred',           required=True,              choices=['TER', 'VEGF', 'Both'],    help='Type of Value being Predicted from QBAMs')
     parser.add_argument('--chkpt_path',     default='',                     help='where the model checkpoint is')
-    parser.add_argument('--epochs',         type=int,   default=100,        help='Number of epochs used in training.')
-    parser.add_argument('--lr',             type=float, default=1e-3,       help='Model\'s learning rate')
     parser.add_argument('--batch_size',     type=int,   default=20,         help='Model\'s batch size.')
-    parser.add_argument('--num_gcn',        type=int,   default=3,          help='Number of GAT layers in the model.')
-    parser.add_argument('--num_dense',      type=int,   default=2,          help='Number of Dense layers in the model.')
 
     if args is None: 
         return parser.parse_args()      ## For calling through command line
@@ -177,17 +173,23 @@ def main(args):
     # print()
     # exit()
 
+    lr_epoch = [(0.0001, 500), (0.0005, 300), (0.001, 150), (0.003, 150), (0.005, 100)]
 
-    print("___________________________________")
-    print()
-    print("Learning Rate:", args.lr)
-    print("Epochs:", args.epochs)
-    print(f"Num GCN Layers {args.num_gcn}")
-    print(f"Num Dense Layers {args.num_dense}")
-    print("___________________________________")
+    for (learning_rate, num_epochs) in lr_epoch:
+      for num_gcn in ([2, 3, 4, 5]):
+        for num_dense in ([2, 3, 4, 5, 6]):
+            print("___________________________________")
+            print()
+            print("Learning Rate:", learning_rate)
+            print("Epochs:", num_epochs )
+            print(f"Num GCN Layers {num_gcn}")
+            print(f"Num Dense Layers {num_dense}")
+            print("___________________________________")
 
-    model = Modular_GCN(num_features, num_targets, num_dense = args.num_dense, num_gcn = args.num_gcn)
-    train_model(train_loader, val_loader, model, args.chkpt_path, args.lr, args.epochs)
+            output_filepath = f'{args.chkpt_path}/{args.pred}_Abs_model_e{num_epochs}_lr{learning_rate}_g{num_gcn}_d{num_dense}.pth'
+
+            model = Modular_GCN(num_features, num_targets, num_dense = num_dense, num_gcn = num_gcn)
+            train_model(train_loader, val_loader, model, output_filepath, learning_rate, num_epochs)
 
     test_pickle_file = data_dirs[f"Test_{target}"]
 
@@ -196,7 +198,7 @@ def main(args):
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    model = Modular_GCN(num_features, num_targets, num_dense = args.num_dense, num_gcn = args.num_gcn)
+    model = Modular_GCN(num_features, num_targets, num_dense = num_dense, num_gcn = num_gcn)
     model.load_state_dict(torch.load(args.chkpt_path, map_location=torch.device(device)))
 
     test_acc.test_model(test_loader, model)
