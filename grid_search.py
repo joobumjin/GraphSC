@@ -37,7 +37,8 @@ def parse_args(args=None):
 
 def train(model, train_loader, optimizer, criterion):
     model.train()
-    for data in tqdm(train_loader, desc="Training", leave=False):
+    # for data in tqdm(train_loader, desc="Training", leave=False):
+    for data in train_loader:
         data = data.to(model.device)  # Move data to the same device as the model
         out = model(data)
         loss = criterion(out, data.y)
@@ -75,7 +76,7 @@ def train_model(train_loader, val_loader, model, output_filepath, img_path, lear
     train_losses = []
     val_losses = []
 
-    for epoch in range(1, num_epochs + 1):
+    for epoch in tqdm(range(1, num_epochs + 1), desc="Training Epochs"):
         print(f"Epoch {epoch}/{num_epochs}")
         train(model, train_loader, optimizer, criterion)
         train_rmse = test(model, train_loader, criterion, False)
@@ -192,17 +193,17 @@ def main(args):
             model = Modular_GCN(num_features, num_targets, num_dense = num_dense, num_gcn = num_gcn)
             train_model(train_loader, val_loader, model, output_filepath, args.img_path, learning_rate, num_epochs, num_gcn, num_dense)
 
-    test_pickle_file = data_dirs[f"Test_{target}"]
+            test_pickle_file = data_dirs[f"Test_{target}"]
 
-    test_dataset = load_dataset_from_pickle(test_pickle_file)
-    test_loader = DataLoader(test_dataset)
+            test_dataset = load_dataset_from_pickle(test_pickle_file)
+            test_loader = DataLoader(test_dataset)
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    model = Modular_GCN(num_features, num_targets, num_dense = num_dense, num_gcn = num_gcn)
-    model.load_state_dict(torch.load(args.chkpt_path, map_location=torch.device(device)))
+            model = Modular_GCN(num_features, num_targets, num_dense = num_dense, num_gcn = num_gcn)
+            model.load_state_dict(torch.load(output_filepath, map_location=torch.device(device)))
 
-    test_acc.test_model(test_loader, model)
+            test_acc.test_model(test_loader, model)
 
 ## END UTILITY METHODS
 ##############################################################################
