@@ -77,7 +77,6 @@ def train_model(train_loader, val_loader, model, output_filepath, img_path, lear
     val_losses = []
 
     for epoch in tqdm(range(1, num_epochs + 1), desc="Training Epochs"):
-        print(f"Epoch {epoch}/{num_epochs}")
         train(model, train_loader, optimizer, criterion)
         train_rmse = test(model, train_loader, criterion, False)
         val_rmse = test(model, val_loader, criterion, False)
