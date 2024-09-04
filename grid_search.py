@@ -85,8 +85,7 @@ def train_model(train_loader, val_loader, model, output_filepath, img_path, lear
         val_losses.append(val_rmse)
 
         if epoch % 20 == 0:
-          print(f'Epoch: {epoch:03d}, Train RMSE: {train_rmse:.4f}, Val RMSE: {val_rmse:.4f}')
-          print()
+          print(f'\nEpoch: {epoch:03d}, Train RMSE: {train_rmse:.4f}, Val RMSE: {val_rmse:.4f}\n')
 
     torch.save(model.state_dict(), output_filepath)
     print("Saved the model to:", output_filepath)
@@ -177,8 +176,11 @@ def main(args):
     lr_epoch = [(0.0001, 500), (0.0005, 300), (0.001, 150), (0.003, 150), (0.005, 100)]
 
     for (learning_rate, num_epochs) in lr_epoch:
-      for num_gcn in ([2, 3, 4, 5]):
-        for num_dense in ([2, 3, 4, 5, 6]):
+    #   for num_gcn in ([2, 3, 4, 5]):
+    #     for num_dense in ([2, 3, 4, 5, 6]):
+      for num_gcn in ([3, 4, 5]):
+        for num_dense in ([3, 4, 5, 6]):
+    
             print("___________________________________")
             print()
             print("Learning Rate:", learning_rate)

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --partition=gpu --gres=gpu:2
-
+#SBATCH -N 1
 #SBATCH -n 4
 #SBATCH -t 48:00:00
 #SBATCH --mem=150g
