@@ -131,6 +131,8 @@ def main(args):
     target = args.pred #when validating TER, check the really small values
     #the model might end up predicting the exact same TER value for all smaller values
     train_pickle_file = data_dirs[f"Train_{target}"]
+    test_pickle_file = data_dirs[f"Test_{target}"]
+
     dataset = load_dataset_from_pickle(train_pickle_file)
 
     train_index = int(len(dataset) * 0.95)
@@ -140,11 +142,9 @@ def main(args):
     test_dataset = load_dataset_from_pickle(test_pickle_file)
     test_loader = DataLoader(test_dataset)
 
-
     check_for_nan(train_dataset)
 
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
-    test_pickle_file = data_dirs[f"Test_{target}"]
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
 
 
