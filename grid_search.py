@@ -81,7 +81,7 @@ def train_model(train_loader, val_loader, test_loader, model, output_filepath, i
         train(model, train_loader, optimizer, criterion)
         train_rmse = test(model, train_loader, criterion, False)
         # val_rmse = test(model, val_loader, criterion, False)
-        val_rmse = test(model, test_loader)
+        val_rmse = test(model, test_loader, criterion, False)
 
         train_losses.append(train_rmse)
         val_losses.append(val_rmse)
