@@ -62,9 +62,10 @@ def test(model, loader, criterion, print_met=False):
     avg_loss = total_loss / len(loader.dataset)
     return math.sqrt(avg_loss)
 
-def train_model(train_loader, val_loader, model, output_filepath, img_path, learning_rate, num_epochs, num_gcn, num_dense):
+def train_model(train_loader, val_loader, test_loader, model, output_filepath, img_path, learning_rate, num_epochs, num_gcn, num_dense, convergence_epsilon = 1):
 
     best_rmse = 99999999999
+    prev_rmse = None
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Using,", device)
@@ -79,10 +80,15 @@ def train_model(train_loader, val_loader, model, output_filepath, img_path, lear
     for epoch in tqdm(range(1, num_epochs + 1), desc="Training Epochs"):
         train(model, train_loader, optimizer, criterion)
         train_rmse = test(model, train_loader, criterion, False)
-        val_rmse = test(model, val_loader, criterion, False)
+        # val_rmse = test(model, val_loader, criterion, False)
+        val_rmse = test(model, test_loader)
 
         train_losses.append(train_rmse)
         val_losses.append(val_rmse)
+
+        if prev_rmse and math.abs(train_rmse - prev_rmse) < convergence_epsilon: break
+
+        prev_rmse = train_rmse
 
         if epoch % 20 == 0:
           print(f'\nEpoch: {epoch:03d}, Train RMSE: {train_rmse:.4f}, Val RMSE: {val_rmse:.4f}\n')
@@ -131,10 +137,15 @@ def main(args):
     train_dataset = dataset[:train_index]
     val_dataset = dataset[train_index:]
 
+    test_dataset = load_dataset_from_pickle(test_pickle_file)
+    test_loader = DataLoader(test_dataset)
+
+
     check_for_nan(train_dataset)
 
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
+
 
     num_features = train_dataset[0].x.shape[1]  # Number of features per node
     num_targets = train_dataset[0].y.shape[0]
@@ -173,13 +184,15 @@ def main(args):
     # print()
     # exit()
 
-    lr_epoch = [(0.0001, 500), (0.0005, 300), (0.001, 150), (0.003, 150), (0.005, 100)]
+    # lr_epoch = [(0.0001, 500), (0.0005, 300), (0.001, 150), (0.003, 150), (0.005, 100)]
+    lr_epoch = [(0.00001, 500), (0.00005, 500), (0.0001, 500), (0.0005, 500)]
+
 
     for (learning_rate, num_epochs) in lr_epoch:
     #   for num_gcn in ([2, 3, 4, 5]):
     #     for num_dense in ([2, 3, 4, 5, 6]):
-      for num_gcn in ([3, 4, 5]):
-        for num_dense in ([3, 4, 5, 6]):
+      for num_gcn in ([2, 3, 4, 5]):
+        for num_dense in ([2, 3, 4, 5, 6]):
     
             print("___________________________________")
             print()
@@ -192,12 +205,9 @@ def main(args):
             output_filepath = f'{args.chkpt_path}/{args.pred}_Abs_model_e{num_epochs}_lr{learning_rate}_g{num_gcn}_d{num_dense}.pth'
 
             model = Modular_GCN(num_features, num_targets, num_dense = num_dense, num_gcn = num_gcn)
-            train_model(train_loader, val_loader, model, output_filepath, args.img_path, learning_rate, num_epochs, num_gcn, num_dense)
+            train_model(train_loader, val_loader, test_loader, model, output_filepath, args.img_path, learning_rate, num_epochs, num_gcn, num_dense)
 
             test_pickle_file = data_dirs[f"Test_{target}"]
-
-            test_dataset = load_dataset_from_pickle(test_pickle_file)
-            test_loader = DataLoader(test_dataset)
 
             device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
