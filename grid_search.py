@@ -144,6 +144,7 @@ def main(args):
     check_for_nan(train_dataset)
 
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
+    test_pickle_file = data_dirs[f"Test_{target}"]
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
 
 
@@ -206,8 +207,6 @@ def main(args):
 
             model = Modular_GCN(num_features, num_targets, num_dense = num_dense, num_gcn = num_gcn)
             train_model(train_loader, val_loader, test_loader, model, output_filepath, args.img_path, learning_rate, num_epochs, num_gcn, num_dense)
-
-            test_pickle_file = data_dirs[f"Test_{target}"]
 
             device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
