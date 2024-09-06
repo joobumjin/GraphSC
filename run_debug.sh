@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# SBATCH --partition=gpu-debug --gres=gpu:1
+# SBATCH --partition=debug --gres=gpu:1
 #SBATCH -N 1
 #SBATCH -n 1
 #SBATCH -t 00:01:00
