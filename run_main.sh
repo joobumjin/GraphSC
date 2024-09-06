@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# SBATCH --partition=gpu --gres=gpu:2
+#SBATCH --partition=gpu --gres=gpu:1
 #SBATCH -N 1
 #SBATCH -n 4
 #SBATCH -t 48:00:00
