@@ -86,7 +86,7 @@ def train_model(train_loader, val_loader, test_loader, model, output_filepath, i
         train_losses.append(train_rmse)
         val_losses.append(val_rmse)
 
-        if prev_rmse and math.abs(train_rmse - prev_rmse) < convergence_epsilon: break
+        if prev_rmse and abs(train_rmse - prev_rmse) < convergence_epsilon: break
 
         prev_rmse = train_rmse
 

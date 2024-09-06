@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# SBATCH --partition=gpu --gres=gpu:2
+# SBATCH --partition=gpu-debug --gres=gpu:1
 #SBATCH -N 1
-#SBATCH -n 4
-#SBATCH -t 48:00:00
-#SBATCH --mem=150g
+#SBATCH -n 1
+#SBATCH -t 00:01:00
+#SBATCH --mem=1g
 
 # Load a CUDA module
 module load cuda
