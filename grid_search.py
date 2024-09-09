@@ -142,7 +142,7 @@ def main(args):
     # train_dataset = dataset[:train_index]
     # val_dataset = dataset[train_index:]
     random_inds = torch.randperm(len(dataset)) #try shuffling the indices to see if the validation will yield different performance
-    train_dataset, val_dataset = []
+    train_dataset, val_dataset = [], []
     for rand_ind in random_inds[:train_index].tolist():
         train_dataset.append(dataset[rand_ind])
 
