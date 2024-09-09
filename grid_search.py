@@ -185,13 +185,10 @@ def main(args):
     # print()
     # exit()
 
-    # lr_epoch = [(0.0001, 500), (0.0005, 300), (0.001, 150), (0.003, 150), (0.005, 100)]
-    lr_epoch = [(0.00001, 500), (0.00005, 500), (0.0001, 500), (0.0005, 500)]
+    lr_epoch = [(0.0001, 500), (0.00025, 500), (0.0005, 500), (0.00075, 500)]
 
 
     for (learning_rate, num_epochs) in lr_epoch:
-    #   for num_gcn in ([2, 3, 4, 5]):
-    #     for num_dense in ([2, 3, 4, 5, 6]):
       for num_gcn in ([2, 3, 4, 5]):
         for num_dense in ([2, 3, 4, 5, 6]):
     
