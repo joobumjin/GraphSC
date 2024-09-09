@@ -3,6 +3,7 @@ from tqdm import tqdm
 
 import math
 import os
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pickle
@@ -12,6 +13,7 @@ from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
 
 from GNN.src.gnn_modular import Modular_GCN
+from GNN.src.gnn_model import GCN
 from GNN.src import test_acc
 
 
@@ -90,7 +92,7 @@ def train_model(train_loader, val_loader, test_loader, model, output_filepath, i
 
         # if prev_rmse and abs(train_rmse - prev_rmse) < convergence_epsilon: break
 
-        prev_rmse = train_rmse
+        # prev_rmse = train_rmse
 
         if epoch % 20 == 0:
           print(f'\nEpoch: {epoch:03d}, Train RMSE: {train_rmse:.4f}, Val RMSE: {val_rmse:.4f}\n')
@@ -106,7 +108,7 @@ def train_model(train_loader, val_loader, test_loader, model, output_filepath, i
     plt.ylabel('RMSE')
     plt.title('Training and Validation RMSE')
     plt.legend()
-    plt.savefig(f"{img_path}/RMSE_e{num_epochs}_lr{learning_rate}_g{num_gcn}_d{num_dense}.jpg")
+    plt.savefig(img_path)
     plt.close()
 
 
@@ -139,8 +141,6 @@ def main(args):
     dataset = load_dataset_from_pickle(train_pickle_file)
 
     train_index = int(len(dataset) * 0.95)
-    # train_dataset = dataset[:train_index]
-    # val_dataset = dataset[train_index:]
     random_inds = torch.randperm(len(dataset)) #try shuffling the indices to see if the validation will yield different performance
     train_dataset, val_dataset = [], []
     for rand_ind in random_inds[:train_index].tolist():
@@ -195,9 +195,9 @@ def main(args):
     # print()
     # exit()
 
-    lr_epoch = [(0.00001, 500), (0.00005, 500), (0.0001, 500), (0.00025, 500), (0.0005, 500), (0.00075, 500)]
+    lr_epoch = [(0.00001, 500), (0.00005, 500), (0.0001, 500), (0.00025, 500), (0.0005, 500), (0.00075, 500), (0.001, 500)]
 
-
+    #Tuning Modular
     for (learning_rate, num_epochs) in lr_epoch:
       for num_gcn in ([2, 3, 4, 5]):
         for num_dense in ([2, 3, 4, 5, 6]):
@@ -210,18 +210,48 @@ def main(args):
             print(f"Num Dense Layers {num_dense}")
             print("___________________________________")
 
-            output_filepath = f'{args.chkpt_path}/{args.pred}_Abs_model_e{num_epochs}_lr{learning_rate}_g{num_gcn}_d{num_dense}.pth'
+            hyper_param_dir = f"{args.pred}/lr{learning_rate}_e{num_epochs}/g{num_gcn}_d{num_dense}" 
+            Path(f'{args.chkpt_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
+            output_filepath = f'{args.chkpt_pah}/{hyper_param_dir}/Abs_model.pth'
+            Path(f'{args.img_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
+            img_path = f"{args.img_path}/{hyper_param_dir}/RMSE_Loss_Graph.jpg"
 
             model = Modular_GCN(num_features, num_targets, num_dense = num_dense, num_gcn = num_gcn)
-            train_model(train_loader, val_loader, test_loader, model, output_filepath, args.img_path, learning_rate, num_epochs, num_gcn, num_dense)
+            train_model(train_loader, val_loader, test_loader, model, output_filepath, img_path, learning_rate, num_epochs, num_gcn, num_dense)
 
-            device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-            model = Modular_GCN(num_features, num_targets, num_dense = num_dense, num_gcn = num_gcn)
-            model.load_state_dict(torch.load(output_filepath, map_location=torch.device(device)))
-
-            results_file = f'{args.results_path}/{args.pred}_Abs_model_e{num_epochs}_lr{learning_rate}_g{num_gcn}_d{num_dense}.txt'
+            # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            # model = Modular_GCN(num_features, num_targets, num_dense = num_dense, num_gcn = num_gcn)
+            # model.load_state_dict(torch.load(output_filepath, map_location=torch.device(device)))
+            Path(f'{args.results_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
+            results_file = f'{args.results_path}/{hyper_param_dir}/sample_preds.txt'
             test_acc.test_model(test_loader, model, write_to_file=results_file)
+
+    #Tuning Set Architecture
+    print("___________________________________")
+    print()
+    print("Training Mat Hyperparams")
+    print("Learning Rate:", learning_rate)
+    print("Epochs:", num_epochs )
+    print(f"Num GCN Layers {num_gcn}")
+    print(f"Num Dense Layers {num_dense}")
+    print("___________________________________")
+
+    num_epochs=25
+    learning_rate=1e-3
+    num_gcn=3
+    num_dense=3
+    output_filepath = f'{args.chkpt_path}/{args.pred}_MAT_Abs_model_e{num_epochs}_lr{learning_rate}.pth'
+    img_path = f'{args.img_path}/{args.pred}_MAT_Abs_model_e{num_epochs}_lr{learning_rate}.jpg'
+
+    model = GCN(num_features, num_targets, num_dense = num_dense, num_gcn = num_gcn)
+    train_model(train_loader, val_loader, test_loader, model, output_filepath, img_path, learning_rate, num_epochs, num_gcn, num_dense)
+
+    # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # model = GCN(num_features, num_targets, num_dense = num_dense, num_gcn = num_gcn)
+    # model.load_state_dict(torch.load(output_filepath, map_location=torch.device(device)))
+
+    results_file = f'{args.results_path}/{args.pred}_MAT_Abs_model_e{num_epochs}_lr{learning_rate}.txt'
+    test_acc.test_model(test_loader, model, write_to_file=results_file)
 
 ## END UTILITY METHODS
 ##############################################################################
