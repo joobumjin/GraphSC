@@ -143,8 +143,8 @@ def main(args):
     # val_dataset = dataset[train_index:]
     random_inds = torch.randperm(len(dataset)) #try shuffling the indices to see if the validation will yield different performance
     # train_dataset = dataset[random_inds[:train_index]]
-    train_dataset = torch.gather(dataset, dim=0, index=random_inds[:train_index])
-    val_dataset = torch.gather(dataset, dim=0, index=random_inds[train_index:])
+    train_dataset = torch.gather(torch.tensor(dataset), dim=0, index=random_inds[:train_index])
+    val_dataset = torch.gather(torch.tensor(dataset), dim=0, index=random_inds[train_index:])
 
     test_dataset = load_dataset_from_pickle(test_pickle_file)
 
