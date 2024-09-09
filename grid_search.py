@@ -28,6 +28,7 @@ def parse_args(args=None):
     parser.add_argument('--pred',           required=True,              choices=['TER', 'VEGF', 'Both'],    help='Type of Value being Predicted from QBAMs')
     parser.add_argument('--chkpt_path',     default='',                 help='where the model checkpoint is')
     parser.add_argument('--img_path',       default='',                 help='where the model saves loss graphs')
+    parser.add_argument('--results_path',   default='',                 help='where the model saves text files with test predictions')
     parser.add_argument('--batch_size',     type=int,   default=20,     help='Model\'s batch size.')
 
     if args is None: 
@@ -37,7 +38,6 @@ def parse_args(args=None):
 
 def train(model, train_loader, optimizer, criterion):
     model.train()
-    # for data in tqdm(train_loader, desc="Training", leave=False):
     for data in train_loader:
         data = data.to(model.device)  # Move data to the same device as the model
         out = model(data)
@@ -76,15 +76,17 @@ def train_model(train_loader, val_loader, test_loader, model, output_filepath, i
 
     train_losses = []
     val_losses = []
+    test_losses = []
 
     for epoch in tqdm(range(1, num_epochs + 1), desc="Training Epochs"):
         train(model, train_loader, optimizer, criterion)
         train_rmse = test(model, train_loader, criterion, False)
-        # val_rmse = test(model, val_loader, criterion, False)
-        val_rmse = test(model, test_loader, criterion, False)
+        val_rmse = test(model, val_loader, criterion, False)
+        test_rmse = test(model, test_loader, criterion, False)
 
         train_losses.append(train_rmse)
         val_losses.append(val_rmse)
+        test_losses.append(test_rmse)
 
         if prev_rmse and abs(train_rmse - prev_rmse) < convergence_epsilon: break
 
@@ -99,6 +101,7 @@ def train_model(train_loader, val_loader, test_loader, model, output_filepath, i
     plt.figure(figsize=(10, 6))
     plt.plot(train_losses, label='Training RMSE')
     plt.plot(val_losses, label='Validation RMSE')
+    plt.plot(test_losses, label='Test RMSE')
     plt.xlabel('Epoch')
     plt.ylabel('RMSE')
     plt.title('Training and Validation RMSE')
@@ -136,16 +139,19 @@ def main(args):
     dataset = load_dataset_from_pickle(train_pickle_file)
 
     train_index = int(len(dataset) * 0.95)
-    train_dataset = dataset[:train_index]
-    val_dataset = dataset[train_index:]
+    # train_dataset = dataset[:train_index]
+    # val_dataset = dataset[train_index:]
+    random_inds = torch.randperm(len(dataset)) #try shuffling the indices to see if the validation will yield different performance
+    train_dataset = dataset[random_inds[:train_index]]
+    val_dataset = dataset[random_inds[train_index:]]
 
     test_dataset = load_dataset_from_pickle(test_pickle_file)
-    test_loader = DataLoader(test_dataset)
 
     check_for_nan(train_dataset)
 
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
+    test_loader = DataLoader(test_dataset)
 
 
     num_features = train_dataset[0].x.shape[1]  # Number of features per node
@@ -210,7 +216,8 @@ def main(args):
             model = Modular_GCN(num_features, num_targets, num_dense = num_dense, num_gcn = num_gcn)
             model.load_state_dict(torch.load(output_filepath, map_location=torch.device(device)))
 
-            test_acc.test_model(test_loader, model)
+            results_file = f'{args.results_path}/{args.pred}_Abs_model_e{num_epochs}_lr{learning_rate}_g{num_gcn}_d{num_dense}.txt'
+            test_acc.test_model(test_loader, model, write_to_file=results_file)
 
 ## END UTILITY METHODS
 ##############################################################################
