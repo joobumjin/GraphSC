@@ -26,7 +26,9 @@ def test(model, loader, criterion, write_to_file, print_met=True):
                 f.write(f"Predicted: {out}, True: {data.y}, RMSE: {math.sqrt(loss.item())}")
 
     avg_loss = total_loss / len(loader.dataset)
-    if f: f.close()
+    if f: 
+        print(f"Wrote Prediciton Outputs to {write_to_file}")
+        f.close()
     return math.sqrt(avg_loss)
 
 def test_model(test_loader, model, write_to_file=None):
@@ -36,7 +38,7 @@ def test_model(test_loader, model, write_to_file=None):
     criterion = MSELoss()
 
     model.eval()
-    test_rmse = test(model, test_loader, criterion, write_to_file=write_to_file, print_met=True)
+    test_rmse = test(model, test_loader, criterion, write_to_file=write_to_file, print_met=False)
 
     print(f'Test RMSE: {test_rmse:.4f}')
     print()
