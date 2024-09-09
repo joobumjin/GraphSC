@@ -62,7 +62,7 @@ def test(model, loader, criterion, print_met=False):
     avg_loss = total_loss / len(loader.dataset)
     return math.sqrt(avg_loss)
 
-def train_model(train_loader, val_loader, test_loader, model, output_filepath, img_path, learning_rate, num_epochs, num_gcn, num_dense, convergence_epsilon = 1):
+def train_model(train_loader, val_loader, test_loader, model, output_filepath, img_path, learning_rate, num_epochs, num_gcn, num_dense, convergence_epsilon = 0.05):
 
     best_rmse = 99999999999
     prev_rmse = None
