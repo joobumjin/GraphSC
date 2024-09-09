@@ -12,7 +12,7 @@ def test(model, loader, criterion, write_to_file, print_met=True):
     total_loss = 0.0
     f = None
     with torch.no_grad():
-        if write_to_file: f = open(write_to_file, "x")
+        if write_to_file: f = open(write_to_file, "w")
         for data in loader:
             data = data.to(model.device)
             out = model(data)
