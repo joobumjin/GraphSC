@@ -212,7 +212,7 @@ def main(args):
 
             hyper_param_dir = f"{args.pred}/lr{learning_rate}_e{num_epochs}/g{num_gcn}_d{num_dense}" 
             Path(f'{args.chkpt_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
-            output_filepath = f'{args.chkpt_pah}/{hyper_param_dir}/Abs_model.pth'
+            output_filepath = f'{args.chkpt_path}/{hyper_param_dir}/Abs_model.pth'
             Path(f'{args.img_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
             img_path = f"{args.img_path}/{hyper_param_dir}/RMSE_Loss_Graph.jpg"
 
