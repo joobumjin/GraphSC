@@ -241,8 +241,8 @@ def main(args):
     print(f"Num Dense Layers {num_dense}")
     print("___________________________________")
 
-    output_filepath = f'{args.chkpt_path}/{args.pred}_MAT_Abs_model_e{num_epochs}_lr{learning_rate}.pth'
-    img_path = f'{args.img_path}/{args.pred}_MAT_Abs_model_e{num_epochs}_lr{learning_rate}.jpg'
+    output_filepath = f'{args.chkpt_path}/{args.pred}_MAT_orig_Abs_model_e{num_epochs}_lr{learning_rate}.pth'
+    img_path = f'{args.img_path}/{args.pred}_MAT_orig_Abs_model_e{num_epochs}_lr{learning_rate}.jpg'
 
     model = GCN(num_features, num_targets)
     # model = Modular_GCN(num_features, num_targets, 3, 3)
