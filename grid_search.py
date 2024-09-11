@@ -227,6 +227,10 @@ def main(args):
     #         test_acc.test_model(test_loader, model, write_to_file=results_file)
 
     #Tuning Set Architecture
+    num_epochs=75
+    learning_rate=1e-3
+    num_gcn=3
+    num_dense=3
     print("___________________________________")
     print()
     print("Training Mat Hyperparams")
@@ -236,10 +240,6 @@ def main(args):
     print(f"Num Dense Layers {num_dense}")
     print("___________________________________")
 
-    num_epochs=75
-    learning_rate=1e-3
-    num_gcn=3
-    num_dense=3
     output_filepath = f'{args.chkpt_path}/{args.pred}_MAT_Abs_model_e{num_epochs}_lr{learning_rate}.pth'
     img_path = f'{args.img_path}/{args.pred}_MAT_Abs_model_e{num_epochs}_lr{learning_rate}.jpg'
 
