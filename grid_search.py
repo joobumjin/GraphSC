@@ -195,36 +195,36 @@ def main(args):
     # print()
     # exit()
 
-    lr_epoch = [(0.00001, 500), (0.00005, 500), (0.0001, 500), (0.00025, 500), (0.0005, 500), (0.00075, 500), (0.001, 500)]
+    lr_epoch = [(0.00005, 200), (0.0001, 200), (0.0005, 200), (0.001, 200)]
 
-    #Tuning Modular
-    for (learning_rate, num_epochs) in lr_epoch:
-      for num_gcn in ([2, 3, 4, 5]):
-        for num_dense in ([2, 3, 4, 5, 6]):
+    # #Tuning Modular
+    # for (learning_rate, num_epochs) in lr_epoch:
+    #   for num_gcn in ([2, 3, 4]):
+    #     for num_dense in ([2, 3, 4]):
     
-            print("___________________________________")
-            print()
-            print("Learning Rate:", learning_rate)
-            print("Epochs:", num_epochs )
-            print(f"Num GCN Layers {num_gcn}")
-            print(f"Num Dense Layers {num_dense}")
-            print("___________________________________")
+    #         print("___________________________________")
+    #         print()
+    #         print("Learning Rate:", learning_rate)
+    #         print("Epochs:", num_epochs )
+    #         print(f"Num GCN Layers {num_gcn}")
+    #         print(f"Num Dense Layers {num_dense}")
+    #         print("___________________________________")
 
-            hyper_param_dir = f"{args.pred}/lr{learning_rate}_e{num_epochs}/g{num_gcn}_d{num_dense}" 
-            Path(f'{args.chkpt_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
-            output_filepath = f'{args.chkpt_path}/{hyper_param_dir}/Abs_model.pth'
-            Path(f'{args.img_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
-            img_path = f"{args.img_path}/{hyper_param_dir}/RMSE_Loss_Graph.jpg"
+    #         hyper_param_dir = f"{args.pred}/lr{learning_rate}_e{num_epochs}/g{num_gcn}_d{num_dense}" 
+    #         Path(f'{args.chkpt_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
+    #         output_filepath = f'{args.chkpt_path}/{hyper_param_dir}/Abs_model.pth'
+    #         Path(f'{args.img_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
+    #         img_path = f"{args.img_path}/{hyper_param_dir}/RMSE_Loss_Graph.jpg"
 
-            model = Modular_GCN(num_features, num_targets, num_dense = num_dense, num_gcn = num_gcn)
-            train_model(train_loader, val_loader, test_loader, model, output_filepath, img_path, learning_rate, num_epochs, num_gcn, num_dense)
+    #         model = Modular_GCN(num_features, num_targets, num_dense = num_dense, num_gcn = num_gcn)
+    #         train_model(train_loader, val_loader, test_loader, model, output_filepath, img_path, learning_rate, num_epochs, num_gcn, num_dense)
 
-            # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-            # model = Modular_GCN(num_features, num_targets, num_dense = num_dense, num_gcn = num_gcn)
-            # model.load_state_dict(torch.load(output_filepath, map_location=torch.device(device)))
-            Path(f'{args.results_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
-            results_file = f'{args.results_path}/{hyper_param_dir}/sample_preds.txt'
-            test_acc.test_model(test_loader, model, write_to_file=results_file)
+    #         # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    #         # model = Modular_GCN(num_features, num_targets, num_dense = num_dense, num_gcn = num_gcn)
+    #         # model.load_state_dict(torch.load(output_filepath, map_location=torch.device(device)))
+    #         Path(f'{args.results_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
+    #         results_file = f'{args.results_path}/{hyper_param_dir}/sample_preds.txt'
+    #         test_acc.test_model(test_loader, model, write_to_file=results_file)
 
     #Tuning Set Architecture
     print("___________________________________")
@@ -236,7 +236,7 @@ def main(args):
     print(f"Num Dense Layers {num_dense}")
     print("___________________________________")
 
-    num_epochs=25
+    num_epochs=75
     learning_rate=1e-3
     num_gcn=3
     num_dense=3
