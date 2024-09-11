@@ -243,7 +243,7 @@ def main(args):
     output_filepath = f'{args.chkpt_path}/{args.pred}_MAT_Abs_model_e{num_epochs}_lr{learning_rate}.pth'
     img_path = f'{args.img_path}/{args.pred}_MAT_Abs_model_e{num_epochs}_lr{learning_rate}.jpg'
 
-    model = GCN(num_features, num_targets, num_dense = num_dense, num_gcn = num_gcn)
+    model = GCN(num_features, num_targets)
     train_model(train_loader, val_loader, test_loader, model, output_filepath, img_path, learning_rate, num_epochs, num_gcn, num_dense)
 
     # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
