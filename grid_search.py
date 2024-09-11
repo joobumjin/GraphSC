@@ -13,8 +13,8 @@ from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
 
 from GNN.src.gnn_modular import Modular_GCN
-from GNN.src.model_4 import GCN
-# from GNN.src.gnn_model import GCN
+# from GNN.src.model_4 import GCN
+from GNN.src.gnn_model import GCN
 from GNN.src import test_acc
 
 
@@ -252,7 +252,7 @@ def main(args):
     # model = GCN(num_features, num_targets, num_dense = num_dense, num_gcn = num_gcn)
     # model.load_state_dict(torch.load(output_filepath, map_location=torch.device(device)))
 
-    results_file = f'{args.results_path}/{args.pred}_MAT_Abs_model_e{num_epochs}_lr{learning_rate}.txt'
+    results_file = f'{args.results_path}/{args.pred}_MAT_orig_Abs_model_e{num_epochs}_lr{learning_rate}.txt'
     test_acc.test_model(test_loader, model, write_to_file=results_file)
 
 ## END UTILITY METHODS
