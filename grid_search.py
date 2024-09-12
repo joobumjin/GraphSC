@@ -216,36 +216,34 @@ def main(args):
     # print()
     # exit()
 
-    lr_epoch = [(0.00005, 50), (0.0001, 50), (0.0005, 50), (0.001, 50)]
+    lr_epoch = [(0.0005, 150), (0.00075, 150), (0.001, 50), (0.0025, 50), (0.005, 50)]
 
     #Tuning Modular
     for (learning_rate, num_epochs) in lr_epoch:
-    #   for num_gcn in ([2, 3, 4, 5]):
-    #     for num_dense in ([2, 3, 4, 5]):
-        for num_gcn in ([2]):
-            for num_dense in ([2]):
-                print("___________________________________")
-                print()
-                print("Learning Rate:", learning_rate)
-                print("Epochs:", num_epochs )
-                print(f"Num GCN Layers {num_gcn}")
-                print(f"Num Dense Layers {num_dense}")
-                print("___________________________________")
+      for num_gcn in ([3, 4, 5]):
+        for num_dense in ([3, 4, 5]):
+            print("___________________________________")
+            print()
+            print("Learning Rate:", learning_rate)
+            print("Epochs:", num_epochs )
+            print(f"Num GCN Layers {num_gcn}")
+            print(f"Num Dense Layers {num_dense}")
+            print("___________________________________")
 
-                hyper_param_dir = f"{args.pred}/lr{learning_rate}_e{num_epochs}/g{num_gcn}_d{num_dense}" 
-                Path(f'{args.chkpt_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
-                output_filepath = f'{args.chkpt_path}/{hyper_param_dir}/Abs_model.pth'
-                Path(f'{args.img_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
-                img_path = f"{args.img_path}/{hyper_param_dir}/RMSE_Loss_Graph.jpg"
+            hyper_param_dir = f"{args.pred}/lr{learning_rate}_e{num_epochs}/g{num_gcn}_d{num_dense}" 
+            Path(f'{args.chkpt_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
+            output_filepath = f'{args.chkpt_path}/{hyper_param_dir}/Abs_model.pth'
+            Path(f'{args.img_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
+            img_path = f"{args.img_path}/{hyper_param_dir}/RMSE_Loss_Graph.jpg"
 
-                # model = Modular_GCN(num_features, num_targets, num_dense = num_dense, num_gcn = num_gcn)
-                model_class = model_constructors[f"G{num_gcn}_D{num_dense}"]
-                model = model_class(num_features, num_targets)
-                train_model(train_loader, val_loader, test_loader, model, output_filepath, img_path, learning_rate, num_epochs, num_gcn, num_dense)
+            # model = Modular_GCN(num_features, num_targets, num_dense = num_dense, num_gcn = num_gcn)
+            model_class = model_constructors[f"G{num_gcn}_D{num_dense}"]
+            model = model_class(num_features, num_targets)
+            train_model(train_loader, val_loader, test_loader, model, output_filepath, img_path, learning_rate, num_epochs, num_gcn, num_dense)
 
-                Path(f'{args.results_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
-                results_file = f'{args.results_path}/{hyper_param_dir}/sample_preds.txt'
-                test_acc.test_model(test_loader, model, write_to_file=results_file)
+            Path(f'{args.results_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
+            results_file = f'{args.results_path}/{hyper_param_dir}/sample_preds.txt'
+            test_acc.test_model(test_loader, model, write_to_file=results_file)
 
     # #Tuning Set Architecture
     # num_epochs=75
