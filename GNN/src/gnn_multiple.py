@@ -673,8 +673,8 @@ class GCN_G5_D3(torch.nn.Module):
         self.conv3 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
         self.norm3 = BatchNorm(self.hidden_channels * self.num_heads)
 
-        self.conv3 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
-        self.norm3 = BatchNorm(self.hidden_channels * self.num_heads)
+        self.conv4 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.norm4 = BatchNorm(self.hidden_channels * self.num_heads)
         
         self.conv5 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=1)
         self.norm5 = BatchNorm(self.output_dim)
