@@ -220,8 +220,7 @@ def main(args):
 
     #Tuning Modular
     for (learning_rate, num_epochs) in lr_epoch:
-    #   for num_gcn in ([2, 3, 4, 5]):
-      for num_gcn in ([5]):
+      for num_gcn in ([2, 3, 4, 5]):
         for num_dense in ([2, 3, 4, 5]):
             print("___________________________________")
             print()
