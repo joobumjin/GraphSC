@@ -16,4 +16,4 @@ conda activate qbam
 # Run program
 cd /users/bjoo2/code/qbam/qbam_gnn
 # python3 grid_search.py --data /users/bjoo2/data/bjoo2/qbam/data --pred TER --chkpt_path /users/bjoo2/data/bjoo2/qbam/checkpoints --img_path /users/bjoo2/data/bjoo2/qbam/graphs --results_path /users/bjoo2/data/bjoo2/qbam/text_out
-python3 grid_search.py --data /users/bjoo2/code/qbam/qbam_gnn/data --pred TER --chkpt_path /users/bjoo2/code/qbam/qbam_gnn/checkpoints --img_path /users/bjoo2/code/qbam/qbam_gnn/graphs --results_path /users/bjoo2/code/qbam/qbam_gnn/text_out
+python3 grid_search.py --data /users/bjoo2/data/bjoo2/qbam/data --pred TER --chkpt_path /users/bjoo2/code/qbam/qbam_gnn/checkpoints --img_path /users/bjoo2/code/qbam/qbam_gnn/graphs --results_path /users/bjoo2/code/qbam/qbam_gnn/text_out
