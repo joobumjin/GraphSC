@@ -23,10 +23,11 @@ def test(model, loader, criterion, write_to_file, print_met=True):
             if print_met:
                 print(f"Predicted: {out}, True: {data.y}, RMSE: {math.sqrt(loss.item())}")
             if f:
-                f.write(f"Predicted: {out}, True: {data.y}, RMSE: {math.sqrt(loss.item())}")
+                f.write(f"Predicted: {out}, True: {data.y}, RMSE: {math.sqrt(loss.item())}\n")
 
     avg_loss = total_loss / len(loader.dataset)
     if f: 
+        f.write(f"Average Loss: {math.sqrt(avg_loss)}\n")
         print(f"Wrote Prediciton Outputs to {write_to_file}")
         f.close()
     return math.sqrt(avg_loss)
