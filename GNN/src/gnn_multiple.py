@@ -846,4 +846,4 @@ class GCN_G5_D5(torch.nn.Module):
         x = self.dropout(x)
         x = self.linear5(x)
 
-        return x
+        return x.squeeze(-1)
