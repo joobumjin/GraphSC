@@ -17,13 +17,13 @@ def test(model, loader, criterion, write_to_file, print_met=True):
             data = data.to(model.device)
             out = model(data)
             out = out.view(-1) 
-            loss = criterion(out, data.y)
+            loss = criterion(out, data.y.reshape(-1, model.output_dim))
             total_loss += loss.item()
 
             if print_met:
-                print(f"Predicted: {out}, True: {data.y}, RMSE: {math.sqrt(loss.item())}")
+                print(f"Predicted: {out}, True: {data.y.reshape(-1, model.output_dim)}, RMSE: {math.sqrt(loss.item())}")
             if f:
-                f.write(f"Predicted: {out}, True: {data.y}, RMSE: {math.sqrt(loss.item())}\n")
+                f.write(f"Predicted: {out}, True: {data.y.reshape(-1, model.output_dim)}, RMSE: {math.sqrt(loss.item())}\n")
 
     avg_loss = total_loss / len(loader.dataset)
     if f: 

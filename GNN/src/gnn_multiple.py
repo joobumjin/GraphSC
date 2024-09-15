@@ -41,7 +41,7 @@ class GCN_G2_D2(torch.nn.Module):
         x = self.dropout(x)
         x = self.linear2(x)
 
-        return x.squeeze(-1)
+        return x
 
 class GCN_G2_D3(torch.nn.Module):
     def __init__(self, num_node_features, output_dim, hidden_channels=128, num_heads=8):
@@ -83,7 +83,7 @@ class GCN_G2_D3(torch.nn.Module):
         x = self.dropout(x)
         x = self.linear3(x)
 
-        return x.squeeze(-1)
+        return x
     
 class GCN_G2_D4(torch.nn.Module):
     def __init__(self, num_node_features, output_dim, hidden_channels=128, num_heads=8):
@@ -127,7 +127,7 @@ class GCN_G2_D4(torch.nn.Module):
         x = self.dropout(x)
         x = self.linear4(x)
 
-        return x.squeeze(-1)
+        return x
     
 class GCN_G2_D5(torch.nn.Module):
     def __init__(self, num_node_features, output_dim, hidden_channels=128, num_heads=8):
@@ -173,7 +173,7 @@ class GCN_G2_D5(torch.nn.Module):
         x = self.dropout(x)
         x = self.linear5(x)
 
-        return x.squeeze(-1)
+        return x
 
 ######################################################################################################################
 
@@ -222,7 +222,7 @@ class GCN_G3_D2(torch.nn.Module):
         x = self.dropout(x)
         x = self.linear2(x)
 
-        return x.squeeze(-1)
+        return x
 
 class GCN_G3_D3(torch.nn.Module):
     def __init__(self, num_node_features, output_dim, hidden_channels=128, num_heads=8):
@@ -271,7 +271,7 @@ class GCN_G3_D3(torch.nn.Module):
         x = self.dropout(x)
         x = self.linear3(x)
 
-        return x.squeeze(-1)
+        return x
     
 class GCN_G3_D4(torch.nn.Module):
     def __init__(self, num_node_features, output_dim, hidden_channels=128, num_heads=8):
@@ -322,7 +322,7 @@ class GCN_G3_D4(torch.nn.Module):
         x = self.dropout(x)
         x = self.linear4(x)
 
-        return x.squeeze(-1)
+        return x
     
 class GCN_G3_D5(torch.nn.Module):
     def __init__(self, num_node_features, output_dim, hidden_channels=128, num_heads=8):
@@ -375,7 +375,7 @@ class GCN_G3_D5(torch.nn.Module):
         x = self.dropout(x)
         x = self.linear5(x)
 
-        return x.squeeze(-1)
+        return x
 
 ######################################################################################################################
 
@@ -431,7 +431,7 @@ class GCN_G4_D2(torch.nn.Module):
         x = self.dropout(x)
         x = self.linear2(x)
 
-        return x.squeeze(-1)
+        return x
 
 class GCN_G4_D3(torch.nn.Module):
     def __init__(self, num_node_features, output_dim, hidden_channels=128, num_heads=8):
@@ -487,7 +487,7 @@ class GCN_G4_D3(torch.nn.Module):
         x = self.dropout(x)
         x = self.linear3(x)
 
-        return x.squeeze(-1)
+        return x
     
 class GCN_G4_D4(torch.nn.Module):
     def __init__(self, num_node_features, output_dim, hidden_channels=128, num_heads=8):
@@ -545,7 +545,7 @@ class GCN_G4_D4(torch.nn.Module):
         x = self.dropout(x)
         x = self.linear4(x)
 
-        return x.squeeze(-1)
+        return x
     
 class GCN_G4_D5(torch.nn.Module):
     def __init__(self, num_node_features, output_dim, hidden_channels=128, num_heads=8):
@@ -605,7 +605,7 @@ class GCN_G4_D5(torch.nn.Module):
         x = self.dropout(x)
         x = self.linear5(x)
 
-        return x.squeeze(-1)
+        return x
     
 ######################################################################################################################
 
@@ -667,7 +667,7 @@ class GCN_G5_D2(torch.nn.Module):
         x = self.dropout(x)
         x = self.linear2(x)
 
-        return x.squeeze(-1)
+        return x
 
 class GCN_G5_D3(torch.nn.Module):
     def __init__(self, num_node_features, output_dim, hidden_channels=128, num_heads=8):
@@ -730,7 +730,7 @@ class GCN_G5_D3(torch.nn.Module):
         x = self.dropout(x)
         x = self.linear3(x)
 
-        return x.squeeze(-1)
+        return x
     
 class GCN_G5_D4(torch.nn.Module):
     def __init__(self, num_node_features, output_dim, hidden_channels=128, num_heads=8):
@@ -795,7 +795,7 @@ class GCN_G5_D4(torch.nn.Module):
         x = self.dropout(x)
         x = self.linear4(x)
 
-        return x.squeeze(-1)
+        return x
     
 class GCN_G5_D5(torch.nn.Module):
     def __init__(self, num_node_features, output_dim, hidden_channels=128, num_heads=8):
@@ -862,4 +862,4 @@ class GCN_G5_D5(torch.nn.Module):
         x = self.dropout(x)
         x = self.linear5(x)
 
-        return x.squeeze(-1)
+        return x

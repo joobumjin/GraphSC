@@ -44,7 +44,7 @@ def train(model, train_loader, optimizer, criterion):
     for data in train_loader:
         data = data.to(model.device)  # Move data to the same device as the model
         out = model(data)
-        loss = criterion(out, data.y)
+        loss = criterion(out, data.y.reshape(-1, model.output_dim))
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -56,11 +56,11 @@ def test(model, loader, criterion, print_met=False):
         for data in tqdm(loader, desc="Testing", leave=False):
             data = data.to(model.device)
             out = model(data)
-            loss = criterion(out, data.y)
+            loss = criterion(out, data.y.reshape(-1, model.output_dim))
             total_loss += loss.item()
 
             if print_met:
-                print(f"Predicted: {out}, True: {data.y}, RMSE: {math.sqrt(loss.item())}")
+                print(f"Predicted: {out}, True: {data.y.reshape(-1, model.output_dim)}, RMSE: {math.sqrt(loss.item())}")
 
     avg_loss = total_loss / len(loader.dataset)
     return math.sqrt(avg_loss)
