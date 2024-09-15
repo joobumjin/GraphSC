@@ -10,11 +10,12 @@ class GCN_G2_D2(torch.nn.Module):
         self.output_dim = output_dim
         self.hidden_channels = hidden_channels
         self.num_heads = num_heads
+        self.edge_dim = 0 if output_dim == 1 else 1
 
-        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm1 = BatchNorm(self.hidden_channels * self.num_heads)
         
-        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=1)
+        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=self.edge_dim)
         self.norm2 = BatchNorm(self.output_dim)
         
         self.dropout = Dropout(p=0.5)
@@ -49,11 +50,12 @@ class GCN_G2_D3(torch.nn.Module):
         self.output_dim = output_dim
         self.hidden_channels = hidden_channels
         self.num_heads = num_heads
+        self.edge_dim = 0 if output_dim == 2 else 1
 
-        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm1 = BatchNorm(self.hidden_channels * self.num_heads)
 
-        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=1)
+        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=self.edge_dim)
         self.norm2 = BatchNorm(self.output_dim)
         
         self.dropout = Dropout(p=0.5)
@@ -90,11 +92,12 @@ class GCN_G2_D4(torch.nn.Module):
         self.output_dim = output_dim
         self.hidden_channels = hidden_channels
         self.num_heads = num_heads
+        self.edge_dim = 0 if output_dim == 2 else 1
 
-        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm1 = BatchNorm(self.hidden_channels * self.num_heads)
         
-        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=1)
+        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=self.edge_dim)
         self.norm2 = BatchNorm(self.output_dim)
         
         self.dropout = Dropout(p=0.5)
@@ -133,11 +136,12 @@ class GCN_G2_D5(torch.nn.Module):
         self.output_dim = output_dim
         self.hidden_channels = hidden_channels
         self.num_heads = num_heads
+        self.edge_dim = 0 if output_dim == 2 else 1
 
-        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm1 = BatchNorm(self.hidden_channels * self.num_heads)
         
-        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=1)
+        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=self.edge_dim)
         self.norm2 = BatchNorm(self.output_dim)
         
         self.dropout = Dropout(p=0.5)
@@ -180,14 +184,15 @@ class GCN_G3_D2(torch.nn.Module):
         self.output_dim = output_dim
         self.hidden_channels = hidden_channels
         self.num_heads = num_heads
+        self.edge_dim = 0 if output_dim == 2 else 1
 
-        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm1 = BatchNorm(self.hidden_channels * self.num_heads)
 
-        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm2 = BatchNorm(self.hidden_channels * self.num_heads)
         
-        self.conv3 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=1)
+        self.conv3 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=self.edge_dim)
         self.norm3 = BatchNorm(self.output_dim)
         
         self.dropout = Dropout(p=0.5)
@@ -226,14 +231,15 @@ class GCN_G3_D3(torch.nn.Module):
         self.output_dim = output_dim
         self.hidden_channels = hidden_channels
         self.num_heads = num_heads
+        self.edge_dim = 0 if output_dim == 2 else 1
 
-        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm1 = BatchNorm(self.hidden_channels * self.num_heads)
 
-        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm2 = BatchNorm(self.hidden_channels * self.num_heads)
         
-        self.conv3 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=1)
+        self.conv3 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=self.edge_dim)
         self.norm3 = BatchNorm(self.output_dim)
         
         self.dropout = Dropout(p=0.5)
@@ -274,14 +280,15 @@ class GCN_G3_D4(torch.nn.Module):
         self.output_dim = output_dim
         self.hidden_channels = hidden_channels
         self.num_heads = num_heads
+        self.edge_dim = 0 if output_dim == 2 else 1
 
-        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm1 = BatchNorm(self.hidden_channels * self.num_heads)
 
-        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm2 = BatchNorm(self.hidden_channels * self.num_heads)
         
-        self.conv3 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=1)
+        self.conv3 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=self.edge_dim)
         self.norm3 = BatchNorm(self.output_dim)
         
         self.dropout = Dropout(p=0.5)
@@ -324,14 +331,15 @@ class GCN_G3_D5(torch.nn.Module):
         self.output_dim = output_dim
         self.hidden_channels = hidden_channels
         self.num_heads = num_heads
+        self.edge_dim = 0 if output_dim == 2 else 1
 
-        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm1 = BatchNorm(self.hidden_channels * self.num_heads)
 
-        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm2 = BatchNorm(self.hidden_channels * self.num_heads)
         
-        self.conv3 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=1)
+        self.conv3 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=self.edge_dim)
         self.norm3 = BatchNorm(self.output_dim)
         
         self.dropout = Dropout(p=0.5)
@@ -378,17 +386,18 @@ class GCN_G4_D2(torch.nn.Module):
         self.output_dim = output_dim
         self.hidden_channels = hidden_channels
         self.num_heads = num_heads
+        self.edge_dim = 0 if output_dim == 2 else 1
 
-        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm1 = BatchNorm(self.hidden_channels * self.num_heads)
 
-        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm2 = BatchNorm(self.hidden_channels * self.num_heads)
 
-        self.conv3 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv3 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm3 = BatchNorm(self.hidden_channels * self.num_heads)
         
-        self.conv4 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=1)
+        self.conv4 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=self.edge_dim)
         self.norm4 = BatchNorm(self.output_dim)
         
         self.dropout = Dropout(p=0.5)
@@ -431,17 +440,18 @@ class GCN_G4_D3(torch.nn.Module):
         self.output_dim = output_dim
         self.hidden_channels = hidden_channels
         self.num_heads = num_heads
+        self.edge_dim = 0 if output_dim == 2 else 1
 
-        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm1 = BatchNorm(self.hidden_channels * self.num_heads)
 
-        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm2 = BatchNorm(self.hidden_channels * self.num_heads)
 
-        self.conv3 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv3 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm3 = BatchNorm(self.hidden_channels * self.num_heads)
         
-        self.conv4 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=1)
+        self.conv4 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=self.edge_dim)
         self.norm4 = BatchNorm(self.output_dim)
         
         self.dropout = Dropout(p=0.5)
@@ -486,17 +496,18 @@ class GCN_G4_D4(torch.nn.Module):
         self.output_dim = output_dim
         self.hidden_channels = hidden_channels
         self.num_heads = num_heads
+        self.edge_dim = 0 if output_dim == 2 else 1
 
-        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm1 = BatchNorm(self.hidden_channels * self.num_heads)
 
-        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm2 = BatchNorm(self.hidden_channels * self.num_heads)
 
-        self.conv3 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv3 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm3 = BatchNorm(self.hidden_channels * self.num_heads)
         
-        self.conv4 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=1)
+        self.conv4 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=self.edge_dim)
         self.norm4 = BatchNorm(self.output_dim)
         
         self.dropout = Dropout(p=0.5)
@@ -543,17 +554,18 @@ class GCN_G4_D5(torch.nn.Module):
         self.output_dim = output_dim
         self.hidden_channels = hidden_channels
         self.num_heads = num_heads
+        self.edge_dim = 0 if output_dim == 2 else 1
 
-        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm1 = BatchNorm(self.hidden_channels * self.num_heads)
 
-        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm2 = BatchNorm(self.hidden_channels * self.num_heads)
 
-        self.conv3 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv3 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm3 = BatchNorm(self.hidden_channels * self.num_heads)
         
-        self.conv4 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=1)
+        self.conv4 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=self.edge_dim)
         self.norm4 = BatchNorm(self.output_dim)
         
         self.dropout = Dropout(p=0.5)
@@ -604,20 +616,21 @@ class GCN_G5_D2(torch.nn.Module):
         self.output_dim = output_dim
         self.hidden_channels = hidden_channels
         self.num_heads = num_heads
+        self.edge_dim = 0 if output_dim == 2 else 1
 
-        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm1 = BatchNorm(self.hidden_channels * self.num_heads)
 
-        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm2 = BatchNorm(self.hidden_channels * self.num_heads)
 
-        self.conv3 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv3 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm3 = BatchNorm(self.hidden_channels * self.num_heads)
 
-        self.conv4 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv4 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm4 = BatchNorm(self.hidden_channels * self.num_heads)
         
-        self.conv5 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=1)
+        self.conv5 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=self.edge_dim)
         self.norm5 = BatchNorm(self.output_dim)
         
         self.dropout = Dropout(p=0.5)
@@ -663,20 +676,21 @@ class GCN_G5_D3(torch.nn.Module):
         self.output_dim = output_dim
         self.hidden_channels = hidden_channels
         self.num_heads = num_heads
+        self.edge_dim = 0 if output_dim == 2 else 1
 
-        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm1 = BatchNorm(self.hidden_channels * self.num_heads)
 
-        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm2 = BatchNorm(self.hidden_channels * self.num_heads)
 
-        self.conv3 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv3 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm3 = BatchNorm(self.hidden_channels * self.num_heads)
 
-        self.conv4 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv4 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm4 = BatchNorm(self.hidden_channels * self.num_heads)
         
-        self.conv5 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=1)
+        self.conv5 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=self.edge_dim)
         self.norm5 = BatchNorm(self.output_dim)
         
         self.dropout = Dropout(p=0.5)
@@ -725,20 +739,21 @@ class GCN_G5_D4(torch.nn.Module):
         self.output_dim = output_dim
         self.hidden_channels = hidden_channels
         self.num_heads = num_heads
+        self.edge_dim = 0 if output_dim == 2 else 1
 
-        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm1 = BatchNorm(self.hidden_channels * self.num_heads)
 
-        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm2 = BatchNorm(self.hidden_channels * self.num_heads)
 
-        self.conv3 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv3 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm3 = BatchNorm(self.hidden_channels * self.num_heads)
 
-        self.conv4 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv4 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm4 = BatchNorm(self.hidden_channels * self.num_heads)
         
-        self.conv5 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=1)
+        self.conv5 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=self.edge_dim)
         self.norm5 = BatchNorm(self.output_dim)
         
         self.dropout = Dropout(p=0.5)
@@ -789,20 +804,21 @@ class GCN_G5_D5(torch.nn.Module):
         self.output_dim = output_dim
         self.hidden_channels = hidden_channels
         self.num_heads = num_heads
+        self.edge_dim = 0 if output_dim == 2 else 1
 
-        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv1 = GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm1 = BatchNorm(self.hidden_channels * self.num_heads)
 
-        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv2 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm2 = BatchNorm(self.hidden_channels * self.num_heads)
 
-        self.conv3 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv3 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm3 = BatchNorm(self.hidden_channels * self.num_heads)
 
-        self.conv4 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=1)
+        self.conv4 = GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=self.edge_dim)
         self.norm4 = BatchNorm(self.hidden_channels * self.num_heads)
         
-        self.conv5 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=1)
+        self.conv5 = GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=self.edge_dim)
         self.norm5 = BatchNorm(self.output_dim)
         
         self.dropout = Dropout(p=0.5)
