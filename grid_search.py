@@ -275,6 +275,8 @@ def main(args):
             df = pd.DataFrame(data)
             df.to_excel(writer, sheet_name=split)
 
+    print(f"Wrote performance summary to {df_filepath}")
+
 ## END UTILITY METHODS
 ##############################################################################
 

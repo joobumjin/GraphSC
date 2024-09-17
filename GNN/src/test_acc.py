@@ -16,7 +16,7 @@ def test(model, loader, criterion, write_to_file, print_met=True):
         for data in loader:
             data = data.to(model.device)
             out = model(data)
-            out = out.view(-1) 
+            # out = out.view(-1) 
             loss = criterion(out, data.y.reshape(-1, model.output_dim))
             total_loss += loss.item()
 
