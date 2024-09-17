@@ -8,8 +8,10 @@
 
 # Load a CUDA module
 module load cuda
+# module load miniconda/4.12.0
+# source /gpfs/runtime/opt/miniconda/4.12.0/etc/profile.d/conda.sh
 module load miniconda3/23.11.0s
-source /gpfs/runtime/opt/miniconda/4.12.0/etc/profile.d/conda.sh
+source /oscar/runtime/software/external/miniconda3/23.11.0/etc/profile.d/conda.sh
 
 conda activate qbam
 
