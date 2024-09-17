@@ -67,7 +67,7 @@ def test(model, loader, criterion, print_met=False):
     avg_loss = total_loss / len(loader.dataset)
     return math.sqrt(avg_loss)
 
-def train_model(train_loader, val_loader, test_loader, model, output_filepath, img_path, learning_rate, num_epochs, num_gcn, num_dense, convergence_epsilon = 0.05):
+def train_model(train_loader, val_loader, test_loader, model, output_filepath, img_path, learning_rate, num_epochs, convergence_epsilon = 0.05):
 
     best_rmse = 99999999999
     prev_rmse = None
@@ -103,6 +103,9 @@ def train_model(train_loader, val_loader, test_loader, model, output_filepath, i
     train_losses = np.array(train_losses)
     val_losses = np.array(val_losses)
     test_losses = np.array(test_losses)
+    print(train_losses)
+    print(val_losses)
+    print(test_losses)
 
     torch.save(model.state_dict(), output_filepath)
     print("Saved the model to:", output_filepath)
@@ -253,7 +256,7 @@ def main(args):
                 model_class = model_constructors[arch_string]
                 model = model_class(num_features, num_targets)
 
-                train_loss, val_loss = train_model(train_loader, val_loader, test_loader, model, output_filepath, img_path, learning_rate, num_epochs, num_gcn, num_dense)
+                train_loss, val_loss = train_model(train_loader, val_loader, test_loader, model, output_filepath, img_path, learning_rate, num_epochs)
                 train_losses.append(train_loss)
                 val_losses.append(val_loss)
 
