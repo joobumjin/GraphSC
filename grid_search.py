@@ -73,7 +73,7 @@ def train_model(train_loader, val_loader, test_loader, model, output_filepath, i
     prev_rmse = None
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print("Using,", device)
+    print("Using", device)
     model = model.to(device)
     model.device = device
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
