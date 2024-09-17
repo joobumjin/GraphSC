@@ -103,9 +103,9 @@ def train_model(train_loader, val_loader, test_loader, model, output_filepath, i
     train_losses = np.array(train_losses)
     val_losses = np.array(val_losses)
     test_losses = np.array(test_losses)
-    print(train_losses)
-    print(val_losses)
-    print(test_losses)
+    # print(train_losses)
+    # print(val_losses)
+    # print(test_losses)
 
     torch.save(model.state_dict(), output_filepath)
     print("Saved the model to:", output_filepath)
@@ -120,6 +120,7 @@ def train_model(train_loader, val_loader, test_loader, model, output_filepath, i
     plt.legend()
     plt.savefig(img_path)
     plt.close()
+    print(f"Saved graph to {img_path}")
 
     return train_losses[-1], val_losses[-1]
 
