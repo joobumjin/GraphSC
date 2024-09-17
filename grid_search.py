@@ -7,6 +7,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 import pickle
 import torch
 from torch.nn import MSELoss
@@ -98,6 +99,10 @@ def train_model(train_loader, val_loader, test_loader, model, output_filepath, i
 
         if epoch % 20 == 0:
             print(f'\nEpoch: {epoch:03d}, Train RMSE: {train_rmse:.4f}, Val RMSE: {val_rmse:.4f}\n')
+
+    train_losses = np.array(train_losses)
+    val_losses = np.array(val_losses)
+    test_losses = np.array(test_losses)
 
     torch.save(model.state_dict(), output_filepath)
     print("Saved the model to:", output_filepath)
