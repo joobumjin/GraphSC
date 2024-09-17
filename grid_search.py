@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import pandas as pd
 import pickle
 import torch
 from torch.nn import MSELoss
@@ -96,7 +97,7 @@ def train_model(train_loader, val_loader, test_loader, model, output_filepath, i
         # prev_rmse = train_rmse
 
         if epoch % 20 == 0:
-          print(f'\nEpoch: {epoch:03d}, Train RMSE: {train_rmse:.4f}, Val RMSE: {val_rmse:.4f}\n')
+            print(f'\nEpoch: {epoch:03d}, Train RMSE: {train_rmse:.4f}, Val RMSE: {val_rmse:.4f}\n')
 
     torch.save(model.state_dict(), output_filepath)
     print("Saved the model to:", output_filepath)
@@ -111,6 +112,8 @@ def train_model(train_loader, val_loader, test_loader, model, output_filepath, i
     plt.legend()
     plt.savefig(img_path)
     plt.close()
+
+    return train_losses[-1], val_losses[-1]
 
 
 def check_for_nan(dataset):
@@ -218,60 +221,51 @@ def main(args):
 
     lr_epoch = [(0.0005, 150), (0.00075, 150), (0.001, 50), (0.0025, 50), (0.005, 50)]
 
+    train_data = {"Learning Rate": [lr for lr, _ in lr_epoch]}
+    val_data = {"Learning Rate": [lr for lr, _ in lr_epoch]}
+    test_data = {"Learning Rate": [lr for lr, _ in lr_epoch]}
+
     #Tuning Modular
-    for (learning_rate, num_epochs) in lr_epoch:
-      for num_gcn in ([2, 3, 4, 5]):
+    for num_gcn in ([2, 3, 4, 5]):
         for num_dense in ([2, 3, 4, 5]):
-            print("___________________________________")
-            print()
-            print("Learning Rate:", learning_rate)
-            print("Epochs:", num_epochs )
-            print(f"Num GCN Layers {num_gcn}")
-            print(f"Num Dense Layers {num_dense}")
-            print("___________________________________")
+            arch_string = f"G{num_gcn}_D{num_dense}"
+            train_losses, val_losses, test_losses = [], [], []
+            for (learning_rate, num_epochs) in lr_epoch:
+                print("___________________________________")
+                print()
+                print("Learning Rate:", learning_rate)
+                print("Epochs:", num_epochs )
+                print(f"Num GCN Layers {num_gcn}")
+                print(f"Num Dense Layers {num_dense}")
+                print("___________________________________")
 
-            hyper_param_dir = f"{args.pred}/lr{learning_rate}_e{num_epochs}/g{num_gcn}_d{num_dense}" 
-            Path(f'{args.chkpt_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
-            output_filepath = f'{args.chkpt_path}/{hyper_param_dir}/Abs_model.pth'
-            Path(f'{args.img_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
-            img_path = f"{args.img_path}/{hyper_param_dir}/RMSE_Loss_Graph.jpg"
+                hyper_param_dir = f"{args.pred}/lr{learning_rate}_e{num_epochs}" 
+                Path(f'{args.chkpt_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
+                output_filepath = f'{args.chkpt_path}/{hyper_param_dir}/g{num_gcn}_d{num_dense}_Abs_model.pth'
+                Path(f'{args.img_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
+                img_path = f"{args.img_path}/{hyper_param_dir}/g{num_gcn}_d{num_dense}_RMSE_Loss_Graph.jpg"
 
-            # model = Modular_GCN(num_features, num_targets, num_dense = num_dense, num_gcn = num_gcn)
-            model_class = model_constructors[f"G{num_gcn}_D{num_dense}"]
-            model = model_class(num_features, num_targets)
-            train_model(train_loader, val_loader, test_loader, model, output_filepath, img_path, learning_rate, num_epochs, num_gcn, num_dense)
+                model_class = model_constructors[arch_string]
+                model = model_class(num_features, num_targets)
 
-            Path(f'{args.results_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
-            results_file = f'{args.results_path}/{hyper_param_dir}/sample_preds.txt'
-            test_acc.test_model(test_loader, model, write_to_file=results_file)
+                train_loss, val_loss = train_model(train_loader, val_loader, test_loader, model, output_filepath, img_path, learning_rate, num_epochs, num_gcn, num_dense)
+                train_losses.append(train_loss)
+                val_losses.append(val_loss)
 
-    # #Tuning Set Architecture
-    # num_epochs=75
-    # learning_rate=1e-3
-    # num_gcn=3
-    # num_dense=3
-    # print("___________________________________")
-    # print()
-    # print("Training Mat Hyperparams")
-    # print("Learning Rate:", learning_rate)
-    # print("Epochs:", num_epochs )
-    # print(f"Num GCN Layers {num_gcn}")
-    # print(f"Num Dense Layers {num_dense}")
-    # print("___________________________________")
+                Path(f'{args.results_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
+                results_file = f'{args.results_path}/{hyper_param_dir}/g{num_gcn}_d{num_dense}_sample_preds.txt'
+                test_loss = test_acc.test_model(test_loader, model, write_to_file=results_file)
+                test_losses.append(test_loss)
+            train_data[arch_string] = train_losses
+            val_data[arch_string] = val_losses
+            test_data[arch_string] = test_losses
 
-    # output_filepath = f'{args.chkpt_path}/{args.pred}_MAT_orig_Abs_model_e{num_epochs}_lr{learning_rate}.pth'
-    # img_path = f'{args.img_path}/{args.pred}_MAT_orig_Abs_model_e{num_epochs}_lr{learning_rate}.jpg'
-
-    # model = GCN(num_features, num_targets)
-    # # model = Modular_GCN(num_features, num_targets, 3, 3)
-    # train_model(train_loader, val_loader, test_loader, model, output_filepath, img_path, learning_rate, num_epochs, num_gcn, num_dense)
-
-    # # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    # # model = GCN(num_features, num_targets, num_dense = num_dense, num_gcn = num_gcn)
-    # # model.load_state_dict(torch.load(output_filepath, map_location=torch.device(device)))
-
-    # results_file = f'{args.results_path}/{args.pred}_MAT_orig_Abs_model_e{num_epochs}_lr{learning_rate}.txt'
-    # test_acc.test_model(test_loader, model, write_to_file=results_file)
+    #Create performance summaries
+    df_filepath = f"{args.results_path}/{args.pred}_stats.xlsx"
+    with pd.ExcelWriter(df_filepath) as writer:
+        for data, split in zip([train_data, val_data, test_data], ["Train", "Val", "Test"]):
+            df = pd.DataFrame(data)
+            df.to_excel(writer, sheet_name=split)
 
 ## END UTILITY METHODS
 ##############################################################################

@@ -43,5 +43,6 @@ def test_model(test_loader, model, write_to_file=None):
 
     print(f'Test RMSE: {test_rmse:.4f}')
     print()
+    return test_rmse
     
 
