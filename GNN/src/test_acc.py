@@ -19,8 +19,8 @@ def test(model, loader, criterion, write_to_file, vis_preds, task, print_met=Tru
             data = data.to(model.device)
             out = model(data)
             
-            if all_preds is not None: all_preds = np.vstack((all_preds, out.detach().numpy()))
-            else: all_preds = out.detach().numpy()
+            if all_preds is not None: all_preds = np.vstack((all_preds, out.detach().cpu().numpy()))
+            else: all_preds = out.detach().cpu().numpy()
 
             loss = criterion(out, data.y.reshape(-1, model.output_dim))
             total_loss += loss.item()
