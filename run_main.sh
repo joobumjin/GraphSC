@@ -17,9 +17,10 @@ conda activate qbam
 cd /users/bjoo2/code/qbam/qbam_gnn
 # python3 grid_search.py --data /users/bjoo2/data/bjoo2/qbam/data --pred TER --chkpt_path /users/bjoo2/data/bjoo2/qbam/checkpoints --img_path /users/bjoo2/data/bjoo2/qbam/graphs --results_path /users/bjoo2/data/bjoo2/qbam/text_out
 
-declare -a arr=("TER" "VEGF" "Both")
+# declare -a arr=("TER" "VEGF" "Both")
+declare -a arr=("VEGF")
 for i in "${arr[@]}"
 do
-    echo "$i"
+    echo "Grid Searching $i"
     python3 grid_search.py --data /users/bjoo2/data/bjoo2/qbam/data --pred "$i" --chkpt_path /users/bjoo2/code/qbam/qbam_gnn/checkpoints --img_path /users/bjoo2/code/qbam/qbam_gnn/graphs --results_path /users/bjoo2/code/qbam/qbam_gnn/text_out
 done
