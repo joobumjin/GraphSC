@@ -185,6 +185,7 @@ def main(args):
     test_dataset = load_dataset_from_pickle(test_pickle_file)
 
     check_for_nan(train_dataset)
+    check_for_nan(test_dataset)
 
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
