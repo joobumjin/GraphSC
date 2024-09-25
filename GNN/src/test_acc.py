@@ -20,8 +20,8 @@ def test(model, loader, criterion, write_to_file, vis_preds, task, print_met=Tru
             out = model(data)
             
             if all_preds is not None: 
-                print(out)
-                print(all_preds)
+                print(out.shape)
+                print(all_preds.shape)
                 all_preds = np.vstack((all_preds, out.numpy(force=True)))
             else: all_preds = out.numpy(force=True)
 
