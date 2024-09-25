@@ -20,10 +20,10 @@ def test(model, loader, criterion, write_to_file, vis_preds, task, print_met=Tru
             out = model(data)
             
             if all_preds is not None: 
-                print(out.detach().cpu().numpy())
+                print(out.numpy(force=True))
                 print(all_preds)
-                all_preds = np.vstack((all_preds, out.detach().cpu().numpy()))
-            else: all_preds = out.detach().cpu().numpy()
+                all_preds = np.vstack((all_preds, out.numpy(force=True)))
+            else: all_preds = out.numpy(force=True)
 
             loss = criterion(out, data.y.reshape(-1, model.output_dim))
             total_loss += loss.item()
