@@ -46,10 +46,10 @@ def test(model, loader, criterion, write_to_file, vis_preds, task, print_met=Tru
         plt.plot(x_data, y_data, "b+")
         plt.plot(label_x, label_y, "ro")
         if model.output_dim == 1:
-            plt.ylabel(task)
+            plt.xlabel(task)
         else:
-            plt.xlabel('TER')
-            plt.ylabel('VEGF')
+            plt.xlabel('VEGF')
+            plt.ylabel('TER')
         plt.title('Predicted and Ground Truth Values')
         plt.legend()
         plt.savefig(vis_preds)
