@@ -54,7 +54,7 @@ def test(model, loader, criterion, write_to_file, vis_preds, task, print_met=Tru
         plt.legend()
         plt.savefig(vis_preds)
         plt.close()
-        print(f"Saved graph to {vis_preds}")
+        print(f"Saved predictions graph to {vis_preds}")
 
     avg_loss = total_loss / len(loader.dataset)
     if f: 
