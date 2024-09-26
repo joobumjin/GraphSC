@@ -38,6 +38,10 @@ def test(model, loader, criterion, write_to_file, vis_preds, task, print_met=Tru
 
         x_data = all_preds[:,0]
         y_data = torch.zeros_like(x_data) if (model.output_dim == 1) else all_preds[:,1]
+
+        x_data = x_data.numpy(force=True)
+        y_data = y_data.numpy(force=True)
+        label_x = label_x.numpy(force=True)
             
         plt.plot(x_data, y_data, "b+")
         plt.plot(label_x, label_y, "ro")
