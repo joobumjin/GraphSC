@@ -20,8 +20,6 @@ def test(model, loader, criterion, write_to_file, vis_preds, task, print_met=Tru
             out = model(data)
             
             if all_preds is not None: 
-                print(out.shape)
-                print(all_preds.shape)
                 all_preds = torch.vstack((all_preds, out))
             else: all_preds = out
 
@@ -39,7 +37,7 @@ def test(model, loader, criterion, write_to_file, vis_preds, task, print_met=Tru
         label_y = 0.0 if (model.output_dim == 1) else label[1]
 
         x_data = all_preds[:,0]
-        y_data = np.zeros_like(x_data) if (model.output_dim == 1) else all_preds[:,1]
+        y_data = torch.zeros_like(x_data) if (model.output_dim == 1) else all_preds[:,1]
             
         plt.plot(x_data, y_data, "b+")
         plt.plot(label_x, label_y, "ro")
