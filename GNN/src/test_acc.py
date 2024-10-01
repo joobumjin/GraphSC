@@ -74,8 +74,8 @@ def test(model, loader, criterion, write_to_file, vis_preds, task, print_met=Tru
         for task_type in data_dict:
             x_data,y_data = data_dict[task_type][0]
             label_x,label_y = data_dict[task_type][1]
-            plt.plot(x_data, y_data, "b+")
-            plt.plot(label_x, label_y, "ro")
+            plt.plot(x_data, y_data, "b+", label="Model Predictions")
+            plt.plot(label_x, label_y, "ro", label="Ground Truth")
             if task_type == "TER":
                 plt.xlabel("TER")
             else:
