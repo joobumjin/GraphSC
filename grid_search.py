@@ -264,7 +264,7 @@ def main(args):
 
                 Path(f'{args.results_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
                 results_file = f'{args.results_path}/{hyper_param_dir}/g{num_gcn}_d{num_dense}_sample_preds.txt'
-                plotted_preds = f'{args.results_path}/{hyper_param_dir}/g{num_gcn}_d{num_dense}_preds_graph.jpg'
+                plotted_preds = f'{args.results_path}/{hyper_param_dir}/g{num_gcn}_d{num_dense}_preds_graph'
                 test_loss = test_acc.test_model(test_loader, model, task=args.pred, write_to_file=results_file, vis_preds=plotted_preds)
                 test_losses.append(test_loss)
             train_data[arch_string] = train_losses

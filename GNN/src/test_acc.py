@@ -33,28 +33,59 @@ def test(model, loader, criterion, write_to_file, vis_preds, task, print_met=Tru
 
     if vis_preds:
         label = data.y.reshape(-1, model.output_dim)[0]
-        label_x = label[0]
-        label_y = 0.0 if (model.output_dim == 1) else label[1]
 
-        x_data = all_preds[:,0]
-        y_data = torch.zeros_like(x_data) if (model.output_dim == 1) else all_preds[:,1]
+        task_list = ["VEGF", "TER"] if task == "Both" else [f"{task}"]
 
-        x_data = x_data.numpy(force=True)
-        y_data = y_data.numpy(force=True)
-        label_x = label_x.numpy(force=True)
-            
-        plt.plot(x_data, y_data, "b+")
-        plt.plot(label_x, label_y, "ro")
-        if model.output_dim == 1:
-            plt.xlabel(task)
-        else:
-            plt.xlabel('VEGF')
-            plt.ylabel('TER')
-        plt.title('Predicted and Ground Truth Values')
-        plt.legend()
-        plt.savefig(vis_preds)
-        plt.close()
-        print(f"Saved predictions graph to {vis_preds}")
+        data_dict = {}
+
+        vegf_label_x, vegf_label_y, vegf_pred_x, vegf_pred_y = None, None, None, None
+        ter_label_x, ter_label_y, ter_pred_x, ter_pred_y = None, None, None, None
+
+        if task == "Both":
+            vegf_label_x = label[0].numpy(force=True)
+            vegf_label_y = label[1].numpy(force=True)
+
+            vegf_pred_x = all_preds[:,0].numpy(force=True)
+            vegf_pred_y = all_preds[:,1].numpy(force=True)
+
+            ter_label_x = label[2].numpy(force=True)
+            ter_label_y = 0.0
+
+            ter_pred_x = all_preds[:,0].numpy(force=True)
+            ter_pred_y = torch.zeros_like(ter_pred_x).numpy(force=True)
+
+        elif task == "VEGF":
+            vegf_label_x = label[0].numpy(force=True)
+            vegf_label_y = label[1].numpy(force=True)
+            vegf_pred_x = all_preds[:,0].numpy(force=True)
+            vegf_pred_y = all_preds[:,1].numpy(force=True)
+        
+        elif task == "TER":
+            ter_label_x = label[0].numpy(force=True)
+            ter_label_y = 0.0
+            ter_pred_x = all_preds[:,0].numpy(force=True)
+            ter_pred_y = torch.zeros_like(ter_pred_x).numpy(force=True)
+
+        if vegf_label_x is not None:
+            data_dict["VEGF"]  = [(vegf_label_x, vegf_label_y), (vegf_pred_x, vegf_pred_y)]
+        if ter_label_x is not None:
+            data_dict["TER"]  = [(ter_label_x, ter_label_y), (ter_pred_x, ter_pred_y)]
+        
+        for task_type in data_dict:
+            x_data,y_data = data_dict[task_type][0]
+            label_x,label_y = data_dict[task_type][1]
+            plt.plot(x_data, y_data, "b+")
+            plt.plot(label_x, label_y, "ro")
+            if task_type == "TER":
+                plt.xlabel("TER")
+            else:
+                plt.xlabel('VEGF Numerator')
+                plt.ylabel('VEGF Denominator')
+            plt.title('Predicted and Ground Truth Values')
+            plt.legend()
+            plt.savefig(f"{vis_preds}_{task_type}.jpg")
+            plt.close()
+            print(f"Saved predictions graph to {f"{vis_preds}_{task_type}.jpg"}")
 
     avg_loss = total_loss / len(loader.dataset)
     if f: 
