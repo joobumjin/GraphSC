@@ -144,6 +144,7 @@ def main(args):
     data_dirs = {}
     for data_type in ['TER', 'VEGF', 'Both']:
         data_dirs[f"Train_{data_type}"] = f"{args.data}/{data_type}/Train_{data_type}.pkl"
+        data_dirs[f"Valid_{data_type}"] = f"{args.data}/{data_type}/Valid_{data_type}.pkl"
         data_dirs[f"Test_{data_type}"] = f"{args.data}/{data_type}/Test_{data_type}.pkl"
 
     model_constructors = {
@@ -169,18 +170,20 @@ def main(args):
     target = args.pred #when validating TER, check the really small values
     #the model might end up predicting the exact same TER value for all smaller values
     train_pickle_file = data_dirs[f"Train_{target}"]
+    val_pickle_file = data_dirs[f"Valid_{target}"]
     test_pickle_file = data_dirs[f"Test_{target}"]
 
-    dataset = load_dataset_from_pickle(train_pickle_file)
+    train_dataset = load_dataset_from_pickle(train_pickle_file)
+    val_dataset = load_dataset_from_pickle(val_pickle_file)
 
-    train_index = int(len(dataset) * 0.95)
-    random_inds = torch.randperm(len(dataset)) #try shuffling the indices to see if the validation will yield different performance
-    train_dataset, val_dataset = [], []
-    for rand_ind in random_inds[:train_index].tolist():
-        train_dataset.append(dataset[rand_ind])
+    # train_index = int(len(dataset) * 0.95)
+    # random_inds = torch.randperm(len(dataset)) #try shuffling the indices to see if the validation will yield different performance
+    # train_dataset, val_dataset = [], []
+    # for rand_ind in random_inds[:train_index].tolist():
+    #     train_dataset.append(dataset[rand_ind])
 
-    for rand_ind in random_inds[train_index:].tolist():
-        val_dataset.append(dataset[rand_ind])
+    # for rand_ind in random_inds[train_index:].tolist():
+    #     val_dataset.append(dataset[rand_ind])
 
     test_dataset = load_dataset_from_pickle(test_pickle_file)
 
