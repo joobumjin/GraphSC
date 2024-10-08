@@ -67,16 +67,13 @@ def test(model, loader, criterion, print_met=False):
     avg_loss = total_loss / len(loader.dataset)
     return math.sqrt(avg_loss)
 
-def train_model(train_loader, val_loader, test_loader, model, output_filepath, img_path, learning_rate, num_epochs, convergence_epsilon = 0.05):
-
-    best_rmse = 99999999999
-    prev_rmse = None
-
+def train_model(train_loader, val_loader, test_loader, model, output_filepath, img_path, learning_rate, num_epochs, convergence_epsilon = 0.05, gamma=0.95):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Using", device)
     model = model.to(device)
     model.device = device
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma)
     criterion = MSELoss()
 
     train_losses = []
@@ -93,19 +90,22 @@ def train_model(train_loader, val_loader, test_loader, model, output_filepath, i
         val_losses.append(val_rmse)
         test_losses.append(test_rmse)
 
-        # if prev_rmse and abs(train_rmse - prev_rmse) < convergence_epsilon: break
+        if len(train_losses) > 4:
+            last_3 = np.array(train_losses)[:-3]
+            prev = np.array(train_losses)[-1:-4]
+            avg_loss_diff = np.mean(np.abs(last_3 - prev))
+            if avg_loss_diff < convergence_epsilon:
+                print(f"Stopping early on epoch {epoch} with average changes in loss {avg_loss_diff}")
+                break
 
-        # prev_rmse = train_rmse
-
-        if epoch % 20 == 0:
-            print(f'\nEpoch: {epoch:03d}, Train RMSE: {train_rmse:.4f}, Val RMSE: {val_rmse:.4f}\n')
+        if epoch % 3 == 0:
+            scheduler.step()
+            if epoch % 20 == 0:
+                print(f'\nEpoch: {epoch:03d}, Train RMSE: {train_rmse:.4f}, Val RMSE: {val_rmse:.4f}\n')
 
     train_losses = np.array(train_losses)
     val_losses = np.array(val_losses)
     test_losses = np.array(test_losses)
-    # print(train_losses)
-    # print(val_losses)
-    # print(test_losses)
 
     torch.save(model.state_dict(), output_filepath)
     print("Saved the model to:", output_filepath)
@@ -175,16 +175,6 @@ def main(args):
 
     train_dataset = load_dataset_from_pickle(train_pickle_file)
     val_dataset = load_dataset_from_pickle(val_pickle_file)
-
-    # train_index = int(len(dataset) * 0.95)
-    # random_inds = torch.randperm(len(dataset)) #try shuffling the indices to see if the validation will yield different performance
-    # train_dataset, val_dataset = [], []
-    # for rand_ind in random_inds[:train_index].tolist():
-    #     train_dataset.append(dataset[rand_ind])
-
-    # for rand_ind in random_inds[train_index:].tolist():
-    #     val_dataset.append(dataset[rand_ind])
-
     test_dataset = load_dataset_from_pickle(test_pickle_file)
 
     check_for_nan(train_dataset)
@@ -276,10 +266,13 @@ def main(args):
 
     #Create performance summaries
     df_filepath = f"{args.results_path}/{args.pred}_stats.xlsx"
-    with pd.ExcelWriter(df_filepath) as writer:
+
+    with pd.ExcelWriter(df_filepath, engine='xlsxwriter') as writer:
+        start_row = 1
         for data, split in zip([train_data, val_data, test_data], ["Train", "Val", "Test"]):
             df = pd.DataFrame(data)
-            df.to_excel(writer, sheet_name=split)
+            df.to_excel(writer, sheet_name=target, startrow=start_row, startcol=0)
+            start_row += len(lr_epoch) + 5
 
     print(f"Wrote performance summary to {df_filepath}")
 

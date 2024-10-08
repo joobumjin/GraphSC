@@ -34,8 +34,6 @@ def test(model, loader, criterion, write_to_file, vis_preds, task, print_met=Tru
     if vis_preds:
         label = data.y.reshape(-1, model.output_dim)[0]
 
-        task_list = ["VEGF", "TER"] if task == "Both" else [f"{task}"]
-
         data_dict = {}
 
         vegf_label_x, vegf_label_y, vegf_pred_x, vegf_pred_y = None, None, None, None
@@ -51,8 +49,8 @@ def test(model, loader, criterion, write_to_file, vis_preds, task, print_met=Tru
             ter_label_x = label[2].numpy(force=True)
             ter_label_y = 0.0
 
-            ter_pred_x = all_preds[:,0].numpy(force=True)
-            ter_pred_y = torch.zeros_like(ter_pred_x).numpy(force=True)
+            ter_pred_x = all_preds[:,2].numpy(force=True)
+            ter_pred_y = np.zeros_like(ter_pred_x)
 
         elif task == "VEGF":
             vegf_label_x = label[0].numpy(force=True)
@@ -64,7 +62,7 @@ def test(model, loader, criterion, write_to_file, vis_preds, task, print_met=Tru
             ter_label_x = label[0].numpy(force=True)
             ter_label_y = 0.0
             ter_pred_x = all_preds[:,0].numpy(force=True)
-            ter_pred_y = torch.zeros_like(ter_pred_x).numpy(force=True)
+            ter_pred_y = np.zeros_like(ter_pred_x)
 
         if vegf_label_x is not None:
             data_dict["VEGF"]  = [(vegf_label_x, vegf_label_y), (vegf_pred_x, vegf_pred_y)]
