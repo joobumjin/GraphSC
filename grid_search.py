@@ -271,9 +271,10 @@ def main(args):
 
     with pd.ExcelWriter(df_filepath, engine="openpyxl", **kwargs) as writer:
         start_row = 1
-        for data, _ in zip([train_data, val_data, test_data], ["Train", "Val", "Test"]):
+        for data, split in zip([train_data, val_data, test_data], ["Train", "Val", "Test"]):
+            pd.DataFrame([split]).to_excel(writer, sheet_name=target, startrow=start_row-1, startcol=0, header=False, index=False)
             df = pd.DataFrame(data)
-            df.to_excel(writer, sheet_name=target, startrow=start_row, startcol=0)
+            df.to_excel(writer, sheet_name=target, startrow=start_row, startcol=0, index=False)
             start_row += len(lr_epoch) + 5
 
     print(f"Wrote performance summary to {df_filepath}")
