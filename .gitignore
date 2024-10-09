@@ -5,3 +5,8 @@
 
 .DS_Store
 */.DS_Store
+
+checkpoints
+graphs
+text_out
+slurm-*.out
