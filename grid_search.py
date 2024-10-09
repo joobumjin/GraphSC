@@ -14,6 +14,8 @@ from torch.nn import MSELoss
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
 
+from preprocessing import get_loaders
+from train_test import train, test
 from GNN.src.gnn_modular import Modular_GCN
 import GNN.src.gnn_multiple as GCNs
 from GNN.src import test_acc
@@ -39,32 +41,33 @@ def parse_args(args=None):
         return parser.parse_args()      ## For calling through command line
     return parser.parse_args(args)      ## For calling through notebook.
 
+def plot_losses(loss_dict, img_path):
+    plt.figure(figsize=(10, 6))
+    for loss_label, loss_list in loss_dict:
+        plt.plot(np.array(loss_list), label=f"{loss_label}")
+    plt.xlabel('Epoch')
+    plt.ylabel('RMSE')
+    plt.title('Training, Validation, and Testing RMSE')
+    plt.legend()
+    plt.savefig(img_path)
+    plt.close()
+    print(f"Saved graph to {img_path}")
 
-def train(model, train_loader, optimizer, criterion):
-    model.train()
-    for data in train_loader:
-        data = data.to(model.device)  # Move data to the same device as the model
-        out = model(data)
-        loss = criterion(out, data.y.reshape(-1, model.output_dim))
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+def export_stats_excel(dir, target, train_data, val_data, test_data):
+    df_filepath = f"{dir}/{target}_stats.xlsx"
+    df_file = Path(df_filepath)
 
-def test(model, loader, criterion, print_met=False):
-    model.eval()
-    total_loss = 0.0
-    with torch.no_grad():
-        for data in tqdm(loader, desc="Testing", leave=False):
-            data = data.to(model.device)
-            out = model(data)
-            loss = criterion(out, data.y.reshape(-1, model.output_dim))
-            total_loss += loss.item()
+    kwargs = {"mode": "a", "if_sheet_exists": "new"} if df_file.exists() and target != "TER" else {}
 
-            if print_met:
-                print(f"Predicted: {out}, True: {data.y.reshape(-1, model.output_dim)}, RMSE: {math.sqrt(loss.item())}")
+    with pd.ExcelWriter(df_filepath, engine="openpyxl", **kwargs) as writer:
+        start_row = 1
+        for data, split in zip([train_data, val_data, test_data], ["Train", "Val", "Test"]):
+            pd.DataFrame([split]).to_excel(writer, sheet_name=target, startrow=start_row-1, startcol=0, header=False, index=False)
+            df = pd.DataFrame(data)
+            df.to_excel(writer, sheet_name=target, startrow=start_row, startcol=0, index=False)
+            start_row += len(data["Learning Rate"]) + 5
 
-    avg_loss = total_loss / len(loader.dataset)
-    return math.sqrt(avg_loss)
+    print(f"Wrote performance summary to {df_filepath}")
 
 def train_model(train_loader, val_loader, test_loader, model, output_filepath, img_path, learning_rate, num_epochs, convergence_epsilon = 0.05, gamma=0.95):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -81,9 +84,11 @@ def train_model(train_loader, val_loader, test_loader, model, output_filepath, i
 
     for epoch in tqdm(range(1, num_epochs + 1), desc="Training Epochs"):
         train(model, train_loader, optimizer, criterion)
-        train_rmse = test(model, train_loader, criterion, False)
-        val_rmse = test(model, val_loader, criterion, False)
-        test_rmse = test(model, test_loader, criterion, False)
+        scheduler.step()
+
+        train_rmse = test(model, train_loader, criterion)
+        val_rmse = test(model, val_loader, criterion)
+        test_rmse = test(model, test_loader, criterion)
 
         train_losses.append(train_rmse)
         val_losses.append(val_rmse)
@@ -97,47 +102,19 @@ def train_model(train_loader, val_loader, test_loader, model, output_filepath, i
                 print(f"Stopping early on epoch {epoch} with average changes in loss {avg_loss_diff}")
                 break
 
-        if epoch % 3 == 0:
-            scheduler.step()
-            if epoch % 20 == 0:
-                print(f'\nEpoch: {epoch:03d}, Train RMSE: {train_rmse:.4f}, Val RMSE: {val_rmse:.4f}\n')
-
-    train_losses = np.array(train_losses)
-    val_losses = np.array(val_losses)
-    test_losses = np.array(test_losses)
+        if epoch % 20 == 0:
+            print(f'\nEpoch: {epoch:03d}, Train RMSE: {train_rmse:.4f}, Val RMSE: {val_rmse:.4f}\n')
 
     torch.save(model.state_dict(), output_filepath)
     print("Saved the model to:", output_filepath)
 
-    plt.figure(figsize=(10, 6))
-    plt.plot(train_losses, label='Training RMSE')
-    plt.plot(val_losses, label='Validation RMSE')
-    plt.plot(test_losses, label='Test RMSE')
-    plt.xlabel('Epoch')
-    plt.ylabel('RMSE')
-    plt.title('Training and Validation RMSE')
-    plt.legend()
-    plt.savefig(img_path)
-    plt.close()
-    print(f"Saved graph to {img_path}")
+    if img_path:
+        loss_dict = {"Training Loss": train_losses, "Validation Loss": val_losses, "Testing Loss": test_losses}
+        plot_losses(loss_dict, img_path)
 
     return train_losses[-1], val_losses[-1]
 
 
-def check_for_nan(dataset):
-    for i, data in enumerate(dataset):
-        if torch.isnan(data.x).any():
-            print(f"NaN found in features at index {i}")
-        if torch.isnan(data.y).any():
-            print(f"NaN found in target at index {i}")
-
-def load_dataset_from_pickle(pickle_file):
-    with open(pickle_file, 'rb') as f:
-        dataset = pickle.load(f)
-    if isinstance(dataset, list) and all(isinstance(d, Data) for d in dataset):
-        return dataset
-    else:
-        raise ValueError("The loaded dataset is not a list of Data objects).")
 
 def main(args):
     data_dirs = {}
@@ -147,79 +124,15 @@ def main(args):
         data_dirs[f"Test_{data_type}"] = f"{args.data}/{data_type}/Test_{data_type}.pkl"
 
     model_constructors = {
-        "G2_D2": GCNs.GCN_G2_D2,
-        "G2_D3": GCNs.GCN_G2_D3,
-        "G2_D4": GCNs.GCN_G2_D4,
-        "G2_D5": GCNs.GCN_G2_D5,
-        "G3_D2": GCNs.GCN_G3_D2,
-        "G3_D3": GCNs.GCN_G3_D3,
-        "G3_D4": GCNs.GCN_G3_D4,
-        "G3_D5": GCNs.GCN_G3_D5,
-        "G4_D2": GCNs.GCN_G4_D2,
-        "G4_D3": GCNs.GCN_G4_D3,
-        "G4_D4": GCNs.GCN_G4_D4,
-        "G4_D5": GCNs.GCN_G4_D5,
-        "G5_D2": GCNs.GCN_G5_D2,
-        "G5_D3": GCNs.GCN_G5_D3,
-        "G5_D4": GCNs.GCN_G5_D4,
-        "G5_D5": GCNs.GCN_G5_D5
+        "G2_D2": GCNs.GCN_G2_D2, "G2_D3": GCNs.GCN_G2_D3, "G2_D4": GCNs.GCN_G2_D4, "G2_D5": GCNs.GCN_G2_D5,
+        "G3_D2": GCNs.GCN_G3_D2, "G3_D3": GCNs.GCN_G3_D3, "G3_D4": GCNs.GCN_G3_D4, "G3_D5": GCNs.GCN_G3_D5,
+        "G4_D2": GCNs.GCN_G4_D2, "G4_D3": GCNs.GCN_G4_D3, "G4_D4": GCNs.GCN_G4_D4, "G4_D5": GCNs.GCN_G4_D5,
+        "G5_D2": GCNs.GCN_G5_D2, "G5_D3": GCNs.GCN_G5_D3, "G5_D4": GCNs.GCN_G5_D4, "G5_D5": GCNs.GCN_G5_D5
     }
 
+    target = args.pred
 
-    target = args.pred #when validating TER, check the really small values
-    #the model might end up predicting the exact same TER value for all smaller values
-    train_pickle_file = data_dirs[f"Train_{target}"]
-    val_pickle_file = data_dirs[f"Valid_{target}"]
-    test_pickle_file = data_dirs[f"Test_{target}"]
-
-    train_dataset = load_dataset_from_pickle(train_pickle_file)
-    val_dataset = load_dataset_from_pickle(val_pickle_file)
-    test_dataset = load_dataset_from_pickle(test_pickle_file)
-
-    check_for_nan(train_dataset)
-    check_for_nan(test_dataset)
-
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
-    test_loader = DataLoader(test_dataset)
-
-
-    num_features = train_dataset[0].x.shape[1]  # Number of features per node
-    num_targets = train_dataset[0].y.shape[0]
-
-
-    print("###################################")
-    print()
-    print(f'Number of training graphs: {len(train_dataset)}')
-    print(f'Number of test graphs: {len(val_dataset)}')
-    print(f'Number of features: {num_features}')
-    print(f'Number of targets: {num_targets}')
-    print("###################################")
-
-    # data = dataset[0]
-    # print()
-    # print(data)
-    # print('=============================================================')
-    # print(f'Number of nodes: {data.num_nodes}')
-    # print(f'Number of edges: {data.num_edges}')
-    # print(f'Average node degree: {data.num_edges / data.num_nodes:.2f}')
-    # print(f'Has isolated nodes: {data.has_isolated_nodes()}')
-    # print(f'Has self-loops: {data.has_self_loops()}')
-    # print(f'Is undirected: {data.is_undirected()}')
-    # print('=============================================================')
-    # print()
-    # print(f'Number of training graphs: {len(train_dataset)}')
-    # print(f'Number of test graphs: {len(val_dataset)}')
-    # print('=============================================================')
-    # print()
-    # # for step, data in enumerate(train_loader):
-    # #     print(f'Step {step + 1}:')
-    # #     print('=======')
-    # #     print(f'Number of graphs in the current batch: {data.num_graphs}')
-    # #     print(data)
-    # #     print()
-    # print()
-    # exit()
+    data_loaders, data_details = get_loaders(data_dirs, target, args.batch_size)
 
     lr_epoch = [(0.0005, 150), (0.00075, 150), (0.001, 50), (0.0025, 50), (0.005, 50)]
 
@@ -241,43 +154,32 @@ def main(args):
                 print(f"Num Dense Layers {num_dense}")
                 print("___________________________________")
 
-                hyper_param_dir = f"{args.pred}/lr{learning_rate}_e{num_epochs}" 
                 Path(f'{args.chkpt_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
-                output_filepath = f'{args.chkpt_path}/{hyper_param_dir}/g{num_gcn}_d{num_dense}_Abs_model.pth'
                 Path(f'{args.img_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
-                img_path = f"{args.img_path}/{hyper_param_dir}/g{num_gcn}_d{num_dense}_RMSE_Loss_Graph.jpg"
-
-                model_class = model_constructors[arch_string]
-                model = model_class(num_features, num_targets)
-
-                train_loss, val_loss = train_model(train_loader, val_loader, test_loader, model, output_filepath, img_path, learning_rate, num_epochs)
-                train_losses.append(train_loss)
-                val_losses.append(val_loss)
-
                 Path(f'{args.results_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
+
+                hyper_param_dir = f"{args.pred}/lr{learning_rate}_e{num_epochs}" 
+                output_filepath = f'{args.chkpt_path}/{hyper_param_dir}/g{num_gcn}_d{num_dense}_Abs_model.pth'
+                img_path = f"{args.img_path}/{hyper_param_dir}/g{num_gcn}_d{num_dense}_RMSE_Loss_Graph.jpg"
                 results_file = f'{args.results_path}/{hyper_param_dir}/g{num_gcn}_d{num_dense}_sample_preds.txt'
                 plotted_preds = f'{args.results_path}/{hyper_param_dir}/g{num_gcn}_d{num_dense}_preds_graph'
-                test_loss = test_acc.test_model(test_loader, model, task=args.pred, write_to_file=results_file, vis_preds=plotted_preds)
+
+                model_class = model_constructors[arch_string]
+                model = model_class(*data_details)
+
+                train_loss, val_loss = train_model(**data_loaders, model, output_filepath, img_path, learning_rate, num_epochs)
+                train_losses.append(train_loss)
+                val_losses.append(val_loss)
+                
+                test_loss = test_acc.test_model(data_loaders["test_loader"], model, task=args.pred, write_to_file=results_file, vis_preds=plotted_preds)
                 test_losses.append(test_loss)
+
             train_data[arch_string] = train_losses
             val_data[arch_string] = val_losses
             test_data[arch_string] = test_losses
 
     #Create performance summaries
-    df_filepath = f"{args.results_path}/{target}_stats.xlsx"
-    df_file = Path(df_filepath)
-
-    kwargs = {"mode": "a", "if_sheet_exists": "new"} if df_file.exists() and target != "TER" else {}
-
-    with pd.ExcelWriter(df_filepath, engine="openpyxl", **kwargs) as writer:
-        start_row = 1
-        for data, split in zip([train_data, val_data, test_data], ["Train", "Val", "Test"]):
-            pd.DataFrame([split]).to_excel(writer, sheet_name=target, startrow=start_row-1, startcol=0, header=False, index=False)
-            df = pd.DataFrame(data)
-            df.to_excel(writer, sheet_name=target, startrow=start_row, startcol=0, index=False)
-            start_row += len(lr_epoch) + 5
-
-    print(f"Wrote performance summary to {df_filepath}")
+    export_stats_excel(args.results_path, target, train_data, val_data, test_data)
 
 ## END UTILITY METHODS
 ##############################################################################

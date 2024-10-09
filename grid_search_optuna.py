@@ -15,7 +15,7 @@ from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
 import optuna
 
-from GNN.src.gnn_modular import Modular_GCN
+from preprocessing import get_loaders
 import GNN.src.gnn_multiple as GCNs
 from GNN.src import test_acc
 
@@ -124,28 +124,7 @@ def train_model(train_loader, val_loader, test_loader, model, learning_rate, num
 
     return train_losses[-1], val_losses[-1]
 
-
-def check_for_nan(dataset):
-    for i, data in enumerate(dataset):
-        if torch.isnan(data.x).any():
-            print(f"NaN found in features at index {i}")
-        if torch.isnan(data.y).any():
-            print(f"NaN found in target at index {i}")
-
-def load_dataset_from_pickle(pickle_file):
-    with open(pickle_file, 'rb') as f:
-        dataset = pickle.load(f)
-    if isinstance(dataset, list) and all(isinstance(d, Data) for d in dataset):
-        return dataset
-    else:
-        raise ValueError("The loaded dataset is not a list of Data objects).")
-
-
-def objective(trial, target, model_constructors, num_features, num_targets, train_dataset, val_dataset, test_dataset, args):
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
-    test_loader = DataLoader(test_dataset)
-
+def objective(trial, target, model_constructors, data_details, train_loader, val_loader, test_loader):
     num_epochs = 100
 
     #Tuning
@@ -155,28 +134,13 @@ def objective(trial, target, model_constructors, num_features, num_targets, trai
     learning_rate = trial.suggest_float("learning_rate", 1e-4, 5e-3, step=0.00025)
 
     model_class = model_constructors[arch_string]
-    model = model_class(num_features, num_targets)
+    model = model_class(*data_details)
 
     train_loss, val_loss = train_model(train_loader, val_loader, test_loader, model, learning_rate, num_epochs)
 
     test_loss = test_acc.test_model(test_loader, model, task=target)
 
     return test_loss
-
-
-def build_data(target, data_dirs):
-    train_pickle_file = data_dirs[f"Train_{target}"]
-    val_pickle_file = data_dirs[f"Valid_{target}"]
-    test_pickle_file = data_dirs[f"Test_{target}"]
-
-    train_dataset = load_dataset_from_pickle(train_pickle_file)
-    val_dataset = load_dataset_from_pickle(val_pickle_file)
-    test_dataset = load_dataset_from_pickle(test_pickle_file)
-
-    check_for_nan(train_dataset)
-    check_for_nan(test_dataset)
-
-    return {"train_dataset": train_dataset, "val_dataset": val_dataset, "test_dataset": test_dataset}
 
 
 def main(args):
@@ -208,12 +172,7 @@ def main(args):
         "G5_D5": GCNs.GCN_G5_D5
     }
     
-    datasets = build_data(target, data_dirs)
-
-    num_features = datasets["train_dataset"][0].x.shape[1]  # Number of features per node
-    num_targets = datasets["train_dataset"][0].y.shape[0]
-
-    data_details = {"num_features": num_features, "num_targets": num_targets}
+    data_loaders, data_details = get_loaders(data_dirs, target, args.batch_size)
 
     Path(f'{args.log_path}').mkdir(parents=True, exist_ok=True)
     storage = optuna.storages.JournalStorage(
@@ -221,7 +180,7 @@ def main(args):
     )
 
     study = optuna.create_study(storage = storage)
-    study.optimize(lambda trial: objective(trial, target, model_constructors, **data_details, **datasets), n_trials=100, n_jobs=-1)
+    study.optimize(lambda trial: objective(trial, target, model_constructors, data_details, **data_loaders), n_trials=100, n_jobs=-1)
 
     print(f"Best value: {study.best_value} (params: {study.best_params})")
 
