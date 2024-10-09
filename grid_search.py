@@ -91,8 +91,8 @@ def train_model(train_loader, val_loader, test_loader, model, output_filepath, i
         test_losses.append(test_rmse)
 
         if len(train_losses) > 4:
-            last_3 = np.array(train_losses)[:-3]
-            prev = np.array(train_losses)[-1:-4]
+            last_3 = np.array(train_losses)[:-4:-1]
+            prev = np.array(train_losses)[-2:-5:-1]
             avg_loss_diff = np.mean(np.abs(last_3 - prev))
             if avg_loss_diff < convergence_epsilon:
                 print(f"Stopping early on epoch {epoch} with average changes in loss {avg_loss_diff}")
