@@ -16,7 +16,6 @@ from torch_geometric.loader import DataLoader
 
 from GNN.src.gnn_modular import Modular_GCN
 import GNN.src.gnn_multiple as GCNs
-# from GNN.src.gnn_model import GCN
 from GNN.src import test_acc
 
 
@@ -265,11 +264,14 @@ def main(args):
             test_data[arch_string] = test_losses
 
     #Create performance summaries
-    df_filepath = f"{args.results_path}/{args.pred}_stats.xlsx"
+    df_filepath = f"{args.results_path}/{target}_stats.xlsx"
+    df_file = Path(df_filepath)
 
-    with pd.ExcelWriter(df_filepath, engine='xlsxwriter') as writer:
+    kwargs = {"mode": "a", "if_sheet_exists": "new"} if df_file.exists() and target != "TER" else {}
+
+    with pd.ExcelWriter(df_filepath, engine="openpyxl", **kwargs) as writer:
         start_row = 1
-        for data, split in zip([train_data, val_data, test_data], ["Train", "Val", "Test"]):
+        for data, _ in zip([train_data, val_data, test_data], ["Train", "Val", "Test"]):
             df = pd.DataFrame(data)
             df.to_excel(writer, sheet_name=target, startrow=start_row, startcol=0)
             start_row += len(lr_epoch) + 5
