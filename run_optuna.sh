@@ -19,6 +19,6 @@ cd /users/bjoo2/code/qbam/qbam_gnn
 declare -a arr=("TER" "VEGF" "Both")
 for i in "${arr[@]}"
 do
-    echo "Grid Searching $i"
+    echo "Optuna Searching $i"
     python3 grid_search.py --data /users/bjoo2/data/bjoo2/qbam/data --pred "$i" --log_path /users/bjoo2/data/bjoo2/qbam/optuna_logs/
 done
