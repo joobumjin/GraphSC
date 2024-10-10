@@ -105,7 +105,7 @@ def objective(trial, target, model_constructors, data_details, train_loader, val
     num_gcn = trial.suggest_int("num_gcn", 2, 5)
     num_dense = trial.suggest_int("num_dense", 2, 5)
     arch_string = f"G{num_gcn}_D{num_dense}"
-    learning_rate = trial.suggest_float("learning_rate", 1e-4, 5e-3, step=0.00025)
+    learning_rate = trial.suggest_float("learning_rate", 1e-4, 5e-3, step=5e-5)
 
     model_class = model_constructors[arch_string]
     model = model_class(*data_details)
@@ -154,7 +154,7 @@ def main(args):
     )
 
     study = optuna.create_study(storage = storage)
-    study.optimize(lambda trial: objective(trial, target, model_constructors, data_details, train_loader, val_loader, test_loader), n_trials=100, n_jobs=-1)
+    study.optimize(lambda trial: objective(trial, target, model_constructors, data_details, train_loader, val_loader, test_loader), n_trials=100)
 
     print(f"Best value: {study.best_value} (params: {study.best_params})")
 
