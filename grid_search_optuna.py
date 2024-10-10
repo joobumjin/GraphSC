@@ -54,6 +54,8 @@ def train_model(train_loader, val_loader, test_loader, model, learning_rate, num
 
     for epoch in tqdm(range(1, num_epochs + 1), desc="Training Epochs"):
         train(model, train_loader, optimizer, criterion)
+        scheduler.step()
+
         train_rmse = test(model, train_loader, criterion)
         val_rmse = test(model, val_loader, criterion)
         test_rmse = test(model, test_loader, criterion)
@@ -63,17 +65,15 @@ def train_model(train_loader, val_loader, test_loader, model, learning_rate, num
         test_losses.append(test_rmse)
 
         if len(train_losses) > 4:
-            last_3 = np.array(train_losses)[:-3]
-            prev = np.array(train_losses)[-1:-4]
+            last_3 = np.array(train_losses)[:-4:-1]
+            prev = np.array(train_losses)[-2:-5:-1]
             avg_loss_diff = np.mean(np.abs(last_3 - prev))
             if avg_loss_diff < convergence_epsilon:
                 print(f"Stopping early on epoch {epoch} with average changes in loss {avg_loss_diff}")
                 break
 
-        if epoch % 3 == 0:
-            scheduler.step()
-            if epoch % 20 == 0:
-                print(f'\nEpoch: {epoch:03d}, Train RMSE: {train_rmse:.4f}, Val RMSE: {val_rmse:.4f}\n')
+        if epoch % 20 == 0:
+            print(f'\nEpoch: {epoch:03d}, Train RMSE: {train_rmse:.4f}, Val RMSE: {val_rmse:.4f}\n')
 
     train_losses = np.array(train_losses)
     val_losses = np.array(val_losses)
