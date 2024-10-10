@@ -69,7 +69,7 @@ def export_stats_excel(dir, target, train_data, val_data, test_data):
 
     print(f"Wrote performance summary to {df_filepath}")
 
-def train_model(train_loader, val_loader, test_loader, model, output_filepath, img_path, learning_rate, num_epochs, convergence_epsilon = 0.05, gamma=0.95):
+def train_model(train_loader, val_loader, test_loader, model, output_filepath, img_path, learning_rate, num_epochs, convergence_epsilon = 0.5, gamma=0.95):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Using", device)
     model = model.to(device)
@@ -132,7 +132,7 @@ def main(args):
 
     target = args.pred
 
-    data_loaders, data_details = get_loaders(data_dirs, target, args.batch_size)
+    train_loader, val_loader, test_loader, data_details = get_loaders(data_dirs, target, args.batch_size)
 
     lr_epoch = [(0.0005, 150), (0.00075, 150), (0.001, 50), (0.0025, 50), (0.005, 50)]
 
@@ -167,11 +167,11 @@ def main(args):
                 model_class = model_constructors[arch_string]
                 model = model_class(*data_details)
 
-                train_loss, val_loss = train_model(**data_loaders, model, output_filepath, img_path, learning_rate, num_epochs)
+                train_loss, val_loss = train_model(train_loader, val_loader, test_loader, model, output_filepath, img_path, learning_rate, num_epochs)
                 train_losses.append(train_loss)
                 val_losses.append(val_loss)
                 
-                test_loss = test_acc.test_model(data_loaders["test_loader"], model, task=args.pred, write_to_file=results_file, vis_preds=plotted_preds)
+                test_loss = test_acc.test_model(test_loader, model, task=args.pred, write_to_file=results_file, vis_preds=plotted_preds)
                 test_losses.append(test_loss)
 
             train_data[arch_string] = train_losses

@@ -86,6 +86,4 @@ def get_loaders(data_dirs, target, batch_size, print_data_stats = True, print_de
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
-    loader_dict = {"train_loader": train_loader, "val_loader": val_loader, "test_loader": test_loader}
-
-    return loader_dict, detail_list
+    return train_loader, val_loader, test_loader, detail_list

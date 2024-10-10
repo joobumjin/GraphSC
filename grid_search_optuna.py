@@ -16,6 +16,7 @@ from torch_geometric.loader import DataLoader
 import optuna
 
 from preprocessing import get_loaders
+from train_test import train, test
 import GNN.src.gnn_multiple as GCNs
 from GNN.src import test_acc
 
@@ -38,34 +39,7 @@ def parse_args(args=None):
         return parser.parse_args()      ## For calling through command line
     return parser.parse_args(args)      ## For calling through notebook.
 
-
-def train(model, train_loader, optimizer, criterion):
-    model.train()
-    for data in train_loader:
-        data = data.to(model.device)  # Move data to the same device as the model
-        out = model(data)
-        loss = criterion(out, data.y.reshape(-1, model.output_dim))
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-def test(model, loader, criterion, print_met=False):
-    model.eval()
-    total_loss = 0.0
-    with torch.no_grad():
-        for data in tqdm(loader, desc="Testing", leave=False):
-            data = data.to(model.device)
-            out = model(data)
-            loss = criterion(out, data.y.reshape(-1, model.output_dim))
-            total_loss += loss.item()
-
-            if print_met:
-                print(f"Predicted: {out}, True: {data.y.reshape(-1, model.output_dim)}, RMSE: {math.sqrt(loss.item())}")
-
-    avg_loss = total_loss / len(loader.dataset)
-    return math.sqrt(avg_loss)
-
-def train_model(train_loader, val_loader, test_loader, model, learning_rate, num_epochs, output_filepath = None, img_path = None, convergence_epsilon = 0.05, gamma=0.95):
+def train_model(train_loader, val_loader, test_loader, model, learning_rate, num_epochs, output_filepath = None, img_path = None, convergence_epsilon = 0.5, gamma=0.95):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Using", device)
     model = model.to(device)
@@ -80,9 +54,9 @@ def train_model(train_loader, val_loader, test_loader, model, learning_rate, num
 
     for epoch in tqdm(range(1, num_epochs + 1), desc="Training Epochs"):
         train(model, train_loader, optimizer, criterion)
-        train_rmse = test(model, train_loader, criterion, False)
-        val_rmse = test(model, val_loader, criterion, False)
-        test_rmse = test(model, test_loader, criterion, False)
+        train_rmse = test(model, train_loader, criterion)
+        val_rmse = test(model, val_loader, criterion)
+        test_rmse = test(model, test_loader, criterion)
 
         train_losses.append(train_rmse)
         val_losses.append(val_rmse)
@@ -172,7 +146,7 @@ def main(args):
         "G5_D5": GCNs.GCN_G5_D5
     }
     
-    data_loaders, data_details = get_loaders(data_dirs, target, args.batch_size)
+    train_loader, val_loader, test_loader, data_details = get_loaders(data_dirs, target, args.batch_size)
 
     Path(f'{args.log_path}').mkdir(parents=True, exist_ok=True)
     storage = optuna.storages.JournalStorage(
@@ -180,7 +154,7 @@ def main(args):
     )
 
     study = optuna.create_study(storage = storage)
-    study.optimize(lambda trial: objective(trial, target, model_constructors, data_details, **data_loaders), n_trials=100, n_jobs=-1)
+    study.optimize(lambda trial: objective(trial, target, model_constructors, data_details, train_loader, val_loader, test_loader), n_trials=100, n_jobs=-1)
 
     print(f"Best value: {study.best_value} (params: {study.best_params})")
 
