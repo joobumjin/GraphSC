@@ -1,10 +1,9 @@
 import argparse
-from tqdm import tqdm
-
 import math
 import os
 from pathlib import Path
 
+from tqdm import tqdm
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -153,7 +152,8 @@ def main(args):
         optuna.storages.journal.JournalFileBackend(f"{args.log_path}/optuna_journal_storage.log")
     )
 
-    study = optuna.create_study(storage = storage)
+    study = optuna.create_study(storage = storage, direction="minimize")
+    study.set_metric_names(["RMSE"])
     study.optimize(lambda trial: objective(trial, target, model_constructors, data_details, train_loader, val_loader, test_loader), n_trials=100)
 
     print(f"Best value: {study.best_value} (params: {study.best_params})")

@@ -103,7 +103,7 @@ if __name__ == "__main__":
     num_targets = test_dataset[0].y.shape[0]
 
     model = gnn_model.GCN(num_features, num_targets)
-    model.load_state_dict(torch.load(model_path,map_location=torch.device('cpu')))
+    model.load_state_dict(torch.load(model_path,map_location=torch.device('cpu'), weights_only=True))
     
     test_acc.test_model(test_loader, model)
 
