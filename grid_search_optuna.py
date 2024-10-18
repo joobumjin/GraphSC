@@ -2,6 +2,7 @@ import argparse
 import math
 import os
 from pathlib import Path
+import datetime
 
 from tqdm import tqdm
 import matplotlib.pyplot as plt
@@ -29,10 +30,11 @@ def parse_args(args=None):
         parse_args('--type', 'rnn', ...)
     """
     parser = argparse.ArgumentParser(description="Specify Hyperparameters for Grid Searching the hyperparameters of the GNN", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--data',           required=True,              help='File path to the assignment data file.')
-    parser.add_argument('--pred',           required=True,              choices=['TER', 'VEGF', 'Both'],    help='Type of Value being Predicted from QBAMs')
-    parser.add_argument('--log_path',       default='',                 help='where the optuna study logs will stored')
-    parser.add_argument('--batch_size',     type=int,   default=20,     help='Model\'s batch size.')
+    parser.add_argument('--data',           required=True,                                          help='File path to the assignment data file.')
+    parser.add_argument('--normed',         required=False, action='store_true',                    help='Whether or not to use normalized label values')
+    parser.add_argument('--pred',           required=True,  choices=['TER', 'VEGF', 'Both'],        help='Type of Value being Predicted from QBAMs')
+    parser.add_argument('--log_path',       default='',                                             help='where the optuna study logs will stored')
+    parser.add_argument('--batch_size',     type=int,       default=20,                             help='Model\'s batch size.')
 
     if args is None: 
         return parser.parse_args()      ## For calling through command line
@@ -120,11 +122,13 @@ def main(args):
     # arg_dict = {"target": args.pred, "batch_size": args.batch_size, }
     target = args.pred
 
+    norm_string = "_normalized" if args.normed else ""
+
     data_dirs = {}
     for data_type in ['TER', 'VEGF', 'Both']:
-        data_dirs[f"Train_{data_type}"] = f"{args.data}/{data_type}/Train_{data_type}.pkl"
-        data_dirs[f"Valid_{data_type}"] = f"{args.data}/{data_type}/Valid_{data_type}.pkl"
-        data_dirs[f"Test_{data_type}"] = f"{args.data}/{data_type}/Test_{data_type}.pkl"
+        data_dirs[f"Train_{data_type}"] = f"{args.data}/{data_type}/Train_{data_type}{norm_string}.pkl"
+        data_dirs[f"Valid_{data_type}"] = f"{args.data}/{data_type}/Valid_{data_type}{norm_string}.pkl"
+        data_dirs[f"Test_{data_type}"] = f"{args.data}/{data_type}/Test_{data_type}{norm_string}.pkl"
 
     model_constructors = {
         "G2_D2": GCNs.GCN_G2_D2,
@@ -147,12 +151,15 @@ def main(args):
     
     train_loader, val_loader, test_loader, data_details = get_loaders(data_dirs, target, args.batch_size)
 
+
     Path(f'{args.log_path}').mkdir(parents=True, exist_ok=True)
     storage = optuna.storages.JournalStorage(
         optuna.storages.journal.JournalFileBackend(f"{args.log_path}/optuna_journal_storage.log")
     )
 
-    study = optuna.create_study(storage = storage, direction="minimize")
+    time_string = datetime.datetime.now().strftime('%d-%b-%Y-%H%M')
+
+    study = optuna.create_study(study_name=f"{time_string}_optimize_{data_type}",storage = storage, direction="minimize")
     study.set_metric_names(["RMSE"])
     study.optimize(lambda trial: objective(trial, target, model_constructors, data_details, train_loader, val_loader, test_loader), n_trials=100)
 
