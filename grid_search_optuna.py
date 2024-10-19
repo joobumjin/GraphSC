@@ -120,7 +120,7 @@ def objective(trial, target, model_constructors, data_details, train_loader, val
 
 def main(args):
     # arg_dict = {"target": args.pred, "batch_size": args.batch_size, }
-    target = args.pre
+    target = args.pred
     print(f"Optuna Searching {target}")
 
     norm_string = "_normalized" if args.normed else ""
