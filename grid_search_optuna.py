@@ -29,12 +29,12 @@ def parse_args(args=None):
     For example: 
         parse_args('--type', 'rnn', ...)
     """
-    parser = argparse.ArgumentParser(description="Specify Hyperparameters for Grid Searching the hyperparameters of the GNN", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(description="Specify Hyperparameters to Optimize for the GNN", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--data',           required=True,                                          help='File path to the assignment data file.')
-    parser.add_argument('--normed',         required=False, action='store_true',                    help='Whether or not to use normalized label values')
     parser.add_argument('--pred',           required=True,  choices=['TER', 'VEGF', 'Both'],        help='Type of Value being Predicted from QBAMs')
     parser.add_argument('--log_path',       default='',                                             help='where the optuna study logs will stored')
     parser.add_argument('--batch_size',     type=int,       default=20,                             help='Model\'s batch size.')
+    parser.add_argument('--normed',         required=False, action='store_true',                    help='Whether or not to use normalized label values')
 
     if args is None: 
         return parser.parse_args()      ## For calling through command line
@@ -120,7 +120,8 @@ def objective(trial, target, model_constructors, data_details, train_loader, val
 
 def main(args):
     # arg_dict = {"target": args.pred, "batch_size": args.batch_size, }
-    target = args.pred
+    target = args.pre
+    print(f"Optuna Searching {target}")
 
     norm_string = "_normalized" if args.normed else ""
 
@@ -159,7 +160,7 @@ def main(args):
 
     time_string = datetime.datetime.now().strftime('%d-%b-%Y-%H%M')
 
-    study = optuna.create_study(study_name=f"{time_string}_optimize_{data_type}",storage = storage, direction="minimize")
+    study = optuna.create_study(study_name=f"{time_string}_optimize_{args.pred}",storage = storage, direction="minimize")
     study.set_metric_names(["RMSE"])
     study.optimize(lambda trial: objective(trial, target, model_constructors, data_details, train_loader, val_loader, test_loader), n_trials=100)
 
