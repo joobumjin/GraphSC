@@ -18,6 +18,7 @@ import optuna
 from preprocessing import get_loaders
 from train_test import train, test
 import GNN.src.gnn_multiple as GCNs
+from GNN.src.gnn_modular import Modular_GCN
 from GNN.src import test_acc
 
 
@@ -99,7 +100,25 @@ def train_model(train_loader, val_loader, test_loader, model, learning_rate, num
 
     return train_losses[-1], val_losses[-1]
 
-def objective(trial, target, model_constructors, data_details, train_loader, val_loader, test_loader):
+# def objective(trial, target, model_constructors, data_details, train_loader, val_loader, test_loader):
+#     num_epochs = 100
+#
+#     #Tuning
+#     num_gcn = trial.suggest_int("num_gcn", 2, 5)
+#     num_dense = trial.suggest_int("num_dense", 2, 5)
+#     arch_string = f"G{num_gcn}_D{num_dense}"
+#     learning_rate = trial.suggest_float("learning_rate", 1e-4, 5e-3, step=5e-5)
+#
+#     model_class = model_constructors[arch_string]
+#     model = model_class(*data_details)
+#
+#     train_loss, val_loss = train_model(train_loader, val_loader, test_loader, model, learning_rate, num_epochs)
+#
+#     test_loss = test_acc.test_model(test_loader, model, task=target)
+#
+#     return test_loss
+
+def objective(trial, target, model_class, data_details, train_loader, val_loader, test_loader):
     num_epochs = 100
 
     #Tuning
@@ -108,8 +127,7 @@ def objective(trial, target, model_constructors, data_details, train_loader, val
     arch_string = f"G{num_gcn}_D{num_dense}"
     learning_rate = trial.suggest_float("learning_rate", 1e-4, 5e-3, step=5e-5)
 
-    model_class = model_constructors[arch_string]
-    model = model_class(*data_details)
+    model = model_class(*data_details, num_dense, num_gcn)
 
     train_loss, val_loss = train_model(train_loader, val_loader, test_loader, model, learning_rate, num_epochs)
 
@@ -162,7 +180,8 @@ def main(args):
 
     study = optuna.create_study(study_name=f"{time_string}_optimize_{args.pred}{norm_string}",storage = storage, direction="minimize")
     study.set_metric_names(["RMSE"])
-    study.optimize(lambda trial: objective(trial, target, model_constructors, data_details, train_loader, val_loader, test_loader), n_trials=100)
+    # study.optimize(lambda trial: objective(trial, target, model_constructors, data_details, train_loader, val_loader, test_loader), n_trials=100)
+    study.optimize(lambda trial: objective(trial, target, Modular_GCN, data_details, train_loader, val_loader, test_loader), n_trials=100)
 
     print(f"Best value: {study.best_value} (params: {study.best_params})")
 
