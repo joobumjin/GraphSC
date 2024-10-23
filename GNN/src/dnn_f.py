@@ -95,4 +95,4 @@ class DNN_F(torch.nn.Module):
 
 
     def forward(self, data):
-        return F.relu(self.layers(data)).squeeze()
+        return F.relu(self.layers(data)).squeeze(dim=(2,3)) #squeeze width and height dimensions
