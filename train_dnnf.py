@@ -19,6 +19,7 @@ from preprocessing import get_loaders
 from train_test import train, test
 import GNN.src.gnn_multiple as GCNs
 from GNN.src.gnn_modular import Modular_GCN
+from GNN.src.dnn_f import DNN_F
 from GNN.src import test_acc
 
 
@@ -100,44 +101,21 @@ def train_model(train_loader, val_loader, test_loader, model, learning_rate, num
 
     return train_losses[-1], val_losses[-1]
 
-def objective(trial, target, model_constructors, data_details, train_loader, val_loader, test_loader):
+def objective(trial, target, model_constructors, train_loader, val_loader, test_loader):
     num_epochs = 100
 
     #Tuning
-    num_gcn = trial.suggest_int("num_gcn", 2, 5)
-    num_dense = trial.suggest_int("num_dense", 2, 5)
-    arch_string = f"G{num_gcn}_D{num_dense}"
     learning_rate = trial.suggest_float("learning_rate", 1e-4, 5e-3, step=5e-5)
 
-    model_class = model_constructors[arch_string]
-    model = model_class(*data_details)
+    model = model_constructors["DNN_F"]()
 
     train_loss, val_loss = train_model(train_loader, val_loader, test_loader, model, learning_rate, num_epochs)
-
     test_loss = test_acc.test_model(test_loader, model, task=target)
 
     return test_loss
 
-# def objective(trial, target, model_class, data_details, train_loader, val_loader, test_loader):
-#     num_epochs = 100
-
-#     #Tuning
-#     num_gcn = trial.suggest_int("num_gcn", 2, 5)
-#     num_dense = trial.suggest_int("num_dense", 2, 5)
-#     arch_string = f"G{num_gcn}_D{num_dense}"
-#     learning_rate = trial.suggest_float("learning_rate", 1e-4, 5e-3, step=5e-5)
-
-#     model = model_class(*data_details, num_dense, num_gcn)
-
-#     train_loss, val_loss = train_model(train_loader, val_loader, test_loader, model, learning_rate, num_epochs)
-
-#     test_loss = test_acc.test_model(test_loader, model, task=target)
-
-#     return test_loss
-
 
 def main(args):
-    # arg_dict = {"target": args.pred, "batch_size": args.batch_size, }
     target = args.pred
     print(f"Optuna Searching {target}")
 
@@ -150,25 +128,10 @@ def main(args):
         data_dirs[f"Test_{data_type}"] = f"{args.data}/{data_type}/Test_{data_type}{norm_string}.pkl"
 
     model_constructors = {
-        "G2_D2": GCNs.GCN_G2_D2,
-        "G2_D3": GCNs.GCN_G2_D3,
-        "G2_D4": GCNs.GCN_G2_D4,
-        "G2_D5": GCNs.GCN_G2_D5,
-        "G3_D2": GCNs.GCN_G3_D2,
-        "G3_D3": GCNs.GCN_G3_D3,
-        "G3_D4": GCNs.GCN_G3_D4,
-        "G3_D5": GCNs.GCN_G3_D5,
-        "G4_D2": GCNs.GCN_G4_D2,
-        "G4_D3": GCNs.GCN_G4_D3,
-        "G4_D4": GCNs.GCN_G4_D4,
-        "G4_D5": GCNs.GCN_G4_D5,
-        "G5_D2": GCNs.GCN_G5_D2,
-        "G5_D3": GCNs.GCN_G5_D3,
-        "G5_D4": GCNs.GCN_G5_D4,
-        "G5_D5": GCNs.GCN_G5_D5
+        "DNN_F": DNN_F,
     }
     
-    train_loader, val_loader, test_loader, data_details = get_loaders(data_dirs, target, args.batch_size)
+    train_loader, val_loader, test_loader, _ = get_loaders(data_dirs, target, args.batch_size)
 
 
     Path(f'{args.log_path}').mkdir(parents=True, exist_ok=True)
@@ -180,8 +143,7 @@ def main(args):
 
     study = optuna.create_study(study_name=f"{time_string}_optimize_{args.pred}{norm_string}_modular",storage = storage, direction="minimize")
     study.set_metric_names(["RMSE"])
-    study.optimize(lambda trial: objective(trial, target, model_constructors, data_details, train_loader, val_loader, test_loader), n_trials=100)
-    # study.optimize(lambda trial: objective(trial, target, Modular_GCN, data_details, train_loader, val_loader, test_loader), n_trials=100)
+    study.optimize(lambda trial: objective(trial, target, model_constructors, train_loader, val_loader, test_loader), n_trials=100)
 
     print(f"Best value: {study.best_value} (params: {study.best_params})")
 
