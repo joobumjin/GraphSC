@@ -48,4 +48,4 @@ class Modular_GCN(torch.nn.Module):
           x = F.leaky_relu(x)
           x = self.dropout(x)
 
-        return x.squeeze(-1)
+        return x

@@ -1,21 +1,25 @@
 import argparse
-from tqdm import tqdm
-
 import math
 import os
 from pathlib import Path
+import datetime
 
+from tqdm import tqdm
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import pickle
 import torch
-from torch.nn import CrossEntropyLoss
+from torch.nn import MSELoss
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
+import optuna
 
-from GNN.src.gnn_modular import Modular_GCN
+from preprocessing import get_loaders
+from train_test import train, test
 import GNN.src.gnn_multiple as GCNs
+from GNN.src.gnn_modular import Modular_GCN
+from GNN.src import test_acc
 
 
 def parse_args(args=None):
@@ -26,56 +30,25 @@ def parse_args(args=None):
     For example: 
         parse_args('--type', 'rnn', ...)
     """
-    parser = argparse.ArgumentParser(description="Specify Hyperparameters for Grid Searching the hyperparameters of the GNN", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--data',           required=True,              help='File path to the assignment data file.')
-    parser.add_argument('--pred',           required=True,              choices=['Donor'],    help='Type of Value being Predicted from QBAMs')
-    parser.add_argument('--chkpt_path',     default='',                 help='where the model checkpoint is')
-    parser.add_argument('--img_path',       default='',                 help='where the model saves loss graphs')
-    parser.add_argument('--results_path',   default='',                 help='where the model saves text files with test predictions')
-    parser.add_argument('--batch_size',     type=int,   default=20,     help='Model\'s batch size.')
+    parser = argparse.ArgumentParser(description="Specify Hyperparameters to Optimize for the GNN", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--data',           required=True,                                          help='File path to the assignment data file.')
+    parser.add_argument('--pred',           required=True,  choices=['TER', 'VEGF', 'Both'],        help='Type of Value being Predicted from QBAMs')
+    parser.add_argument('--log_path',       default='',                                             help='where the optuna study logs will stored')
+    parser.add_argument('--batch_size',     type=int,       default=20,                             help='Model\'s batch size.')
+    parser.add_argument('--normed',         required=False, action='store_true',                    help='Whether or not to use normalized label values')
 
     if args is None: 
         return parser.parse_args()      ## For calling through command line
     return parser.parse_args(args)      ## For calling through notebook.
 
-
-def train(model, train_loader, optimizer, criterion):
-    model.train()
-    for data in train_loader:
-        data = data.to(model.device)  # Move data to the same device as the model
-        out = model(data)
-        loss = criterion(out, data.y.reshape(-1, model.output_dim))
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-def test(model, loader, criterion, print_met=False):
-    model.eval()
-    total_loss = 0.0
-    with torch.no_grad():
-        for data in tqdm(loader, desc="Testing", leave=False):
-            data = data.to(model.device)
-            out = model(data)
-            loss = criterion(out, data.y.reshape(-1, model.output_dim))
-            total_loss += loss.item()
-
-            if print_met:
-                print(f"Predicted: {out}, True: {data.y.reshape(-1, model.output_dim)}, CCE: {loss.item()}")
-
-    avg_loss = total_loss / len(loader.dataset)
-    return math.sqrt(avg_loss)
-
-def train_model(train_loader, val_loader, test_loader, model, output_filepath, img_path, learning_rate, num_epochs, convergence_epsilon = 0.05):
-
-    best_cce = 99999999999
-    prev_cce = None
-
+def train_model(train_loader, val_loader, test_loader, model, learning_rate, num_epochs, output_filepath = None, img_path = None, convergence_epsilon = 0.5, gamma=0.95):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Using", device)
     model = model.to(device)
     model.device = device
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-    criterion = CrossEntropyLoss()
+    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma)
+    criterion = MSELoss()
 
     train_losses = []
     val_losses = []
@@ -83,101 +56,81 @@ def train_model(train_loader, val_loader, test_loader, model, output_filepath, i
 
     for epoch in tqdm(range(1, num_epochs + 1), desc="Training Epochs"):
         train(model, train_loader, optimizer, criterion)
-        train_cce = test(model, train_loader, criterion, False)
-        val_cce = test(model, val_loader, criterion, False)
-        test_cce = test(model, test_loader, criterion, False)
+        scheduler.step()
 
-        train_losses.append(train_cce)
-        val_losses.append(val_cce)
-        test_losses.append(test_cce)
+        train_rmse = test(model, train_loader, criterion)
+        val_rmse = test(model, val_loader, criterion)
+        test_rmse = test(model, test_loader, criterion)
 
-        # if prev_cce and abs(train_cce - prev_cce) < convergence_epsilon: break
+        train_losses.append(train_rmse)
+        val_losses.append(val_rmse)
+        test_losses.append(test_rmse)
 
-        # prev_cce = train_cce
+        if len(train_losses) > 4:
+            last_3 = np.array(train_losses)[:-4:-1]
+            prev = np.array(train_losses)[-2:-5:-1]
+            avg_loss_diff = np.mean(np.abs(last_3 - prev))
+            if avg_loss_diff < convergence_epsilon:
+                print(f"Stopping early on epoch {epoch} with average changes in loss {avg_loss_diff}")
+                break
 
         if epoch % 20 == 0:
-            print(f'\nEpoch: {epoch:03d}, Train CCE: {train_cce:.4f}, Val CCE: {val_cce:.4f}\n')
+            print(f'\nEpoch: {epoch:03d}, Train RMSE: {train_rmse:.4f}, Val RMSE: {val_rmse:.4f}\n')
 
     train_losses = np.array(train_losses)
     val_losses = np.array(val_losses)
     test_losses = np.array(test_losses)
 
-    torch.save(model.state_dict(), output_filepath)
-    print("Saved the model to:", output_filepath)
+    if output_filepath:
+        torch.save(model.state_dict(), output_filepath)
+        print("Saved the model to:", output_filepath)
 
-    plt.figure(figsize=(10, 6))
-    plt.plot(train_losses, label='Training CCE')
-    plt.plot(val_losses, label='Validation CCE')
-    plt.plot(test_losses, label='Test CCE')
-    plt.xlabel('Epoch')
-    plt.ylabel('CCE')
-    plt.title('Training and Validation CCE')
-    plt.legend()
-    plt.savefig(img_path)
-    plt.close()
-    print(f"Saved graph to {img_path}")
+    if img_path:
+        plt.figure(figsize=(10, 6))
+        plt.plot(train_losses, label='Training RMSE')
+        plt.plot(val_losses, label='Validation RMSE')
+        plt.plot(test_losses, label='Test RMSE')
+        plt.xlabel('Epoch')
+        plt.ylabel('RMSE')
+        plt.title('Training and Validation RMSE')
+        plt.legend()
+        plt.savefig(img_path)
+        plt.close()
+        print(f"Saved graph to {img_path}")
 
-    return train_losses[-1], val_losses[-1], test_losses[-1]
+    return train_losses[-1], val_losses[-1]
 
+def objective(trial, target, model_constructors, data_details, train_loader, val_loader, test_loader):
+    num_epochs = 100
 
-def final_test(model, loader, write_to_file, print_met=True):
-    correct_preds = 0
-    f = open(write_to_file, "w") if write_to_file else None
+    #Tuning
+    num_gcn = trial.suggest_int("num_gcn", 2, 5)
+    num_dense = trial.suggest_int("num_dense", 2, 5)
+    arch_string = f"G{num_gcn}_D{num_dense}"
+    learning_rate = trial.suggest_float("learning_rate", 1e-4, 5e-3, step=5e-5)
 
-    with torch.no_grad():
-        for data in loader:
-            data = data.to(model.device)
-            out = model(data)
+    model_class = model_constructors[arch_string]
+    model = model_class(*data_details)
 
-            correct_preds += torch.sum(torch.argmax(out.item(),dim=-1)==torch.argmax(data.y.reshape(-1, model.output_dim), dim=-1)).item()
+    train_loss, val_loss = train_model(train_loader, val_loader, test_loader, model, learning_rate, num_epochs)
 
-            if print_met:
-                print(f"Predicted: {out}, True: {data.y.reshape(-1, model.output_dim)}, Accuracy: {correct_preds/len(out)}")
-            if f:
-                f.write(f"Predicted: {out}, True: {data.y.reshape(-1, model.output_dim)}, Accuracy: {correct_preds/len(out)}\n")
+    test_loss = test_acc.test_model(test_loader, model, task=target)
 
-    avg_acc = correct_preds / len(loader.dataset)
-    if f: 
-        f.write(f"Average Accuracy: {avg_acc}\n")
-        print(f"Wrote Prediciton Outputs to {write_to_file}")
-        f.close()
-    return avg_acc
+    return test_loss
 
-def test_model(test_loader, model, task, write_to_file=None):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = model.to(device)
-    model.device = device
-
-    model.eval()
-    test_acc = final_test(model, test_loader, write_to_file=write_to_file, print_met=False)
-
-    print(f'Test Accuracy: {test_acc:.4f}')
-    print()
-    return test_acc
-    
-
-
-def check_for_nan(dataset):
-    for i, data in enumerate(dataset):
-        if torch.isnan(data.x).any():
-            print(f"NaN found in features at index {i}")
-        if torch.isnan(data.y).any():
-            print(f"NaN found in target at index {i}")
-
-def load_dataset_from_pickle(pickle_file):
-    with open(pickle_file, 'rb') as f:
-        dataset = pickle.load(f)
-    if isinstance(dataset, list) and all(isinstance(d, Data) for d in dataset):
-        return dataset
-    else:
-        raise ValueError("The loaded dataset is not a list of Data objects).")
 
 def main(args):
+    # arg_dict = {"target": args.pred, "batch_size": args.batch_size, }
+    target = args.pred
+    print(f"Optuna Searching {target}")
+
+    norm_string = "_normalized" if args.normed else ""
+
     data_dirs = {}
-    for data_type in ['Donor']:
-        data_dirs[f"Train_{data_type}"] = f"{args.data}/{data_type}/Train_{data_type}.pkl"
-        data_dirs[f"Valid_{data_type}"] = f"{args.data}/{data_type}/Valid_{data_type}.pkl"
-        data_dirs[f"Test_{data_type}"] = f"{args.data}/{data_type}/Test_{data_type}.pkl"
+    for data_type in ['TER', 'VEGF', 'Both']:
+        data_dirs[f"Train_{data_type}"] = f"{args.data}/{data_type}/Train_{data_type}{norm_string}.pkl"
+        data_dirs[f"Valid_{data_type}"] = f"{args.data}/{data_type}/Valid_{data_type}{norm_string}.pkl"
+        data_dirs[f"Test_{data_type}"] = f"{args.data}/{data_type}/Test_{data_type}{norm_string}.pkl"
 
     model_constructors = {
         "G2_D2": GCNs.GCN_G2_D2,
@@ -197,113 +150,24 @@ def main(args):
         "G5_D4": GCNs.GCN_G5_D4,
         "G5_D5": GCNs.GCN_G5_D5
     }
+    
+    train_loader, val_loader, test_loader, data_details = get_loaders(data_dirs, target, args.batch_size)
 
 
-    target = args.pred 
-    train_pickle_file = data_dirs[f"Train_{target}"]
-    val_pickle_file = data_dirs[f"Valid_{target}"]
-    test_pickle_file = data_dirs[f"Test_{target}"]
+    Path(f'{args.log_path}').mkdir(parents=True, exist_ok=True)
+    storage = optuna.storages.JournalStorage(
+        optuna.storages.journal.JournalFileBackend(f"{args.log_path}/optuna_journal_storage_modular.log")
+    )
 
-    train_dataset = load_dataset_from_pickle(train_pickle_file)
-    val_dataset = load_dataset_from_pickle(val_pickle_file)
-    test_dataset = load_dataset_from_pickle(test_pickle_file)
+    time_string = datetime.datetime.now().strftime('%d-%b-%Y-%H%M')
 
-    check_for_nan(train_dataset)
-    check_for_nan(val_dataset)
-    check_for_nan(test_dataset)
+    study = optuna.create_study(study_name=f"{time_string}_optimize_{args.pred}{norm_string}_modular",storage = storage, direction="minimize")
+    study.set_metric_names(["RMSE"])
+    # study.optimize(lambda trial: objective(trial, target, model_constructors, data_details, train_loader, val_loader, test_loader), n_trials=100)
+    study.optimize(lambda trial: objective(trial, target, Modular_GCN, data_details, train_loader, val_loader, test_loader), n_trials=100)
 
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
-    test_loader = DataLoader(test_dataset)
+    print(f"Best value: {study.best_value} (params: {study.best_params})")
 
-
-    num_features = train_dataset[0].x.shape[1]  # Number of features per node
-    num_targets = train_dataset[0].y.shape[0]
-
-
-    print("###################################")
-    print()
-    print(f'Number of training graphs: {len(train_dataset)}')
-    print(f'Number of test graphs: {len(val_dataset)}')
-    print(f'Number of features: {num_features}')
-    print(f'Number of targets: {num_targets}')
-    print("###################################")
-
-    # data = dataset[0]
-    # print()
-    # print(data)
-    # print('=============================================================')
-    # print(f'Number of nodes: {data.num_nodes}')
-    # print(f'Number of edges: {data.num_edges}')
-    # print(f'Average node degree: {data.num_edges / data.num_nodes:.2f}')
-    # print(f'Has isolated nodes: {data.has_isolated_nodes()}')
-    # print(f'Has self-loops: {data.has_self_loops()}')
-    # print(f'Is undirected: {data.is_undirected()}')
-    # print('=============================================================')
-    # print()
-    # print(f'Number of training graphs: {len(train_dataset)}')
-    # print(f'Number of test graphs: {len(val_dataset)}')
-    # print('=============================================================')
-    # print()
-    # # for step, data in enumerate(train_loader):
-    # #     print(f'Step {step + 1}:')
-    # #     print('=======')
-    # #     print(f'Number of graphs in the current batch: {data.num_graphs}')
-    # #     print(data)
-    # #     print()
-    # print()
-    # exit()
-
-    lr_epoch = [(0.0005, 150), (0.00075, 150), (0.001, 50), (0.0025, 50), (0.005, 50)]
-
-    train_data = {"Learning Rate": [lr for lr, _ in lr_epoch]}
-    val_data = {"Learning Rate": [lr for lr, _ in lr_epoch]}
-    test_data = {"Learning Rate": [lr for lr, _ in lr_epoch]}
-    test_acc_data = {"Learning Rate": [lr for lr, _ in lr_epoch]}
-
-    #Tuning Modular
-    for num_gcn in ([2, 3, 4, 5]):
-        for num_dense in ([2, 3, 4, 5]):
-            arch_string = f"G{num_gcn}_D{num_dense}"
-            train_losses, val_losses, test_losses, test_accuracies = [], [], [], []
-            for (learning_rate, num_epochs) in lr_epoch:
-                print("___________________________________")
-                print()
-                print("Learning Rate:", learning_rate)
-                print("Epochs:", num_epochs )
-                print(f"Num GCN Layers {num_gcn}")
-                print(f"Num Dense Layers {num_dense}")
-                print("___________________________________")
-
-                hyper_param_dir = f"{args.pred}/lr{learning_rate}_e{num_epochs}" 
-                Path(f'{args.chkpt_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
-                output_filepath = f'{args.chkpt_path}/{hyper_param_dir}/g{num_gcn}_d{num_dense}_Abs_model.pth'
-                Path(f'{args.img_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
-                img_path = f"{args.img_path}/{hyper_param_dir}/g{num_gcn}_d{num_dense}_CCE_Loss_Graph.jpg"
-
-                model_class = model_constructors[arch_string]
-                model = model_class(num_features, num_targets)
-
-                train_loss, val_loss, test_loss = train_model(train_loader, val_loader, test_loader, model, output_filepath, img_path, learning_rate, num_epochs)
-
-                Path(f'{args.results_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
-                results_file = f'{args.results_path}/{hyper_param_dir}/g{num_gcn}_d{num_dense}_sample_preds.txt'
-                test_acc = test_model(test_loader, model, task=args.pred, write_to_file=results_file)
-
-                for l, stat in zip([train_losses, val_losses, test_losses, test_accuracies], [train_loss, val_loss, test_loss, test_acc]):
-                    l.append(stat)
-
-            for d, l in zip([train_data, val_data, test_data, test_acc_data], [train_losses, val_losses, test_losses, test_accuracies]):
-                d[arch_string] = l
-
-    #Create performance summaries
-    df_filepath = f"{args.results_path}/{args.pred}_stats.xlsx"
-    with pd.ExcelWriter(df_filepath) as writer:
-        for data, split in zip([train_data, val_data, test_data, test_acc_data], ["Train Loss", "Val Loss", "Test Loss", "Test Acc"]):
-            df = pd.DataFrame(data)
-            df.to_excel(writer, sheet_name=split)
-
-    print(f"Wrote performance summary to {df_filepath}")
 
 ## END UTILITY METHODS
 ##############################################################################
