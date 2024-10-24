@@ -24,7 +24,7 @@ do
 done
 
 echo "Optuna Searching on Donor"
-python3 grid_search_optuna.py --data /users/bjoo2/data/bjoo2/qbam/data --pred Donor --log_path /users/bjoo2/code/qbam/qbam_gnn/optuna_logs/   
+python3 grid_search_donor.py --data /users/bjoo2/data/bjoo2/qbam/data --pred Donor --log_path /users/bjoo2/code/qbam/qbam_gnn/optuna_logs/   
 
 # for i in "${arr[@]}"
 # do
