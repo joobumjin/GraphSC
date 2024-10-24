@@ -172,7 +172,7 @@ def main(args):
 
     Path(f'{args.log_path}').mkdir(parents=True, exist_ok=True)
     storage = optuna.storages.JournalStorage(
-        optuna.storages.journal.JournalFileBackend(f"{args.log_path}/optuna_journal_storage.log")
+        optuna.storages.journal.JournalFileBackend(f"{args.log_path}/donor_optuna_journal_storage.log")
     )
 
     time_string = datetime.datetime.now().strftime('%d-%b-%Y-%H%M')
