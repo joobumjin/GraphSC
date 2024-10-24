@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 import pickle
 import torch
-from torch.nn import MSELoss
+from torch.nn import CrossEntropyLoss
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
 import optuna
@@ -32,7 +32,7 @@ def parse_args(args=None):
     """
     parser = argparse.ArgumentParser(description="Specify Hyperparameters to Optimize for the GNN", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--data',           required=True,                                          help='File path to the assignment data file.')
-    parser.add_argument('--pred',           required=True,  choices=['TER', 'VEGF', 'Both'],        help='Type of Value being Predicted from QBAMs')
+    parser.add_argument('--pred',           required=True,  choices=['Donor'],                      help='Type of Value being Predicted from QBAMs')
     parser.add_argument('--log_path',       default='',                                             help='where the optuna study logs will stored')
     parser.add_argument('--batch_size',     type=int,       default=20,                             help='Model\'s batch size.')
     parser.add_argument('--normed',         required=False, action='store_true',                    help='Whether or not to use normalized label values')
@@ -48,7 +48,7 @@ def train_model(train_loader, val_loader, test_loader, model, learning_rate, num
     model.device = device
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma)
-    criterion = MSELoss()
+    criterion = CrossEntropyLoss()
 
     train_losses = []
     val_losses = []
@@ -58,13 +58,13 @@ def train_model(train_loader, val_loader, test_loader, model, learning_rate, num
         train(model, train_loader, optimizer, criterion)
         scheduler.step()
 
-        train_rmse = test(model, train_loader, criterion)
-        val_rmse = test(model, val_loader, criterion)
-        test_rmse = test(model, test_loader, criterion)
+        train_cce = test(model, train_loader, criterion)
+        val_cce = test(model, val_loader, criterion)
+        test_cce = test(model, test_loader, criterion)
 
-        train_losses.append(train_rmse)
-        val_losses.append(val_rmse)
-        test_losses.append(test_rmse)
+        train_losses.append(train_cce)
+        val_losses.append(val_cce)
+        test_losses.append(test_cce)
 
         if len(train_losses) > 4:
             last_3 = np.array(train_losses)[:-4:-1]
@@ -75,7 +75,7 @@ def train_model(train_loader, val_loader, test_loader, model, learning_rate, num
                 break
 
         if epoch % 20 == 0:
-            print(f'\nEpoch: {epoch:03d}, Train RMSE: {train_rmse:.4f}, Val RMSE: {val_rmse:.4f}\n')
+            print(f'\nEpoch: {epoch:03d}, Train CCE: {train_cce:.4f}, Val CCE: {val_cce:.4f}\n')
 
     train_losses = np.array(train_losses)
     val_losses = np.array(val_losses)
@@ -87,12 +87,12 @@ def train_model(train_loader, val_loader, test_loader, model, learning_rate, num
 
     if img_path:
         plt.figure(figsize=(10, 6))
-        plt.plot(train_losses, label='Training RMSE')
-        plt.plot(val_losses, label='Validation RMSE')
-        plt.plot(test_losses, label='Test RMSE')
+        plt.plot(train_losses, label='Training CCE')
+        plt.plot(val_losses, label='Validation CCE')
+        plt.plot(test_losses, label='Test CCE')
         plt.xlabel('Epoch')
         plt.ylabel('RMSE')
-        plt.title('Training and Validation RMSE')
+        plt.title('Training and Validation CCE')
         plt.legend()
         plt.savefig(img_path)
         plt.close()
@@ -113,7 +113,6 @@ def objective(trial, target, model_constructors, data_details, train_loader, val
     model = model_class(*data_details)
 
     train_loss, val_loss = train_model(train_loader, val_loader, test_loader, model, learning_rate, num_epochs)
-
     test_loss = test_acc.test_model(test_loader, model, task=target)
 
     return test_loss
@@ -144,7 +143,7 @@ def main(args):
     norm_string = "_normalized" if args.normed else ""
 
     data_dirs = {}
-    for data_type in ['TER', 'VEGF', 'Both']:
+    for data_type in ['Donor']:
         data_dirs[f"Train_{data_type}"] = f"{args.data}/{data_type}/Train_{data_type}{norm_string}.pkl"
         data_dirs[f"Valid_{data_type}"] = f"{args.data}/{data_type}/Valid_{data_type}{norm_string}.pkl"
         data_dirs[f"Test_{data_type}"] = f"{args.data}/{data_type}/Test_{data_type}{norm_string}.pkl"
@@ -173,13 +172,13 @@ def main(args):
 
     Path(f'{args.log_path}').mkdir(parents=True, exist_ok=True)
     storage = optuna.storages.JournalStorage(
-        optuna.storages.journal.JournalFileBackend(f"{args.log_path}/optuna_journal_storage_modular.log")
+        optuna.storages.journal.JournalFileBackend(f"{args.log_path}/optuna_journal_storage.log")
     )
 
     time_string = datetime.datetime.now().strftime('%d-%b-%Y-%H%M')
 
-    study = optuna.create_study(study_name=f"{time_string}_optimize_{args.pred}{norm_string}_modular",storage = storage, direction="minimize")
-    study.set_metric_names(["RMSE"])
+    study = optuna.create_study(study_name=f"{time_string}_optimize_{args.pred}{norm_string}",storage = storage, direction="minimize")
+    study.set_metric_names(["CCE"])
     study.optimize(lambda trial: objective(trial, target, model_constructors, data_details, train_loader, val_loader, test_loader), n_trials=100)
     # study.optimize(lambda trial: objective(trial, target, Modular_GCN, data_details, train_loader, val_loader, test_loader), n_trials=100)
 

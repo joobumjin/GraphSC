@@ -144,7 +144,7 @@ def main(args):
     norm_string = "_normalized" if args.normed else ""
 
     data_dirs = {}
-    for data_type in ['TER', 'VEGF', 'Both']:
+    for data_type in ['TER', 'VEGF', 'Both', 'Donor']:
         data_dirs[f"Train_{data_type}"] = f"{args.data}/{data_type}/Train_{data_type}{norm_string}.pkl"
         data_dirs[f"Valid_{data_type}"] = f"{args.data}/{data_type}/Valid_{data_type}{norm_string}.pkl"
         data_dirs[f"Test_{data_type}"] = f"{args.data}/{data_type}/Test_{data_type}{norm_string}.pkl"
