@@ -97,7 +97,6 @@ def get_image_loaders(base_dir, data_dirs, target, batch_size):
         """
         images = torch.Tensor(np.transpose(np.array([sample.x for sample in data]), axes=(0,3,1,2)))
         labels = torch.Tensor(np.array([sample.y for sample in data]))
-        print(f"Collated Labels: {labels}")
 
         return HealthyData(crop(images), labels)
 
@@ -108,15 +107,8 @@ def get_image_loaders(base_dir, data_dirs, target, batch_size):
     train_dataset = Healthy2Dataset(base_dir, train_csv, target)
     test_dataset = Healthy2Dataset(base_dir, test_csv, target)
 
-    print(f"First sample: {train_dataset[0].x.shape}, {train_dataset[0].y}")
-
     train_loader = DataLoader(train_dataset, batch_size = batch_size, collate_fn=lambda data: collate(data, crop=crop))
     test_loader = DataLoader(test_dataset, batch_size = batch_size, collate_fn=lambda data: collate(data, crop=crop))
-
-    first_batch = next(iter(train_loader))
-
-    print(f"First batch: {first_batch.x.shape}, {first_batch.y}")
-
 
     return train_loader, test_loader
     
