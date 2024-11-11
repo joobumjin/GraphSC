@@ -11,14 +11,10 @@ import numpy as np
 import pickle
 import torch
 from torch.nn import MSELoss
-from torch_geometric.data import Data
-from torch_geometric.loader import DataLoader
 import optuna
 
-from preprocessing import get_loaders
+from preprocessing import get_image_loaders
 from train_test import train, test
-import GNN.src.gnn_multiple as GCNs
-from GNN.src.gnn_modular import Modular_GCN
 from GNN.src.dnn_f import DNN_F
 from GNN.src import test_acc
 
@@ -34,7 +30,7 @@ def parse_args(args=None):
     parser = argparse.ArgumentParser(description="Specify Hyperparameters to Optimize for the GNN", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--data',           required=True,                                          help='File path to the assignment data file.')
     parser.add_argument('--pred',           required=True,  choices=['TER', 'VEGF', 'Both'],        help='Type of Value being Predicted from QBAMs')
-    parser.add_argument('--log_path',       default='',                                             help='where the optuna study logs will stored')
+    parser.add_argument('--graph_path',     required=False,                                         help='Where to store the training graphs')
     parser.add_argument('--batch_size',     type=int,       default=20,                             help='Model\'s batch size.')
     parser.add_argument('--normed',         required=False, action='store_true',                    help='Whether or not to use normalized label values')
 
@@ -52,7 +48,7 @@ def train_model(train_loader, val_loader, test_loader, model, learning_rate, num
     criterion = MSELoss()
 
     train_losses = []
-    val_losses = []
+    # val_losses = []
     test_losses = []
 
     for epoch in tqdm(range(1, num_epochs + 1), desc="Training Epochs"):
@@ -60,11 +56,11 @@ def train_model(train_loader, val_loader, test_loader, model, learning_rate, num
         scheduler.step()
 
         train_rmse = test(model, train_loader, criterion)
-        val_rmse = test(model, val_loader, criterion)
+        # val_rmse = test(model, val_loader, criterion)
         test_rmse = test(model, test_loader, criterion)
 
         train_losses.append(train_rmse)
-        val_losses.append(val_rmse)
+        # val_losses.append(val_rmse)
         test_losses.append(test_rmse)
 
         if len(train_losses) > 4:
@@ -76,10 +72,11 @@ def train_model(train_loader, val_loader, test_loader, model, learning_rate, num
                 break
 
         if epoch % 20 == 0:
-            print(f'\nEpoch: {epoch:03d}, Train RMSE: {train_rmse:.4f}, Val RMSE: {val_rmse:.4f}\n')
+            # print(f'\rEpoch: {epoch:03d}, Train RMSE: {train_rmse:.4f}', end='')
+            print(f'Epoch: {epoch:03d}, Train RMSE: {train_rmse:.4f}', end='\n')
 
     train_losses = np.array(train_losses)
-    val_losses = np.array(val_losses)
+    # val_losses = np.array(val_losses)
     test_losses = np.array(test_losses)
 
     if output_filepath:
@@ -89,7 +86,7 @@ def train_model(train_loader, val_loader, test_loader, model, learning_rate, num
     if img_path:
         plt.figure(figsize=(10, 6))
         plt.plot(train_losses, label='Training RMSE')
-        plt.plot(val_losses, label='Validation RMSE')
+        # plt.plot(val_losses, label='Validation RMSE')
         plt.plot(test_losses, label='Test RMSE')
         plt.xlabel('Epoch')
         plt.ylabel('RMSE')
@@ -99,53 +96,24 @@ def train_model(train_loader, val_loader, test_loader, model, learning_rate, num
         plt.close()
         print(f"Saved graph to {img_path}")
 
-    return train_losses[-1], val_losses[-1]
-
-def objective(trial, target, model_constructors, train_loader, val_loader, test_loader):
-    num_epochs = 100
-
-    #Tuning
-    learning_rate = trial.suggest_float("learning_rate", 1e-4, 5e-3, step=5e-5)
-
-    model = model_constructors["DNN_F"]()
-
-    train_loss, val_loss = train_model(train_loader, val_loader, test_loader, model, learning_rate, num_epochs)
-    test_loss = test_acc.test_model(test_loader, model, task=target)
-
-    return test_loss
+    return train_losses[-1]
 
 
 def main(args):
     target = args.pred
-    print(f"Optuna Searching {target}")
+    print(f"Training DNN F on {target}")
 
     norm_string = "_normalized" if args.normed else ""
 
-    data_dirs = {}
-    for data_type in ['TER', 'VEGF', 'Both']:
-        data_dirs[f"Train_{data_type}"] = f"{args.data}/{data_type}/Train_{data_type}{norm_string}.pkl"
-        data_dirs[f"Valid_{data_type}"] = f"{args.data}/{data_type}/Valid_{data_type}{norm_string}.pkl"
-        data_dirs[f"Test_{data_type}"] = f"{args.data}/{data_type}/Test_{data_type}{norm_string}.pkl"
+    data_base_dir = f"{args.data}/full_imgs/"
+    data_dirs = {"train": "train_samples.csv", "test": "test_samples.csv"}
+ 
+    train_loader, test_loader = get_image_loaders(data_base_dir, data_dirs, target, args.batch_size)
 
-    model_constructors = {
-        "DNN_F": DNN_F,
-    }
-    
-    train_loader, val_loader, test_loader, _ = get_loaders(data_dirs, target, args.batch_size)
+    model = DNN_F()
 
-
-    Path(f'{args.log_path}').mkdir(parents=True, exist_ok=True)
-    storage = optuna.storages.JournalStorage(
-        optuna.storages.journal.JournalFileBackend(f"{args.log_path}/dnn_f_optuna_journal_storage_modular.log")
-    )
-
-    time_string = datetime.datetime.now().strftime('%d-%b-%Y-%H%M')
-
-    study = optuna.create_study(study_name=f"{time_string}_optimize_{args.pred}{norm_string}_modular",storage = storage, direction="minimize")
-    study.set_metric_names(["RMSE"])
-    study.optimize(lambda trial: objective(trial, target, model_constructors, train_loader, val_loader, test_loader), n_trials=100)
-
-    print(f"Best value: {study.best_value} (params: {study.best_params})")
+    train_loss, _ = train_model(train_loader, None, test_loader, model, learning_rate=1e-3, num_epochs=200, img_path = args.graph_path)
+    test_loss = test_acc.test_model(test_loader, model, task=target)
 
 
 ## END UTILITY METHODS
