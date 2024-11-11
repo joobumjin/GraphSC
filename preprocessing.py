@@ -108,6 +108,7 @@ import tifffile
 import torch
 import torchvision
 import numpy as np
+import glob
 
 class HealthyData():
     def __init__(self, x, y):
@@ -134,6 +135,10 @@ class Healthy2Dataset(Dataset):
     self.df = pd.read_csv(f"{base_dir}/{all_data_df}")
     for dtype in self.target_list: 
       self.df = self.df[self.df[dtype].notnull()]
+
+    self.valid_files = glob.glob(f"RGB/*/*", root_dir=base_dir)
+
+    self.df = self.df[self.df["file_path"].isin(self.valid_files)]
 
     self.image_transform = image_transform
     self.target_transform = target_transform
