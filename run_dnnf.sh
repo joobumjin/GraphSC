@@ -20,5 +20,5 @@ declare -a arr=("TER" "VEGF" "Both")
 for i in "${arr[@]}"
 do
     echo "Training DNN F on $i"
-    python3 tran_dnnf.py --data /users/bjoo2/data/bjoo2/qbam/data --graph_path /users/bjoo2/data/bjoo2/qbam/dnn_f_results/train_graph --pred "$i" 
+    python3 train_dnnf.py --data /users/bjoo2/data/bjoo2/qbam/data --graph_path /users/bjoo2/data/bjoo2/qbam/dnn_f_results/train_graph --pred "$i" 
 done
