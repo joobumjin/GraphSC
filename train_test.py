@@ -8,6 +8,7 @@ def train(model, train_loader, optimizer, criterion):
     for data in train_loader:
         data = data.to(model.device)  # Move data to the same device as the model
         out = model(data)
+        print(f"Image: {data.x.shape}, Label: {data.y}")
         loss = criterion(out, data.y.reshape(-1, model.output_dim))
         optimizer.zero_grad()
         loss.backward()
