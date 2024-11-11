@@ -101,6 +101,8 @@ def get_image_loaders(base_dir, data_dirs, target, batch_size):
     train_loader = DataLoader(train_dataset, batch_size = batch_size, collate_fn=lambda data: collate(data, crop=crop))
     test_loader = DataLoader(test_dataset, batch_size = batch_size, collate_fn=lambda data: collate(data, crop=crop))
 
+    print(f"Num Train Batches: {len(train_loader)}, Test Batches: {len(test_loader)}")
+
     return train_loader, test_loader
     
 from torch.utils.data import Dataset, DataLoader
