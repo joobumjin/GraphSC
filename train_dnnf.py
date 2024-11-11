@@ -110,7 +110,9 @@ def main(args):
  
     train_loader, test_loader = get_image_loaders(data_base_dir, data_dirs, target, args.batch_size)
 
-    model = DNN_F()
+    out_dim = 2 if target=="Both" else 1
+
+    model = DNN_F(out_dim)
 
     train_loss, _ = train_model(train_loader, None, test_loader, model, learning_rate=1e-3, num_epochs=200, img_path = args.graph_path)
     test_loss = test_acc.test_model(test_loader, model, task=target)

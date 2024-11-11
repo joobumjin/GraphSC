@@ -63,7 +63,7 @@ class InceptionLayer(torch.nn.Module):
         return self.batch_norm(catted)
 
 class DNN_F(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, output_dim):
         super().__init__()
 
         self.layers = Sequential(
@@ -90,7 +90,7 @@ class DNN_F(torch.nn.Module):
             InceptionLayer(channel_dict={"in": 1024, "oneConv": 384, "threeConv_1": 192, "threeConv_2": 384, "fiveConv_1": 48, "fiveConv_2": 128, "poolConv_2": 128, "out":1024}),
             SameMaxPool2d(3, 2),
             AvgPool2d((4,4)),
-            Conv2d(1024, 1, (1,1), padding="same")
+            Conv2d(1024, output_dim, (1,1), padding="same")
         )
 
 
