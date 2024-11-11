@@ -97,6 +97,7 @@ def get_image_loaders(base_dir, data_dirs, target, batch_size):
         """
         images = np.transpose(np.array([sample.x for sample in data]), axes=(0,3,1,2))
         labels = np.array([sample.y for sample in data])
+        print(f"Collated Labels: {labels}")
 
         return Data(crop(torch.Tensor(images)), torch.Tensor(labels))
 
