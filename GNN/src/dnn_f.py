@@ -66,6 +66,8 @@ class DNN_F(torch.nn.Module):
     def __init__(self, output_dim):
         super().__init__()
 
+        self.output_dim = output_dim
+
         self.layers = Sequential(
             Conv2d(3, 32, 3, padding="same"),
             SameMaxPool2d(3, 2),
