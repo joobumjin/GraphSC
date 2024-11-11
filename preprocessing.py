@@ -91,6 +91,15 @@ def get_loaders(data_dirs, target, batch_size, print_data_stats = True, print_de
 ##################################################################################################################################
 
 def get_image_loaders(base_dir, data_dirs, target, batch_size):
+    def collate(data, crop):
+        """
+        In our cases, we want to collate a list of Data instances
+        """
+        images = np.transpose(np.array([sample.x for sample in data]), axes=(0,3,1,2))
+        labels = np.array([sample.y for sample in data])
+
+        return Data(crop(torch.Tensor(images)), torch.Tensor(labels))
+
     train_csv = data_dirs["train"]
     test_csv = data_dirs["test"]
 
@@ -98,8 +107,15 @@ def get_image_loaders(base_dir, data_dirs, target, batch_size):
     train_dataset = Healthy2Dataset(base_dir, train_csv, target)
     test_dataset = Healthy2Dataset(base_dir, test_csv, target)
 
+    print(f"First sample: {train_dataset[0].x.shape}, {train_dataset[0].y}")
+
     train_loader = DataLoader(train_dataset, batch_size = batch_size, collate_fn=lambda data: collate(data, crop=crop))
     test_loader = DataLoader(test_dataset, batch_size = batch_size, collate_fn=lambda data: collate(data, crop=crop))
+
+    first_batch = next(iter(train_loader))
+
+    print(f"First batch: {first_batch.x.shape}, {first_batch.y}")
+
 
     return train_loader, test_loader
     
@@ -115,16 +131,10 @@ class HealthyData():
         self.x = x
         self.y = y
         self.edge_index, self.batch = None, None #mimic geometric's Data class
-    
-    def set_x(self, x):
-        self.x = x
-
-    def set_y(self, y):
-        self.y = y
 
     def to(self, device):
-       self.x.to(device)
-       self.y.to(device)
+       self.x = self.x.to(device)
+       self.y = self.y.to(device)
 
        return self
 
@@ -166,14 +176,3 @@ class Healthy2Dataset(Dataset):
     if self.target_transform: labels = self.target_transform(labels)
     return HealthyData(image, labels)
     # return image, labels
-
-
-def collate(data, crop):
-  """
-  In our cases, we want to collate a list of Data instances
-  """
-  images = np.transpose(np.array([sample.x for sample in data]), axes=(0,3,1,2))
-  labels = np.array([sample.y for sample in data])
-
-  return Data(crop(torch.Tensor(images)), torch.Tensor(labels))
-
