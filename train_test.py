@@ -26,7 +26,10 @@ def test(model, loader, criterion, metric_printer=None):
             if metric_printer:
                 print(metric_printer(out,data.y.reshape(-1, model.output_dim), math.sqrt(loss.item())))
 
-    avg_loss = total_loss / len(loader.dataset)
+    if len(loader.dataset) > 0: avg_loss = total_loss / len(loader.dataset)
+    else:
+        print("ERROR: 0 len dataset")
+        return total_loss
     return math.sqrt(avg_loss)
 
 class MetricPrinter(ABC):
