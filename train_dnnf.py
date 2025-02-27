@@ -13,7 +13,7 @@ import torch
 from torch.nn import MSELoss
 import optuna
 
-from preprocessing import get_image_loaders
+from img_preprocessing import get_image_loaders
 from train_test import train, test
 from GNN.src.dnn_f import DNN_F
 from GNN.src import test_acc
