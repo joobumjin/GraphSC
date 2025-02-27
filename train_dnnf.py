@@ -48,7 +48,7 @@ def train_model(train_loader, val_loader, test_loader, model, learning_rate, num
     criterion = MSELoss()
 
     train_losses = []
-    # val_losses = []
+    val_losses = []
     test_losses = []
 
     for epoch in tqdm(range(1, num_epochs + 1), desc="Training Epochs"):
@@ -56,11 +56,11 @@ def train_model(train_loader, val_loader, test_loader, model, learning_rate, num
         scheduler.step()
 
         train_rmse = test(model, train_loader, criterion)
-        # val_rmse = test(model, val_loader, criterion)
+        val_rmse = test(model, val_loader, criterion)
         test_rmse = test(model, test_loader, criterion)
 
         train_losses.append(train_rmse)
-        # val_losses.append(val_rmse)
+        val_losses.append(val_rmse)
         test_losses.append(test_rmse)
 
         if len(train_losses) > 4:
@@ -76,7 +76,7 @@ def train_model(train_loader, val_loader, test_loader, model, learning_rate, num
             print(f'Epoch: {epoch:03d}, Train RMSE: {train_rmse:.4f}', end='\n')
 
     train_losses = np.array(train_losses)
-    # val_losses = np.array(val_losses)
+    val_losses = np.array(val_losses)
     test_losses = np.array(test_losses)
 
     if output_filepath:
@@ -114,7 +114,7 @@ def main(args):
 
     model = DNN_F(out_dim)
 
-    train_loss, _ = train_model(train_loader, None, test_loader, model, learning_rate=1e-3, num_epochs=200, img_path = args.graph_path)
+    train_loss = train_model(train_loader, None, test_loader, model, learning_rate=1e-3, num_epochs=200, img_path = args.graph_path)
     test_loss = test_acc.test_model(test_loader, model, task=target)
 
 
