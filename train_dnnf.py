@@ -105,7 +105,7 @@ def main(args):
 
     norm_string = "_normalized" if args.normed else ""
 
-    data_base_dir = f"{args.data}/full_imgs/"
+    data_base_dir = f"{args.data}/full_imgs"
     data_dirs = {"train": "train_samples.csv", "test": "test_samples.csv"}
  
     train_loader, test_loader = get_image_loaders(data_base_dir, data_dirs, target, args.batch_size)
