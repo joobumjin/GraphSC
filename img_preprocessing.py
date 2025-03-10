@@ -1,4 +1,10 @@
-##################################################################################################################################
+from torch.utils.data import Dataset, DataLoader
+import tifffile
+import torch
+import torchvision
+import numpy as np
+import glob
+import pandas as pd
 
 def get_image_loaders(base_dir, data_dirs, target, batch_size):
     def collate(data, crop):
@@ -21,14 +27,6 @@ def get_image_loaders(base_dir, data_dirs, target, batch_size):
     test_loader = DataLoader(test_dataset, batch_size = batch_size, collate_fn=lambda data: collate(data, crop=crop))
 
     return train_loader, test_loader
-
-from torch.utils.data import Dataset, DataLoader
-import tifffile
-import torch
-import torchvision
-import numpy as np
-import glob
-import pandas as pd
 
 class HealthyData():
     def __init__(self, x, y):
