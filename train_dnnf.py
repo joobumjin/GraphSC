@@ -106,15 +106,15 @@ def main(args):
     norm_string = "_normalized" if args.normed else ""
 
     data_base_dir = f"{args.data}/full_imgs"
-    data_dirs = {"train": "train_samples.csv", "test": "test_samples.csv"}
+    data_dirs = {"train": "train_samples.csv", "valid":"valid_samples.csv", "test": "test_samples.csv"}
  
-    train_loader, test_loader = get_image_loaders(data_base_dir, data_dirs, target, args.batch_size)
+    train_loader, valid_loader, test_loader = get_image_loaders(data_base_dir, data_dirs, target, args.batch_size)
 
     out_dim = 2 if target=="Both" else 1
 
     model = DNN_F(out_dim)
 
-    train_loss = train_model(train_loader, None, test_loader, model, learning_rate=1e-3, num_epochs=200, img_path = args.graph_path)
+    train_loss = train_model(train_loader, valid_loader, test_loader, model, learning_rate=1e-3, num_epochs=200, img_path = args.graph_path)
     test_loss = test_acc.test_model(test_loader, model, task=target)
 
 

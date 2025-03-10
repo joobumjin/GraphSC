@@ -17,16 +17,19 @@ def get_image_loaders(base_dir, data_dirs, target, batch_size):
         return HealthyData(crop(images), labels)
 
     train_csv = data_dirs["train"]
+    valid_csv = data_dirs["valid"]
     test_csv = data_dirs["test"]
 
     crop = torchvision.transforms.CenterCrop((1024, 1024))
     train_dataset = Healthy2Dataset(base_dir, train_csv, target)
+    valid_dataset = Healthy2Dataset(base_dir, valid_csv, target)
     test_dataset = Healthy2Dataset(base_dir, test_csv, target)
 
     train_loader = DataLoader(train_dataset, batch_size = batch_size, collate_fn=lambda data: collate(data, crop=crop))
+    valid_loader = DataLoader(valid_dataset, batch_size = batch_size, collate_fn=lambda data: collate(data, crop=crop))
     test_loader = DataLoader(test_dataset, batch_size = batch_size, collate_fn=lambda data: collate(data, crop=crop))
 
-    return train_loader, test_loader
+    return train_loader, valid_loader, test_loader
 
 class HealthyData():
     def __init__(self, x, y):
