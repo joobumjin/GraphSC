@@ -14,7 +14,7 @@ from torch.nn import MSELoss
 import optuna
 
 from img_preprocessing import get_image_loaders
-from train_test import train, test
+from train_test import test
 from GNN.src.dnn_f import DNN_F
 from GNN.src import test_acc
 
@@ -98,23 +98,37 @@ def train_model(train_loader, val_loader, test_loader, model, learning_rate, num
 
     return train_losses[-1]
 
+def train(model, train_loaders, optimizer, criterion):
+    model.train()
+    for train_loader in train_loaders:
+        for data in train_loader:
+            data = data.to(model.device)  # Move data to the same device as the model
+            out = model(data)
+            loss = criterion(out, data.y.reshape(-1, model.output_dim))
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
 
 def main(args):
     target = args.pred
     print(f"Training DNN F on {target}")
 
-    norm_string = "_normalized" if args.normed else ""
+    # norm_string = "_normalized" if args.normed else ""
 
     data_base_dir = f"{args.data}/full_imgs"
-    data_dirs = {"train": "train_samples.csv", "valid":"valid_samples.csv", "test": "test_samples.csv"}
+    # data_dirs = {"train": "train_samples.csv", "valid":"valid_samples.csv", "test": "test_samples.csv"}
+    data_dirs = {"train": ["train_TER_imgs_0.pkl", "train_TER_imgs_1.pkl", "train_TER_imgs_2.pkl"], 
+                 "valid": "valid_TER_imgs_0.pkl", 
+                 "test":  "test_TER_imgs_0.pkl"}
  
-    train_loader, valid_loader, test_loader = get_image_loaders(data_base_dir, data_dirs, target, args.batch_size)
+    train_loaders, valid_loader, test_loader = get_image_loaders(data_base_dir, data_dirs, target, args.batch_size)
 
     out_dim = 2 if target=="Both" else 1
 
     model = DNN_F(out_dim)
 
-    train_loss = train_model(train_loader, valid_loader, test_loader, model, learning_rate=1e-3, num_epochs=200, img_path = args.graph_path)
+    train_loss = train_model(train_loaders, valid_loader, test_loader, model, learning_rate=1e-3, num_epochs=200, img_path = args.graph_path)
     test_loss = test_acc.test_model(test_loader, model, task=target)
 
 

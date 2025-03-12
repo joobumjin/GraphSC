@@ -16,20 +16,23 @@ def get_image_loaders(base_dir, data_dirs, target, batch_size):
 
         return HealthyData(crop(images), labels)
 
-    train_csv = data_dirs["train"]
-    valid_csv = data_dirs["valid"]
-    test_csv = data_dirs["test"]
+    train_pkls = data_dirs["train"]
+    valid_pkl = data_dirs["valid"]
+    test_pkl = data_dirs["test"]
 
     crop = torchvision.transforms.CenterCrop((1024, 1024))
-    train_dataset = Healthy2Dataset(base_dir, train_csv, target)
-    valid_dataset = Healthy2Dataset(base_dir, valid_csv, target)
-    test_dataset = Healthy2Dataset(base_dir, test_csv, target)
+    # train_datasets = [Healthy2Dataset(base_dir, train_csv, target) for train_csv in train_csvs]
+    # valid_dataset = Healthy2Dataset(base_dir, valid_csv, target)
+    # test_dataset = Healthy2Dataset(base_dir, test_csv, target)
+    train_dfs = [pd.read_pickle(f"{base_dir}/{train_pkl}") for train_pkl in train_pkls]
+    val_df = pd.read_pickle(f"{base_dir}/{valid_pkl}")
+    test_df = pd.read_pickle(f"{base_dir}/{test_pkl}")
 
-    train_loader = DataLoader(train_dataset, batch_size = batch_size, collate_fn=lambda data: collate(data, crop=crop))
-    valid_loader = DataLoader(valid_dataset, batch_size = batch_size, collate_fn=lambda data: collate(data, crop=crop))
-    test_loader = DataLoader(test_dataset, batch_size = batch_size, collate_fn=lambda data: collate(data, crop=crop))
+    train_loaders = [DataLoader(df, batch_size = batch_size, collate_fn=lambda data: collate(data, crop=crop)) for df in train_dfs]
+    valid_loader = DataLoader(val_df, batch_size = batch_size, collate_fn=lambda data: collate(data, crop=crop))
+    test_loader = DataLoader(test_df, batch_size = batch_size, collate_fn=lambda data: collate(data, crop=crop))
 
-    return train_loader, valid_loader, test_loader
+    return train_loaders, valid_loader, test_loader
 
 class HealthyData():
     def __init__(self, x, y):
@@ -44,40 +47,40 @@ class HealthyData():
        return self
 
 
-class Healthy2Dataset(Dataset):
-  def __init__(self, base_dir, all_data_df, target, image_transform = None, target_transform=None):
-    self.target_list = ["TER", "VEGF"] if target == "Both" else [f"{target}"]
+# class Healthy2Dataset(Dataset):
+#   def __init__(self, base_dir, all_data_df, target, image_transform = None, target_transform=None):
+#     self.target_list = ["TER", "VEGF"] if target == "Both" else [f"{target}"]
 
-    self.base_dir = base_dir
-    self.df = pd.read_csv(f"{base_dir}/{all_data_df}")
-    for dtype in self.target_list: 
-      self.df = self.df[self.df[dtype].notnull()]
+#     self.base_dir = base_dir
+#     self.df = pd.read_csv(f"{base_dir}/{all_data_df}")
+#     for dtype in self.target_list: 
+#       self.df = self.df[self.df[dtype].notnull()]
 
-    self.valid_files = glob.glob(f"RGB/*/*", root_dir=base_dir)
+#     self.valid_files = glob.glob(f"RGB/*/*", root_dir=base_dir)
 
-    self.df = self.df[self.df["file_path"].isin(self.valid_files)]
+#     self.df = self.df[self.df["file_path"].isin(self.valid_files)]
 
-    self.image_transform = image_transform
-    self.target_transform = target_transform
+#     self.image_transform = image_transform
+#     self.target_transform = target_transform
 
-    self.date_dict = {
-      "d3": "16-Feb-17",
-      "d4": "23-Feb-17",
-      "d5": "2-Mar-17",
-      "d6": "9-Mar-17",
-      "d7": "16-Mar-17",
-      "d8": "23-Mar-17"
-  }
+#     self.date_dict = {
+#       "d3": "16-Feb-17",
+#       "d4": "23-Feb-17",
+#       "d5": "2-Mar-17",
+#       "d6": "9-Mar-17",
+#       "d7": "16-Mar-17",
+#       "d8": "23-Mar-17"
+#   }
 
-  def __len__(self):
-    return len(self.df)
+#   def __len__(self):
+#     return len(self.df)
 
-  def __getitem__(self, idx):
-    row = self.df.iloc[idx]
-    img_path = row["file_path"]
-    image = tifffile.imread(f"{self.base_dir}/{img_path}")
-    labels = [row[dtype] for dtype in self.target_list]
-    if self.image_transform: image = self.image_transform(image)
-    if self.target_transform: labels = self.target_transform(labels)
-    return HealthyData(image, labels)
-    # return image, labels
+#   def __getitem__(self, idx):
+#     row = self.df.iloc[idx]
+#     img_path = row["file_path"]
+#     image = tifffile.imread(f"{self.base_dir}/{img_path}")
+#     labels = [row[dtype] for dtype in self.target_list]
+#     if self.image_transform: image = self.image_transform(image)
+#     if self.target_transform: labels = self.target_transform(labels)
+#     return HealthyData(image, labels)
+#     # return image, labels
