@@ -38,7 +38,7 @@ def parse_args(args=None):
         return parser.parse_args()      ## For calling through command line
     return parser.parse_args(args)      ## For calling through notebook.
 
-def train_model(train_loader, val_loader, test_loader, model, learning_rate, num_epochs, output_filepath = None, img_path = None, convergence_epsilon = 0.5, gamma=0.95):
+def train_model(train_loaders, val_loader, test_loader, model, learning_rate, num_epochs, output_filepath = None, img_path = None, convergence_epsilon = 0.5, gamma=0.95):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Using", device)
     model = model.to(device)
@@ -52,10 +52,10 @@ def train_model(train_loader, val_loader, test_loader, model, learning_rate, num
     test_losses = []
 
     for epoch in tqdm(range(1, num_epochs + 1), desc="Training Epochs"):
-        train(model, train_loader, optimizer, criterion)
+        train(model, train_loaders, optimizer, criterion)
         scheduler.step()
 
-        train_rmse = test(model, train_loader, criterion)
+        train_rmse = test_multi(model, train_loaders, criterion)
         val_rmse = test(model, val_loader, criterion)
         test_rmse = test(model, test_loader, criterion)
 
@@ -108,6 +108,26 @@ def train(model, train_loaders, optimizer, criterion):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+
+def test_multi(model, loaders, criterion, metric_printer=None):
+    model.eval()
+    total_loss = 0.0
+    with torch.no_grad():
+        for loader in loaders:
+            for data in tqdm(loader, desc="Testing", leave=False):
+                data = data.to(model.device)
+                out = model(data)
+                loss = criterion(out, data.y.reshape(-1, model.output_dim))
+                total_loss += loss.item()
+
+                if metric_printer:
+                    print(metric_printer(out,data.y.reshape(-1, model.output_dim), math.sqrt(loss.item())))
+
+            if len(loader.dataset) > 0: avg_loss = total_loss / len(loader.dataset)
+            else:
+                print("ERROR: 0 len dataset")
+                return total_loss
+    return math.sqrt(avg_loss)
 
 
 def main(args):
