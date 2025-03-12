@@ -100,6 +100,7 @@ def train_model(train_loaders, val_loader, test_loader, model, learning_rate, nu
 def train(model, train_loaders, optimizer, criterion):
     model.train()
     total_loss = 0.0
+    total_samples = 0
     for train_loader in train_loaders:
         for data in train_loader:
             data = data.to(model.device)  # Move data to the same device as the model
@@ -110,28 +111,9 @@ def train(model, train_loaders, optimizer, criterion):
             optimizer.step()
 
             total_loss += loss.detach().item()
+            total_samples += 1
 
-    return math.sqrt(total_loss / len(train_loader.dataset))
-
-def test_multi(model, loaders, criterion, metric_printer=None):
-    model.eval()
-    total_loss = 0.0
-    with torch.no_grad():
-        for loader in loaders:
-            for data in tqdm(loader, desc="Testing", leave=False):
-                data = data.to(model.device)
-                out = model(data)
-                loss = criterion(out, data.y.reshape(-1, model.output_dim))
-                total_loss += loss.item()
-
-                if metric_printer:
-                    print(metric_printer(out,data.y.reshape(-1, model.output_dim), math.sqrt(loss.item())))
-
-            if len(loader.dataset) > 0: avg_loss = total_loss / len(loader.dataset)
-            else:
-                print("ERROR: 0 len dataset")
-                return total_loss
-    return math.sqrt(avg_loss)
+    return math.sqrt(total_loss / total_samples)
 
 
 def main(args):
