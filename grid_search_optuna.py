@@ -106,11 +106,12 @@ def objective(trial, target, model_constructors, data_details, train_loader, val
     #Tuning
     num_gcn = trial.suggest_int("num_gcn", 2, 5)
     num_dense = trial.suggest_int("num_dense", 2, 5)
+    hidden_size = trial.suggest_int("hidden_size", 32, 512, step=16)
     arch_string = f"G{num_gcn}_D{num_dense}"
     learning_rate = trial.suggest_float("learning_rate", 1e-4, 5e-3, step=5e-5)
 
     model_class = model_constructors[arch_string]
-    model = model_class(*data_details)
+    model = model_class(*data_details, hidden_channels = hidden_size)
 
     train_loss, val_loss = train_model(train_loader, val_loader, test_loader, model, learning_rate, num_epochs)
 
