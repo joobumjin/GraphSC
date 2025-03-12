@@ -52,10 +52,9 @@ def train_model(train_loaders, val_loader, test_loader, model, learning_rate, nu
     test_losses = []
 
     for epoch in tqdm(range(1, num_epochs + 1), desc="Training Epochs"):
-        train(model, train_loaders, optimizer, criterion)
+        train_rmse = train(model, train_loaders, optimizer, criterion)
         scheduler.step()
 
-        train_rmse = test_multi(model, train_loaders, criterion)
         val_rmse = test(model, val_loader, criterion)
         test_rmse = test(model, test_loader, criterion)
 
@@ -86,7 +85,7 @@ def train_model(train_loaders, val_loader, test_loader, model, learning_rate, nu
     if img_path:
         plt.figure(figsize=(10, 6))
         plt.plot(train_losses, label='Training RMSE')
-        # plt.plot(val_losses, label='Validation RMSE')
+        plt.plot(val_losses, label='Validation RMSE')
         plt.plot(test_losses, label='Test RMSE')
         plt.xlabel('Epoch')
         plt.ylabel('RMSE')
@@ -100,6 +99,7 @@ def train_model(train_loaders, val_loader, test_loader, model, learning_rate, nu
 
 def train(model, train_loaders, optimizer, criterion):
     model.train()
+    total_loss = 0.0
     for train_loader in train_loaders:
         for data in train_loader:
             data = data.to(model.device)  # Move data to the same device as the model
@@ -108,6 +108,10 @@ def train(model, train_loaders, optimizer, criterion):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+
+            total_loss += loss.detach().item()
+
+    return math.sqrt(total_loss / len(train_loader.dataset))
 
 def test_multi(model, loaders, criterion, metric_printer=None):
     model.eval()
