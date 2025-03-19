@@ -14,7 +14,7 @@ from torch.nn import MSELoss
 import optuna
 
 from img_preprocessing import get_image_loaders, HealthyData
-from train_test import test
+from train_test import test, MetricPrinter
 from GNN.src.dnn_f import DNN_F
 from GNN.src import test_acc
 
@@ -49,18 +49,18 @@ def train_model(train_loaders, val_loader, test_loader, model, learning_rate, nu
 
     train_losses = []
     val_losses = []
-    test_losses = []
+    # test_losses = []
 
     for epoch in tqdm(range(1, num_epochs + 1), desc="Training Epochs"):
         train_rmse = train(model, train_loaders, optimizer, criterion)
         scheduler.step()
 
         val_rmse = test(model, val_loader, criterion)
-        test_rmse = test(model, test_loader, criterion)
+        # test_rmse = test(model, test_loader, criterion)
 
         train_losses.append(train_rmse)
         val_losses.append(val_rmse)
-        test_losses.append(test_rmse)
+        # test_losses.append(test_rmse)
 
         if len(train_losses) > 4:
             last_3 = np.array(train_losses)[:-4:-1]
@@ -76,7 +76,7 @@ def train_model(train_loaders, val_loader, test_loader, model, learning_rate, nu
 
     train_losses = np.array(train_losses)
     val_losses = np.array(val_losses)
-    test_losses = np.array(test_losses)
+    # test_losses = np.array(test_losses)
 
     if output_filepath:
         torch.save(model.state_dict(), output_filepath)
@@ -86,7 +86,7 @@ def train_model(train_loaders, val_loader, test_loader, model, learning_rate, nu
         plt.figure(figsize=(10, 6))
         plt.plot(train_losses, label='Training RMSE')
         plt.plot(val_losses, label='Validation RMSE')
-        plt.plot(test_losses, label='Test RMSE')
+        # plt.plot(test_losses, label='Test RMSE')
         plt.xlabel('Epoch')
         plt.ylabel('RMSE')
         plt.title('Training and Validation RMSE')
@@ -136,6 +136,8 @@ def main(args):
 
     train_loss = train_model(train_loaders, valid_loader, test_loader, model, learning_rate=1e-3, num_epochs=200, img_path = args.graph_path)
     test_loss = test_acc.test_model(test_loader, model, task=target)
+
+    print(f"Final Test Loss: {test_loss}")
 
 
 ## END UTILITY METHODS

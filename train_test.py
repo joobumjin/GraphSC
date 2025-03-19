@@ -18,7 +18,7 @@ def test(model, loader, criterion, metric_printer=None):
     total_loss = 0.0
     total_samples = 0
     with torch.no_grad():
-        for data in tqdm(loader, desc="Testing", leave=False):
+        for data in tqdm(loader, desc="Testing"):
             data = data.to(model.device)
             out = model(data)
             loss = criterion(out, data.y.reshape(-1, model.output_dim))
