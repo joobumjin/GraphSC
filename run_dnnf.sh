@@ -21,6 +21,6 @@ declare -a arr=("TER")
 for i in "${arr[@]}"
 do
     echo "Training DNN F on $i"
-    python3 train_dnnf.py --data /users/bjoo2/data/bjoo2/qbam/data --graph_path /users/bjoo2/data/bjoo2/qbam/dnn_f_results/train_graph --pred "$i" --batch_size 48 
-    # python3 train_dnnf.py --data /users/bjoo2/data/bjoo2/qbam/data --graph_path /users/bjoo2/data/bjoo2/qbam/dnn_f_results/train_graph --pred "$i" --batch_size 64 --extra_data /users/bjoo2/data/bjoo2/qbam/data/healthy
+    python3 train_dnnf.py --data /users/bjoo2/data/bjoo2/qbam/data --graph_path /users/bjoo2/data/bjoo2/qbam/dnn_f_results/train_graph --pred "$i" --batch_size 32 
+    # python3 train_dnnf.py --data /users/bjoo2/data/bjoo2/qbam/data --graph_path /users/bjoo2/data/bjoo2/qbam/dnn_f_results/train_graph --pred "$i" --batch_size 32 --extra_data /users/bjoo2/data/bjoo2/qbam/data/healthy
 done
