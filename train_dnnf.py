@@ -33,7 +33,7 @@ def parse_args(args=None):
     parser.add_argument('--graph_path',     required=False,                                         help='Where to store the training graphs')
     parser.add_argument('--batch_size',     type=int,       default=20,                             help='Model\'s batch size.')
     parser.add_argument('--normed',         required=False, action='store_true',                    help='Whether or not to use normalized label values')
-    parser.add_argument('--extra_data',     required=True,  default=None,                           help='File path to the assignment data file.')
+    parser.add_argument('--extra_data',     required=False, default=None,                           help='File path to the assignment data file.')
 
     if args is None: 
         return parser.parse_args()      ## For calling through command line
