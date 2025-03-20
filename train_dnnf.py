@@ -14,7 +14,7 @@ from torch.nn import MSELoss
 import optuna
 
 from img_preprocessing import get_image_loaders, HealthyData
-from train_test import test, MetricPrinter
+from train_test import train_multidata, test, MetricPrinter
 from GNN.src.dnn_f import DNN_F
 from GNN.src import test_acc
 
@@ -33,6 +33,7 @@ def parse_args(args=None):
     parser.add_argument('--graph_path',     required=False,                                         help='Where to store the training graphs')
     parser.add_argument('--batch_size',     type=int,       default=20,                             help='Model\'s batch size.')
     parser.add_argument('--normed',         required=False, action='store_true',                    help='Whether or not to use normalized label values')
+    parser.add_argument('--extra_data',     required=True,  default=None,                           help='File path to the assignment data file.')
 
     if args is None: 
         return parser.parse_args()      ## For calling through command line
@@ -52,7 +53,7 @@ def train_model(train_loaders, val_loader, test_loader, model, learning_rate, nu
     # test_losses = []
 
     for epoch in tqdm(range(1, num_epochs + 1), desc="Training Epochs"):
-        train_rmse = train(model, train_loaders, optimizer, criterion)
+        train_rmse = train_multidata(model, train_loaders, optimizer, criterion)
         scheduler.step()
 
         val_rmse = test(model, val_loader, criterion)
@@ -96,25 +97,6 @@ def train_model(train_loaders, val_loader, test_loader, model, learning_rate, nu
         print(f"Saved graph to {img_path}")
 
     return train_losses[-1]
-
-def train(model, train_loaders, optimizer, criterion):
-    model.train()
-    total_loss = 0.0
-    total_samples = 0
-    for train_loader in train_loaders:
-        for data in train_loader:
-            data = data.to(model.device)  # Move data to the same device as the model
-            out = model(data)
-            loss = criterion(out, data.y.reshape(-1, model.output_dim))
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-
-            total_loss += loss.detach().item()
-            total_samples += 1
-
-    return math.sqrt(total_loss / total_samples)
-
 
 def main(args):
     target = args.pred

@@ -16,7 +16,7 @@ from torch_geometric.loader import DataLoader
 import optuna
 
 from preprocessing import get_loaders
-from train_test import train, test
+from train_test import train, train_multidata, test, test_multidata
 import GNN.src.gnn_multiple as GCNs
 from GNN.src.gnn_modular import Modular_GCN
 from GNN.src import test_acc
@@ -36,12 +36,13 @@ def parse_args(args=None):
     parser.add_argument('--log_path',       default='',                                             help='where the optuna study logs will stored')
     parser.add_argument('--batch_size',     type=int,       default=20,                             help='Model\'s batch size.')
     parser.add_argument('--normed',         required=False, action='store_true',                    help='Whether or not to use normalized label values')
+    parser.add_argument('--extra_data',     required=True,  default=None,                           help='File path to the assignment data file.')
 
     if args is None: 
         return parser.parse_args()      ## For calling through command line
     return parser.parse_args(args)      ## For calling through notebook.
 
-def train_model(train_loader, val_loader, test_loader, model, learning_rate, num_epochs, output_filepath = None, img_path = None, convergence_epsilon = 0.5, gamma=0.95):
+def train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, num_epochs, output_filepath = None, img_path = None, convergence_epsilon = 0.5, gamma=0.95):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Using", device)
     model = model.to(device)
@@ -52,19 +53,19 @@ def train_model(train_loader, val_loader, test_loader, model, learning_rate, num
 
     train_losses = []
     val_losses = []
-    test_losses = []
+    # test_losses = []
 
     for epoch in tqdm(range(1, num_epochs + 1), desc="Training Epochs"):
-        train(model, train_loader, optimizer, criterion)
+        train_multidata(model, train_loaders, optimizer, criterion)
         scheduler.step()
 
-        train_rmse = test(model, train_loader, criterion)
-        val_rmse = test(model, val_loader, criterion)
-        test_rmse = test(model, test_loader, criterion)
+        train_rmse = test_multidata(model, train_loaders, criterion)
+        val_rmse = test_multidata(model, val_loaders, criterion)
+        # test_rmse = test(model, test_loader, criterion)
 
         train_losses.append(train_rmse)
         val_losses.append(val_rmse)
-        test_losses.append(test_rmse)
+        # test_losses.append(test_rmse)
 
         if len(train_losses) > 4:
             last_3 = np.array(train_losses)[:-4:-1]
@@ -79,7 +80,7 @@ def train_model(train_loader, val_loader, test_loader, model, learning_rate, num
 
     train_losses = np.array(train_losses)
     val_losses = np.array(val_losses)
-    test_losses = np.array(test_losses)
+    # test_losses = np.array(test_losses)
 
     if output_filepath:
         torch.save(model.state_dict(), output_filepath)
@@ -89,7 +90,7 @@ def train_model(train_loader, val_loader, test_loader, model, learning_rate, num
         plt.figure(figsize=(10, 6))
         plt.plot(train_losses, label='Training RMSE')
         plt.plot(val_losses, label='Validation RMSE')
-        plt.plot(test_losses, label='Test RMSE')
+        # plt.plot(test_losses, label='Test RMSE')
         plt.xlabel('Epoch')
         plt.ylabel('RMSE')
         plt.title('Training and Validation RMSE')
@@ -100,7 +101,8 @@ def train_model(train_loader, val_loader, test_loader, model, learning_rate, num
 
     return train_losses[-1], val_losses[-1]
 
-def objective(trial, target, model_constructors, data_details, train_loader, val_loader, test_loader):
+def objective(trial, target, model_constructors, data_details, train_loaders, val_loaders, test_loaders):
+# def objective(trial, target, model_class, data_details, train_loader, val_loader, test_loader):
     num_epochs = 100
 
     #Tuning
@@ -112,29 +114,14 @@ def objective(trial, target, model_constructors, data_details, train_loader, val
 
     model_class = model_constructors[arch_string]
     model = model_class(*data_details, hidden_channels = hidden_size)
-
-    train_loss, val_loss = train_model(train_loader, val_loader, test_loader, model, learning_rate, num_epochs)
-
-    test_loss = test_acc.test_model(test_loader, model, task=target)
-
-    return test_loss
-
-# def objective(trial, target, model_class, data_details, train_loader, val_loader, test_loader):
-#     num_epochs = 100
-
-#     #Tuning
-#     num_gcn = trial.suggest_int("num_gcn", 2, 5)
-#     num_dense = trial.suggest_int("num_dense", 2, 5)
-#     arch_string = f"G{num_gcn}_D{num_dense}"
-#     learning_rate = trial.suggest_float("learning_rate", 1e-4, 5e-3, step=5e-5)
-
 #     model = model_class(*data_details, num_dense, num_gcn)
 
-#     train_loss, val_loss = train_model(train_loader, val_loader, test_loader, model, learning_rate, num_epochs)
+    train_loss, val_loss = train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, num_epochs)
 
-#     test_loss = test_acc.test_model(test_loader, model, task=target)
+    #TODO: fix
+    test_loss = test_acc.test_model(test_loaders, model, task=target, test_multiple=True)
 
-#     return test_loss
+    return test_loss
 
 
 def main(args):
@@ -149,6 +136,13 @@ def main(args):
         data_dirs[f"Train_{data_type}"] = f"{args.data}/{data_type}/Train_{data_type}{norm_string}.pkl"
         data_dirs[f"Valid_{data_type}"] = f"{args.data}/{data_type}/Valid_{data_type}{norm_string}.pkl"
         data_dirs[f"Test_{data_type}"] = f"{args.data}/{data_type}/Test_{data_type}{norm_string}.pkl"
+
+    if args.extra_data is not None:
+        extra_data_dirs = {}
+        for data_type in ['TER', 'VEGF', 'Both', 'Donor']:
+            extra_data_dirs[f"Train_{data_type}"] = f"{args.extra_data}/{data_type}/Train_{data_type}{norm_string}.pkl"
+            extra_data_dirs[f"Valid_{data_type}"] = f"{args.extra_data}/{data_type}/Valid_{data_type}{norm_string}.pkl"
+            extra_data_dirs[f"Test_{data_type}"] = f"{args.extra_data}/{data_type}/Test_{data_type}{norm_string}.pkl"
 
     model_constructors = {
         "G2_D2": GCNs.GCN_G2_D2,
@@ -168,20 +162,28 @@ def main(args):
         "G5_D4": GCNs.GCN_G5_D4,
         "G5_D5": GCNs.GCN_G5_D5
     }
-    
+
     train_loader, val_loader, test_loader, data_details = get_loaders(data_dirs, target, args.batch_size)
+    train_loaders = [train_loader]
+    val_loaders = [val_loader]
+    test_loaders = [test_loader]
+    if args.extra_data is not None:
+        extra_train, extra_val, extra_test, _ = get_loaders(extra_data_dirs, target, args.batch_size)
+        train_loaders.append(extra_train)
+        val_loaders.append(extra_val)
+        test_loaders.append(extra_test)
 
 
     Path(f'{args.log_path}').mkdir(parents=True, exist_ok=True)
     storage = optuna.storages.JournalStorage(
-        optuna.storages.journal.JournalFileBackend(f"{args.log_path}/optuna_journal_storage_modular.log")
+        optuna.storages.journal.JournalFileBackend(f"{args.log_path}/optuna_journal_storage_combine_data.log")
     )
 
     time_string = datetime.datetime.now().strftime('%d-%b-%Y-%H%M')
 
-    study = optuna.create_study(study_name=f"{time_string}_optimize_{args.pred}{norm_string}_modular",storage = storage, direction="minimize")
+    study = optuna.create_study(study_name=f"{time_string}_optimize_{args.pred}{norm_string}",storage = storage, direction="minimize")
     study.set_metric_names(["RMSE"])
-    study.optimize(lambda trial: objective(trial, target, model_constructors, data_details, train_loader, val_loader, test_loader), n_trials=100)
+    study.optimize(lambda trial: objective(trial, target, model_constructors, data_details, train_loaders, val_loaders, test_loaders), n_trials=100)
     # study.optimize(lambda trial: objective(trial, target, Modular_GCN, data_details, train_loader, val_loader, test_loader), n_trials=100)
 
     print(f"Best value: {study.best_value} (params: {study.best_params})")
