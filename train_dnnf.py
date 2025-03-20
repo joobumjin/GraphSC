@@ -100,7 +100,7 @@ def train_model(train_loaders, val_loader, test_loader, model, learning_rate, nu
 
 def main(args):
     target = args.pred
-    print(f"Training DNN F on {target}")
+    print(f"Training DNN F on {target} with batch size {args.batch_size}")
 
     # norm_string = "_normalized" if args.normed else ""
 
