@@ -94,6 +94,7 @@ def test(model, loader, criterion, write_to_file, vis_preds, task, print_met=Tru
 
 def test_multi(model, loaders, criterion, write_to_file, vis_preds, task, print_met=True):
     total_loss = 0.0
+    total_preds = 0
     f = None
     all_preds = None
 
@@ -110,6 +111,7 @@ def test_multi(model, loaders, criterion, write_to_file, vis_preds, task, print_
 
                 loss = criterion(out, data.y.reshape(-1, model.output_dim))
                 total_loss += loss.item()
+                total_preds += 1
 
                 if print_met:
                     print(f"Predicted: {out}, True: {data.y.reshape(-1, model.output_dim)}, RMSE: {math.sqrt(loss.item())}")
@@ -170,7 +172,8 @@ def test_multi(model, loaders, criterion, write_to_file, vis_preds, task, print_
             plt.close()
             print(f"Saved predictions graph to {f"{vis_preds}_{task_type}.jpg"}")
 
-    avg_loss = total_loss / len(loader.dataset)
+    avg_loss = total_loss / total_preds
+    
     if f: 
         f.write(f"Average Loss: {math.sqrt(avg_loss)}\n")
         print(f"Wrote Prediciton Outputs to {write_to_file}")
