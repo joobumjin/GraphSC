@@ -29,8 +29,6 @@ def train_multidata(model, train_loaders, optimizer, criterion):
             total_loss += loss.detach().item()
             total_samples += 1
 
-    print(f"Training Processed {total_samples}")
-
     return math.sqrt(total_loss / total_samples)
 
 def test(model, loader, criterion, metric_printer=None):
