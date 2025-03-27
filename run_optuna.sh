@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --partition=gpu --gres=gpu:1  --output=optuna_consec_data.out
+#SBATCH --partition=gpu --gres=gpu:1  --output=optuna_shuffle_data.out
 #SBATCH -N 1
 #SBATCH -n 4
 #SBATCH -t 60:00:00
@@ -21,7 +21,8 @@ declare -a arr=("TER")
 for i in "${arr[@]}"
 do
     echo "Optuna Searching on $i"
-    python3 grid_search_optuna.py --data /users/bjoo2/data/bjoo2/qbam/data --pred "$i" --log_path /users/bjoo2/code/qbam/qbam_gnn/optuna_logs/ --extra_data /users/bjoo2/data/bjoo2/qbam/data/healthy
+    # python3 grid_search_optuna.py --data /users/bjoo2/data/bjoo2/qbam/data --pred "$i" --log_path /users/bjoo2/code/qbam/qbam_gnn/optuna_logs/ --extra_data /users/bjoo2/data/bjoo2/qbam/data/healthy
+    python3 grid_search_optuna.py --data /users/bjoo2/data/bjoo2/qbam/data/combined_data --pred "$i" --log_path /users/bjoo2/code/qbam/qbam_gnn/optuna_logs/ 
 done
 
 # for i in "${arr[@]}"

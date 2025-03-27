@@ -32,6 +32,7 @@ def parse_args(args=None):
     parser.add_argument('--pred',           required=True,  choices=['TER', 'VEGF', 'Both'],        help='Type of Value being Predicted from QBAMs')
     parser.add_argument('--graph_path',     required=False,                                         help='Where to store the training graphs')
     parser.add_argument('--batch_size',     type=int,       default=20,                             help='Model\'s batch size.')
+    parser.add_argument('--lr',             type=float,     default=1e-3,                             help='Model\'s learning rate.')
     parser.add_argument('--normed',         required=False, action='store_true',                    help='Whether or not to use normalized label values')
     parser.add_argument('--extra_data',     required=False, default=None,                           help='File path to the assignment data file.')
 
@@ -116,7 +117,7 @@ def main(args):
 
     model = DNN_F(out_dim)
 
-    train_loss = train_model(train_loaders, valid_loader, test_loader, model, learning_rate=1e-3, num_epochs=200, img_path = args.graph_path)
+    train_loss = train_model(train_loaders, valid_loader, test_loader, model, learning_rate=args.learning_rate, num_epochs=200, img_path = args.graph_path)
     test_loss = test_acc.test_model(test_loader, model, task=target)
 
     print(f"Final Test Loss: {test_loss}")

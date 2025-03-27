@@ -55,7 +55,9 @@ def train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, 
     val_losses = []
     # test_losses = []
 
-    for epoch in tqdm(range(1, num_epochs + 1), desc="Training Epochs"):
+    epoch_tqdm = tqdm(range(1, num_epochs + 1), desc="Training Epochs", postfix={"Train RMSE": 0.0, "Valid RMSE": 0.0})
+    
+    for epoch in epoch_tqdm:
         train_multidata(model, train_loaders, optimizer, criterion)
         scheduler.step()
 
@@ -67,6 +69,8 @@ def train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, 
         val_losses.append(val_rmse)
         # test_losses.append(test_rmse)
 
+        epoch_tqdm.set_postfix({"Train RMSE": train_rmse, "Valid RMSE": val_rmse})
+
         if len(train_losses) > 4:
             last_3 = np.array(train_losses)[:-4:-1]
             prev = np.array(train_losses)[-2:-5:-1]
@@ -77,6 +81,8 @@ def train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, 
 
         if epoch % 20 == 0:
             print(f'\nEpoch: {epoch:03d}, Train RMSE: {train_rmse:.4f}, Val RMSE: {val_rmse:.4f}\n')
+
+    epoch_tqdm.close()
 
     train_losses = np.array(train_losses)
     val_losses = np.array(val_losses)
@@ -108,24 +114,23 @@ def objective(trial, target, model_constructors, data_details, train_loaders, va
     #Tuning
     num_gcn = trial.suggest_int("num_gcn", 2, 5)
     num_dense = trial.suggest_int("num_dense", 2, 5)
-    hidden_size = trial.suggest_int("hidden_size", 32, 512, step=16)
+    hidden_size = trial.suggest_int("hidden_size", 1, 160, step=16)
+    dense_hidden = trial.suggest_int("dense_hidden", 1, 512, step=32)
     arch_string = f"G{num_gcn}_D{num_dense}"
     learning_rate = trial.suggest_float("learning_rate", 1e-4, 5e-3, step=5e-5)
 
     model_class = model_constructors[arch_string]
-    model = model_class(*data_details, hidden_channels = hidden_size)
+    model = model_class(*data_details, hidden_channels = hidden_size, dense_hidden = dense_hidden)
 #     model = model_class(*data_details, num_dense, num_gcn)
 
     train_loss, val_loss = train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, num_epochs)
 
-    #TODO: fix
     test_loss = test_acc.test_model(test_loaders, model, task=target, test_multiple=True)
 
     return test_loss
 
 
 def main(args):
-    # arg_dict = {"target": args.pred, "batch_size": args.batch_size, }
     target = args.pred
     print(f"Optuna Searching {target}")
 

@@ -56,17 +56,22 @@ def test_multidata(model, test_loaders, criterion, metric_printer=None):
     model.eval()
     total_loss = 0.0
     total_samples = 0
-    with torch.no_grad():
+    for loader in test_loaders: total_samples += len(loader)
+    with torch.no_grad(), tqdm(total=total_samples, desc="Testing", postfix={"Test RMSE": 0.0}) as pbar:
+        cur_sampled = 0
         for loader in test_loaders:
-            for data in tqdm(loader, desc="Testing"):
+            for data in loader:
                 data = data.to(model.device)
                 out = model(data)
                 loss = criterion(out, data.y.reshape(-1, model.output_dim))
                 total_loss += loss.item()
-                total_samples += 1
+                cur_sampled += 1
 
                 if metric_printer:
                     print(metric_printer(out,data.y.reshape(-1, model.output_dim), math.sqrt(loss.item())))
+
+                pbar.update(1)
+                pbar.set_postfix({"Test RMSE": math.sqrt(total_loss / cur_sampled)})
 
     if total_samples > 0: avg_loss = total_loss / total_samples
     else:

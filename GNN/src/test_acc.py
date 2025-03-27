@@ -19,9 +19,10 @@ def test(model, loader, criterion, write_to_file, vis_preds, task, print_met=Tru
             data = data.to(model.device)
             out = model(data)
             
-            if all_preds is not None: 
-                all_preds = torch.vstack((all_preds, out))
-            else: all_preds = out
+            if vis_preds:
+                if all_preds is not None: 
+                    all_preds = torch.vstack((all_preds, out))
+                else: all_preds = out
 
             loss = criterion(out, data.y.reshape(-1, model.output_dim))
             total_loss += loss.item()
@@ -101,17 +102,18 @@ def test_multi(model, loaders, criterion, write_to_file, vis_preds, task, print_
     with torch.no_grad():
         if write_to_file: f = open(write_to_file, "w")
         for loader in loaders:
+            total_preds += len(loader)
             for data in loader:
                 data = data.to(model.device)
                 out = model(data)
                 
-                if all_preds is not None: 
-                    all_preds = torch.vstack((all_preds, out))
-                else: all_preds = out
+                if vis_preds:
+                    if all_preds is not None: 
+                        all_preds = torch.vstack((all_preds, out))
+                    else: all_preds = out
 
                 loss = criterion(out, data.y.reshape(-1, model.output_dim))
                 total_loss += loss.item()
-                total_preds += 1
 
                 if print_met:
                     print(f"Predicted: {out}, True: {data.y.reshape(-1, model.output_dim)}, RMSE: {math.sqrt(loss.item())}")
@@ -173,11 +175,13 @@ def test_multi(model, loaders, criterion, write_to_file, vis_preds, task, print_
             print(f"Saved predictions graph to {f"{vis_preds}_{task_type}.jpg"}")
 
     avg_loss = total_loss / total_preds
-    
+
     if f: 
         f.write(f"Average Loss: {math.sqrt(avg_loss)}\n")
         print(f"Wrote Prediciton Outputs to {write_to_file}")
         f.close()
+
+    print(f"Sanity Check: {task_type} had {total_preds} test samples")
     return math.sqrt(avg_loss)
 
 def test_model(test_loader, model, task, write_to_file=None, vis_preds=None, test_multiple=False):
