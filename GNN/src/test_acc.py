@@ -181,7 +181,7 @@ def test_multi(model, loaders, criterion, write_to_file, vis_preds, task, print_
         print(f"Wrote Prediciton Outputs to {write_to_file}")
         f.close()
 
-    print(f"Sanity Check: {task_type} had {total_preds} test samples")
+    print(f"Sanity Check: {total_preds} test samples")
     return math.sqrt(avg_loss)
 
 def test_model(test_loader, model, task, write_to_file=None, vis_preds=None, test_multiple=False):
