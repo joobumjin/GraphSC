@@ -42,7 +42,7 @@ def parse_args(args=None):
         return parser.parse_args()      ## For calling through command line
     return parser.parse_args(args)      ## For calling through notebook.
 
-def train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, num_epochs, output_filepath = None, img_path = None, convergence_epsilon = 0.5, gamma=0.95):
+def train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, num_epochs, output_filepath = None, img_path = None, convergence_epsilon = None, gamma=0.95):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Using", device)
     model = model.to(device)
@@ -71,13 +71,14 @@ def train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, 
 
         epoch_tqdm.set_postfix({"Train RMSE": train_rmse, "Valid RMSE": val_rmse})
 
-        if len(train_losses) > 4:
-            last_3 = np.array(train_losses)[:-4:-1]
-            prev = np.array(train_losses)[-2:-5:-1]
-            avg_loss_diff = np.mean(np.abs(last_3 - prev))
-            if avg_loss_diff < convergence_epsilon:
-                print(f"Stopping early on epoch {epoch} with average changes in loss {avg_loss_diff}")
-                break
+        if convergence_epsilon is not None:
+            if len(train_losses) > 4:
+                last_3 = np.array(train_losses)[:-4:-1]
+                prev = np.array(train_losses)[-2:-5:-1]
+                avg_loss_diff = np.mean(np.abs(last_3 - prev))
+                if avg_loss_diff < convergence_epsilon:
+                    print(f"Stopping early on epoch {epoch} with average changes in loss {avg_loss_diff}")
+                    break
 
         if epoch % 20 == 0:
             print(f'\nEpoch: {epoch:03d}, Train RMSE: {train_rmse:.4f}, Val RMSE: {val_rmse:.4f}\n')
@@ -107,7 +108,7 @@ def train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, 
 
     return train_losses[-1], val_losses[-1]
 
-def objective(trial, target, model_constructors, data_details, train_loaders, val_loaders, test_loaders):
+def objective(trial, target, model_constructors, data_details, train_loaders, val_loaders, test_loaders, data_path = None):
 # def objective(trial, target, model_class, data_details, train_loader, val_loader, test_loader):
     num_epochs = 100
 
@@ -123,7 +124,7 @@ def objective(trial, target, model_constructors, data_details, train_loaders, va
     model = model_class(*data_details, hidden_channels = hidden_size, dense_hidden = dense_hidden)
 #     model = model_class(*data_details, num_dense, num_gcn)
 
-    train_loss, val_loss = train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, num_epochs)
+    _, _ = train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, num_epochs, img_path=f"{data_path}/Train_graphs/{arch_string}_h{hidden_size}_d{dense_hidden}_lr{learning_rate}")
 
     test_loss = test_acc.test_model(test_loaders, model, task=target, test_multiple=True)
 
