@@ -124,7 +124,7 @@ def objective(trial, target, model_constructors, data_details, train_loaders, va
     model = model_class(*data_details, hidden_channels = hidden_size, dense_hidden = dense_hidden)
 #     model = model_class(*data_details, num_dense, num_gcn)
 
-    _, _ = train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, num_epochs, img_path=f"{data_path}/Train_graphs/{arch_string}_h{hidden_size}_d{dense_hidden}_lr{learning_rate}")
+    _, _ = train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, num_epochs, img_path=f"{data_path}/Train_graphs/{arch_string}_h{hidden_size}_d{dense_hidden}_lr{learning_rate}.jpeg")
 
     test_loss = test_acc.test_model(test_loaders, model, task=target, test_multiple=True)
 
