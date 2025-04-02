@@ -189,7 +189,7 @@ def main(args):
 
     study = optuna.create_study(study_name=f"{time_string}_optimize_{args.pred}{norm_string}",storage = storage, direction="minimize")
     study.set_metric_names(["RMSE"])
-    study.optimize(lambda trial: objective(trial, target, model_constructors, data_details, train_loaders, val_loaders, test_loaders), n_trials=100)
+    study.optimize(lambda trial: objective(trial, target, model_constructors, data_details, train_loaders, val_loaders, test_loaders, data_path = args.data), n_trials=100)
     # study.optimize(lambda trial: objective(trial, target, Modular_GCN, data_details, train_loader, val_loader, test_loader), n_trials=100)
 
     print(f"Best value: {study.best_value} (params: {study.best_params})")
