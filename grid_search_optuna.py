@@ -110,7 +110,7 @@ def train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, 
 
 def objective(trial, target, model_constructors, data_details, train_loaders, val_loaders, test_loaders, data_path = None):
 # def objective(trial, target, model_class, data_details, train_loader, val_loader, test_loader):
-    num_epochs = 100
+    num_epochs = 500
 
     #Tuning
     num_gcn = trial.suggest_int("num_gcn", 2, 5)
