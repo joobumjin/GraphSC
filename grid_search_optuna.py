@@ -42,12 +42,13 @@ def parse_args(args=None):
         return parser.parse_args()      ## For calling through command line
     return parser.parse_args(args)      ## For calling through notebook.
 
-def train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, num_epochs, output_filepath = None, img_path = None, convergence_epsilon = None, gamma=0.95):
+def train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, num_epochs, output_filepath = None, img_path = None, convergence_epsilon = None, gamma=0.95, weight_decay = None):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Using", device)
     model = model.to(device)
     model.device = device
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    opt_args = {name: arg for (arg, name) in zip([learning_rate, weight_decay], ["lr", "weight_decay"]) if arg is not None}
+    optimizer = torch.optim.Adam(model.parameters(), **opt_args)
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma)
     criterion = MSELoss()
 
@@ -123,12 +124,14 @@ def objective(trial, target, model_constructors, data_details, train_loaders, va
     dense_hidden = 450
     arch_string = f"G{num_gcn}_D{num_dense}"
     learning_rate = trial.suggest_float("learning_rate", 1e-7, 5e-3, step=5e-7)
+    lr_decay = trial.suggest_float("learning_rate", 0.7, 1.0, step=.05)
+    weight_decay = trial.suggest_float("learning_rate", 0, 1e-2, step=5e-5)
 
     model_class = model_constructors[arch_string]
     model = model_class(*data_details, hidden_channels = hidden_size, dense_hidden = dense_hidden)
 #     model = model_class(*data_details, num_dense, num_gcn)
 
-    _, _ = train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, num_epochs, img_path=f"{data_path}/Train_graphs/{arch_string}_h{hidden_size}_d{dense_hidden}_lr{learning_rate}.jpeg")
+    _, _ = train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, num_epochs, img_path=f"{data_path}/Train_graphs/{arch_string}_h{hidden_size}_d{dense_hidden}_lr{learning_rate}_decay{lr_decay}.jpeg", gamma=lr_decay, weight_decay=weight_decay)
 
     test_loss = test_acc.test_model(test_loaders, model, task=target, test_multiple=True)
 
