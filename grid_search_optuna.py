@@ -125,10 +125,11 @@ def objective(trial, target, model_constructors, data_details, train_loaders, va
     arch_string = f"G{num_gcn}_D{num_dense}"
     learning_rate = trial.suggest_float("learning_rate", 1e-7, 5e-3, step=5e-7)
     lr_decay = trial.suggest_float("learning_rate", 0.7, 1.0, step=.05)
-    weight_decay = trial.suggest_float("learning_rate", 0, 1e-2, step=5e-5)
+    weight_decay = trial.suggest_float("learning_rate_decay", 0, 1e-2, step=5e-5)
+    dropout_rate = trial.suggest_float("dropout", 0, 0.5, step=0.1)
 
     model_class = model_constructors[arch_string]
-    model = model_class(*data_details, hidden_channels = hidden_size, dense_hidden = dense_hidden)
+    model = model_class(*data_details, hidden_channels = hidden_size, dense_hidden = dense_hidden, dropout_p=dropout_rate)
 #     model = model_class(*data_details, num_dense, num_gcn)
 
     _, _ = train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, num_epochs, img_path=f"{data_path}/Train_graphs/{arch_string}_h{hidden_size}_d{dense_hidden}_lr{learning_rate}_decay{lr_decay}.jpeg", gamma=lr_decay, weight_decay=weight_decay)
