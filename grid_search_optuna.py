@@ -186,7 +186,7 @@ def main(args):
 
     time_string = datetime.datetime.now().strftime('%d-%b-%Y-%H%M')
 
-    study = optuna.create_study(study_name=f"{time_string}_optimize_{args.pred}{norm_string}",storage = storage, direction="minimize")
+    study = optuna.create_study(study_name=f"{time_string}_optimize_{args.pred}",storage = storage, direction="minimize")
     study.set_metric_names(["RMSE"])
     study.optimize(lambda trial: objective(trial, target, model_constructors, data_details, train_loaders, val_loaders, test_loaders, data_path = args.data))
     # study.optimize(lambda trial: objective(trial, target, Modular_GCN, data_details, train_loader, val_loader, test_loader), n_trials=100)
