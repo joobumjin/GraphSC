@@ -1,24 +1,18 @@
 import argparse
-import math
-import os
 from pathlib import Path
 import datetime
 
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-import pandas as pd
 import numpy as np
-import pickle
 import torch
 from torch.nn import MSELoss
-from torch_geometric.data import Data
-from torch_geometric.loader import DataLoader
 import optuna
 
 from preprocessing import get_loaders
 from train_test import train, train_multidata, test, test_multidata
 import GNN.src.gnn_multiple as GCNs
-from GNN.src.gnn_modular import Modular_GCN
+# from GNN.src.gnn_modular import Modular_GCN
 from GNN.src import test_acc
 
 
@@ -35,7 +29,6 @@ def parse_args(args=None):
     parser.add_argument('--pred',           required=True,  choices=['TER', 'VEGF', 'Both'],        help='Type of Value being Predicted from QBAMs')
     parser.add_argument('--log_path',       default='',                                             help='where the optuna study logs will stored')
     parser.add_argument('--batch_size',     type=int,       default=20,                             help='Model\'s batch size.')
-    parser.add_argument('--normed',         required=False, action='store_true',                    help='Whether or not to use normalized label values')
     parser.add_argument('--extra_data',     required=False, default=None,                           help='File path to the assignment data file.')
 
     if args is None: 
@@ -51,24 +44,29 @@ def train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, 
     optimizer = torch.optim.Adam(model.parameters(), **opt_args)
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma)
     criterion = MSELoss()
+    if len(train_loaders) > 1: train_fn = train_multidata
+    else: 
+        train_fn = train
+        train_loaders = train_loaders[0]
+
+    if len(val_loaders) > 1: test_fn = test_multidata
+    else: 
+        test_fn = test
+        val_loaders = val_loaders[0]
 
     train_losses = []
     val_losses = []
-    # test_losses = []
 
     epoch_tqdm = tqdm(range(1, num_epochs + 1), desc="Training Epochs", postfix={"Train RMSE": 0.0, "Valid RMSE": 0.0})
     
     for epoch in epoch_tqdm:
-        train_multidata(model, train_loaders, optimizer, criterion)
+        train_rmse = train_fn(model, train_loaders, optimizer, criterion)
         scheduler.step()
 
-        train_rmse = test_multidata(model, train_loaders, criterion)
-        val_rmse = test_multidata(model, val_loaders, criterion)
-        # test_rmse = test(model, test_loader, criterion)
+        val_rmse = test_fn(model, val_loaders, criterion)
 
         train_losses.append(train_rmse)
         val_losses.append(val_rmse)
-        # test_losses.append(test_rmse)
 
         epoch_tqdm.set_postfix({"Train RMSE": train_rmse, "Valid RMSE": val_rmse})
 
@@ -81,14 +79,10 @@ def train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, 
                     print(f"Stopping early on epoch {epoch} with average changes in loss {avg_loss_diff}")
                     break
 
-        if epoch % 20 == 0:
-            print(f'\nEpoch: {epoch:03d}, Train RMSE: {train_rmse:.4f}, Val RMSE: {val_rmse:.4f}\n')
-
     epoch_tqdm.close()
 
     train_losses = np.array(train_losses)
     val_losses = np.array(val_losses)
-    # test_losses = np.array(test_losses)
 
     if output_filepath:
         torch.save(model.state_dict(), output_filepath)
@@ -98,7 +92,6 @@ def train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, 
         plt.figure(figsize=(10, 6))
         plt.plot(train_losses, label='Training RMSE')
         plt.plot(val_losses, label='Validation RMSE')
-        # plt.plot(test_losses, label='Test RMSE')
         plt.xlabel('Epoch')
         plt.ylabel('RMSE')
         plt.title('Training and Validation RMSE')
@@ -111,7 +104,7 @@ def train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, 
 
 def objective(trial, target, model_constructors, data_details, train_loaders, val_loaders, test_loaders, data_path = None):
 # def objective(trial, target, model_class, data_details, train_loader, val_loader, test_loader):
-    num_epochs = 500
+    num_epochs = 300
 
     #Tuning
     # num_gcn = trial.suggest_int("num_gcn", 2, 5)
@@ -143,20 +136,18 @@ def main(args):
     target = args.pred
     print(f"Optuna Searching {target}")
 
-    norm_string = "_normalized" if args.normed else ""
-
     data_dirs = {}
     for data_type in ['TER', 'VEGF', 'Both', 'Donor']:
-        data_dirs[f"Train_{data_type}"] = f"{args.data}/{data_type}/Train_{data_type}{norm_string}.pkl"
-        data_dirs[f"Valid_{data_type}"] = f"{args.data}/{data_type}/Valid_{data_type}{norm_string}.pkl"
-        data_dirs[f"Test_{data_type}"] = f"{args.data}/{data_type}/Test_{data_type}{norm_string}.pkl"
+        data_dirs[f"Train_{data_type}"] = f"{args.data}/{data_type}/Train_{data_type}.pkl"
+        data_dirs[f"Valid_{data_type}"] = f"{args.data}/{data_type}/Valid_{data_type}.pkl"
+        data_dirs[f"Test_{data_type}"] = f"{args.data}/{data_type}/Test_{data_type}.pkl"
 
     if args.extra_data is not None:
         extra_data_dirs = {}
         for data_type in ['TER', 'VEGF', 'Both', 'Donor']:
-            extra_data_dirs[f"Train_{data_type}"] = f"{args.extra_data}/{data_type}/Train_{data_type}{norm_string}.pkl"
-            extra_data_dirs[f"Valid_{data_type}"] = f"{args.extra_data}/{data_type}/Valid_{data_type}{norm_string}.pkl"
-            extra_data_dirs[f"Test_{data_type}"] = f"{args.extra_data}/{data_type}/Test_{data_type}{norm_string}.pkl"
+            extra_data_dirs[f"Train_{data_type}"] = f"{args.extra_data}/{data_type}/Train_{data_type}.pkl"
+            extra_data_dirs[f"Valid_{data_type}"] = f"{args.extra_data}/{data_type}/Valid_{data_type}.pkl"
+            extra_data_dirs[f"Test_{data_type}"] = f"{args.extra_data}/{data_type}/Test_{data_type}.pkl"
 
     model_constructors = {
         "G2_D2": GCNs.GCN_G2_D2,
@@ -190,14 +181,14 @@ def main(args):
 
     Path(f'{args.log_path}').mkdir(parents=True, exist_ok=True)
     storage = optuna.storages.JournalStorage(
-        optuna.storages.journal.JournalFileBackend(f"{args.log_path}/optuna_journal_storage_combine_data.log")
+        optuna.storages.journal.JournalFileBackend(f"{args.log_path}/optuna_journal_storage_fix_rmse.log")
     )
 
     time_string = datetime.datetime.now().strftime('%d-%b-%Y-%H%M')
 
     study = optuna.create_study(study_name=f"{time_string}_optimize_{args.pred}{norm_string}",storage = storage, direction="minimize")
     study.set_metric_names(["RMSE"])
-    study.optimize(lambda trial: objective(trial, target, model_constructors, data_details, train_loaders, val_loaders, test_loaders, data_path = args.data), n_trials=100)
+    study.optimize(lambda trial: objective(trial, target, model_constructors, data_details, train_loaders, val_loaders, test_loaders, data_path = args.data))
     # study.optimize(lambda trial: objective(trial, target, Modular_GCN, data_details, train_loader, val_loader, test_loader), n_trials=100)
 
     print(f"Best value: {study.best_value} (params: {study.best_params})")
