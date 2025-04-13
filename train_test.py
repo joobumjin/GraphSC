@@ -9,10 +9,10 @@ def train(model, train_loader, optimizer, criterion):
     total_samples = 0
 
     for data in train_loader:
+        optimizer.zero_grad()
         data = data.to(model.device)  # Move data to the same device as the model
         out = model(data)
         loss = criterion(out, data.y.reshape(-1, model.output_dim))
-        optimizer.zero_grad()
         loss.backward()
         optimizer.step()
         total_loss += loss.detach().item()
@@ -26,10 +26,10 @@ def train_multidata(model, train_loaders, optimizer, criterion):
     total_samples = 0
     for train_loader in train_loaders:
         for data in train_loader:
+            optimizer.zero_grad()
             data = data.to(model.device)  # Move data to the same device as the model
             out = model(data)
             loss = criterion(out, data.y.reshape(-1, model.output_dim))
-            optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
