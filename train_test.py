@@ -5,6 +5,9 @@ from abc import ABC, abstractmethod
 
 def train(model, train_loader, optimizer, criterion):
     model.train()
+    total_loss = 0.0
+    total_samples = 0
+
     for data in train_loader:
         data = data.to(model.device)  # Move data to the same device as the model
         out = model(data)
@@ -12,6 +15,10 @@ def train(model, train_loader, optimizer, criterion):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+        total_loss += loss.detach().item()
+        total_samples += 1
+
+    return math.sqrt(total_loss / total_samples)
 
 def train_multidata(model, train_loaders, optimizer, criterion):
     model.train()
