@@ -54,6 +54,9 @@ def test(model, loader, criterion, metric_printer=None):
             if metric_printer:
                 metric_printer(out,data.y.reshape(-1, model.output_dim), math.sqrt(loss.item()))
 
+            if loss.item() > 100:
+                print(f"Predicted: {out}, True: {data.y.reshape(-1, model.output_dim)}, Root Squared Error: {math.sqrt(loss.item())}")
+
     avg_loss = total_loss / total_samples
     return math.sqrt(avg_loss)
 
