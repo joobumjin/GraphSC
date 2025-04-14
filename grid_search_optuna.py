@@ -12,7 +12,6 @@ import optuna
 from preprocessing import get_loaders
 from train_test import train, train_multidata, test, test_multidata
 import GNN.src.gnn_multiple as GCNs
-# from GNN.src.gnn_modular import Modular_GCN
 from GNN.src import test_acc
 
 
@@ -103,7 +102,6 @@ def train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, 
     return train_losses[-1], val_losses[-1]
 
 def objective(trial, target, model_constructors, data_details, train_loaders, val_loaders, test_loaders, data_path = None):
-# def objective(trial, target, model_class, data_details, train_loader, val_loader, test_loader):
     num_epochs = 300
 
     #Tuning
@@ -123,7 +121,6 @@ def objective(trial, target, model_constructors, data_details, train_loaders, va
 
     model_class = model_constructors[arch_string]
     model = model_class(*data_details, hidden_channels = hidden_size, dense_hidden = dense_hidden, dropout_p=dropout_rate)
-#     model = model_class(*data_details, num_dense, num_gcn)
 
     _, _ = train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, num_epochs, img_path=f"{data_path}/Train_graphs/{arch_string}_h{hidden_size}_d{dense_hidden}_lr{learning_rate}_decay{lr_decay}.jpeg", gamma=lr_decay, weight_decay=weight_decay)
 
