@@ -28,7 +28,7 @@ def test(model, loader, criterion, write_to_file, vis_preds, task, print_met=Tru
             total_loss += loss.item()
 
             if print_met:
-                print(f"Predicted: {out}, True: {data.y.reshape(-1, model.output_dim)}, RMSE: {math.sqrt(loss.item())}")
+                if math.sqrt(loss.item()) > 100: print(f"Predicted: {out}, True: {data.y.reshape(-1, model.output_dim)}, RMSE: {math.sqrt(loss.item())}")
             if f:
                 f.write(f"Predicted: {out}, True: {data.y.reshape(-1, model.output_dim)}, RMSE: {math.sqrt(loss.item())}\n")
 
@@ -194,7 +194,7 @@ def test_model(test_loader, model, task, write_to_file=None, vis_preds=None, tes
     if test_multiple or isinstance(test_loader, list):
         test_rmse = test_multi(model, test_loader, criterion, write_to_file=write_to_file, vis_preds=vis_preds, task=task, print_met=False)
     else:
-        test_rmse = test(model, test_loader, criterion, write_to_file=write_to_file, vis_preds=vis_preds, task=task, print_met=False)
+        test_rmse = test(model, test_loader, criterion, write_to_file=write_to_file, vis_preds=vis_preds, task=task, print_met=True)
 
     print(f'Test RMSE: {test_rmse:.4f}')
     print()
