@@ -191,10 +191,11 @@ def test_model(test_loader, model, task, write_to_file=None, vis_preds=None, tes
     criterion = MSELoss()
 
     model.eval()
-    # if test_multiple or isinstance(test_loader, list):
-    #     test_rmse = test_multi(model, test_loader, criterion, write_to_file=write_to_file, vis_preds=vis_preds, task=task, print_met=True)
-    # else:
-    test_rmse = test(model, test_loader, criterion, write_to_file=write_to_file, vis_preds=vis_preds, task=task, print_met=True)
+    if test_multiple or (isinstance(test_loader, list) and len(test_loader) > 1):
+        test_rmse = test_multi(model, test_loader, criterion, write_to_file=write_to_file, vis_preds=vis_preds, task=task, print_met=True)
+    else:
+        if isinstance(test_loader, list): test_loader = test_loader[0]
+        test_rmse = test(model, test_loader, criterion, write_to_file=write_to_file, vis_preds=vis_preds, task=task, print_met=True)
 
     print(f'Test RMSE: {test_rmse:.4f}')
     print()
