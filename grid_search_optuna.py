@@ -109,14 +109,14 @@ def objective(trial, target, model_constructors, data_details, train_loaders, va
     num_dense = trial.suggest_int("num_dense", 2, 5)
     hidden_size = trial.suggest_int("hidden_size", 1, 160, step=16)
     dense_hidden = trial.suggest_int("dense_hidden", 1, 512, step=32)
-    num_gcn = 4
-    num_dense = 5
-    hidden_size = 128
-    dense_hidden = 450
+    # num_gcn = 4
+    # num_dense = 5
+    # hidden_size = 128
+    # dense_hidden = 450
     arch_string = f"G{num_gcn}_D{num_dense}"
     learning_rate = trial.suggest_float("learning_rate", 1e-7, 5e-3, step=5e-7)
-    lr_decay = trial.suggest_float("learning_rate", 0.7, 1.0, step=.05)
-    weight_decay = trial.suggest_float("learning_rate_decay", 0, 1e-2, step=5e-5)
+    lr_decay = trial.suggest_float("learning_rate_decay", 0.7, 1.0, step=.05)
+    weight_decay = trial.suggest_float("l2_penalty", 0, 1e-2, step=5e-5)
     dropout_rate = trial.suggest_float("dropout", 0, 0.5, step=0.1)
 
     model_class = model_constructors[arch_string]
@@ -178,7 +178,7 @@ def main(args):
 
     Path(f'{args.log_path}').mkdir(parents=True, exist_ok=True)
     storage = optuna.storages.JournalStorage(
-        optuna.storages.journal.JournalFileBackend(f"{args.log_path}/optuna_journal_storage_fix_rmse.log")
+        optuna.storages.journal.JournalFileBackend(f"{args.log_path}/optuna_journal_storage_fix_rmse_only_amd.log")
     )
 
     time_string = datetime.datetime.now().strftime('%d-%b-%Y-%H%M')
