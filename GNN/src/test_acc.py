@@ -18,6 +18,7 @@ def test(model, loader, criterion, write_to_file, vis_preds, task, print_met=Tru
         if write_to_file: f = open(write_to_file, "w")
         for data in loader:
             data = data.to(model.device)
+            num_samples = len(data.y.reshape(-1, model.output_dim))
             out = model(data)
             
             if vis_preds:
@@ -27,12 +28,12 @@ def test(model, loader, criterion, write_to_file, vis_preds, task, print_met=Tru
 
             loss = criterion(out, data.y.reshape(-1, model.output_dim))
             total_loss += loss.item()
-            total_samples += len(data)
+            total_samples += num_samples
 
             if print_met:
-                print(f"Predicted: {out}, True: {data.y.reshape(-1, model.output_dim)}, RMSE: {math.sqrt(loss.item()/len(data))}")
+                print(f"Predicted: {out}, True: {label}, RMSE: {math.sqrt(loss.item()/len(data))}")
             if f:
-                f.write(f"Predicted: {out}, True: {data.y.reshape(-1, model.output_dim)}, RMSE: {math.sqrt(loss.item())}\n")
+                f.write(f"Predicted: {out}, True: {label}, RMSE: {math.sqrt(loss.item())}\n")
 
     if vis_preds:
         label = data.y.reshape(-1, model.output_dim)[0]
@@ -106,6 +107,7 @@ def test_multi(model, loaders, criterion, write_to_file, vis_preds, task, print_
         for loader in loaders:
             for data in loader:
                 data = data.to(model.device)
+                num_samples = len(data.y.reshape(-1, model.output_dim))
                 out = model(data)
                 
                 if vis_preds:
@@ -115,7 +117,7 @@ def test_multi(model, loaders, criterion, write_to_file, vis_preds, task, print_
 
                 loss = criterion(out, data.y.reshape(-1, model.output_dim))
                 total_loss += loss.item()
-                total_preds += len(data.y)
+                total_preds += num_samples
 
                 if print_met:
                     print(f"Predicted: {out}, True: {data.y.reshape(-1, model.output_dim)}, RMSE: {math.sqrt(loss.item())}")

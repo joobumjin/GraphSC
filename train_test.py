@@ -25,7 +25,7 @@ def train(model, train_loader, optimizer, criterion):
         loss.backward()
         optimizer.step()
         total_loss += loss.detach().item()
-        total_samples += len(data.y)
+        total_samples += len(data.y.reshape(-1, model.output_dim))
 
     return math.sqrt(total_loss / total_samples)
 
@@ -43,7 +43,7 @@ def train_multidata(model, train_loaders, optimizer, criterion):
             optimizer.step()
 
             total_loss += loss.detach().item()
-            total_samples += len(data.y)
+            total_samples += len(data.y.reshape(-1, model.output_dim))
 
     return math.sqrt(total_loss / total_samples)
 
@@ -57,7 +57,7 @@ def test(model, loader, criterion, metric_printer=None):
             out = model(data)
             loss = criterion(out, data.y.reshape(-1, model.output_dim))
             total_loss += loss.item()
-            total_samples += len(data.y)
+            total_samples += len(data.y.reshape(-1, model.output_dim))
 
             if metric_printer:
                 metric_printer(out,data.y.reshape(-1, model.output_dim), math.sqrt(loss.item() / len(data.y)))
@@ -77,7 +77,7 @@ def test_multidata(model, test_loaders, criterion, metric_printer=None):
                 out = model(data)
                 loss = criterion(out, data.y.reshape(-1, model.output_dim))
                 total_loss += loss.item()
-                total_samples += len(data.y)
+                total_samples += len(data.y.reshape(-1, model.output_dim))
 
                 if metric_printer:
                     metric_printer(out,data.y.reshape(-1, model.output_dim), math.sqrt(loss.item() / len(data.y)))
