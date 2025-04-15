@@ -3,6 +3,26 @@ import torch.nn.functional as F
 from torch_geometric.nn import GATv2Conv, global_mean_pool, BatchNorm, JumpingKnowledge
 from torch.nn import Linear, Dropout
 
+def get_model_constructors():
+    return {
+        "G2_D2": GCN_G2_D2,
+        "G2_D3": GCN_G2_D3,
+        "G2_D4": GCN_G2_D4,
+        "G2_D5": GCN_G2_D5,
+        "G3_D2": GCN_G3_D2,
+        "G3_D3": GCN_G3_D3,
+        "G3_D4": GCN_G3_D4,
+        "G3_D5": GCN_G3_D5,
+        "G4_D2": GCN_G4_D2,
+        "G4_D3": GCN_G4_D3,
+        "G4_D4": GCN_G4_D4,
+        "G4_D5": GCN_G4_D5,
+        "G5_D2": GCN_G5_D2,
+        "G5_D3": GCN_G5_D3,
+        "G5_D4": GCN_G5_D4,
+        "G5_D5": GCN_G5_D5
+    }
+
 class GCN_G2_D2(torch.nn.Module):
     def __init__(self, num_node_features, output_dim, hidden_channels=128, dense_hidden=128, num_heads=8, dropout_p=0.5):
         super().__init__()

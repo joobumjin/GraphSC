@@ -151,24 +151,7 @@ def main(args):
             extra_data_dirs[f"Valid_{data_type}"] = f"{args.extra_data}/{data_type}/Valid_{data_type}.pkl"
             extra_data_dirs[f"Test_{data_type}"] = f"{args.extra_data}/{data_type}/Test_{data_type}.pkl"
 
-    model_constructors = {
-        # "G2_D2": GCNs.GCN_G2_D2,
-        # "G2_D3": GCNs.GCN_G2_D3,
-        # "G2_D4": GCNs.GCN_G2_D4,
-        # "G2_D5": GCNs.GCN_G2_D5,
-        # "G3_D2": GCNs.GCN_G3_D2,
-        "G3_D3": GCNs.GCN_G3_D3,
-        "G3_D4": GCNs.GCN_G3_D4,
-        "G3_D5": GCNs.GCN_G3_D5,
-        # "G4_D2": GCNs.GCN_G4_D2,
-        "G4_D3": GCNs.GCN_G4_D3,
-        "G4_D4": GCNs.GCN_G4_D4,
-        "G4_D5": GCNs.GCN_G4_D5,
-        # "G5_D2": GCNs.GCN_G5_D2,
-        "G5_D3": GCNs.GCN_G5_D3,
-        "G5_D4": GCNs.GCN_G5_D4,
-        "G5_D5": GCNs.GCN_G5_D5
-    }
+    model_constructors = GCNs.get_model_constructors()
 
     train_loader, val_loader, test_loader, data_details = get_loaders(data_dirs, target, args.batch_size)
     train_loaders = [train_loader]
