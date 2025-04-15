@@ -104,7 +104,6 @@ def test_multi(model, loaders, criterion, write_to_file, vis_preds, task, print_
     with torch.no_grad():
         if write_to_file: f = open(write_to_file, "w")
         for loader in loaders:
-            total_preds += len(loader)
             for data in loader:
                 data = data.to(model.device)
                 out = model(data)
@@ -116,6 +115,7 @@ def test_multi(model, loaders, criterion, write_to_file, vis_preds, task, print_
 
                 loss = criterion(out, data.y.reshape(-1, model.output_dim))
                 total_loss += loss.item()
+                total_preds += len(data.y)
 
                 if print_met:
                     print(f"Predicted: {out}, True: {data.y.reshape(-1, model.output_dim)}, RMSE: {math.sqrt(loss.item())}")
