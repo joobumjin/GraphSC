@@ -25,7 +25,7 @@ def train(model, train_loader, optimizer, criterion):
         loss.backward()
         optimizer.step()
         total_loss += loss.detach().item()
-        total_samples += len(data)
+        total_samples += len(data.y)
 
     return math.sqrt(total_loss / total_samples)
 
@@ -43,7 +43,7 @@ def train_multidata(model, train_loaders, optimizer, criterion):
             optimizer.step()
 
             total_loss += loss.detach().item()
-            total_samples += len(data)
+            total_samples += len(data.y)
 
     return math.sqrt(total_loss / total_samples)
 
@@ -57,10 +57,10 @@ def test(model, loader, criterion, metric_printer=None):
             out = model(data)
             loss = criterion(out, data.y.reshape(-1, model.output_dim))
             total_loss += loss.item()
-            total_samples += len(data)
+            total_samples += len(data.y)
 
             if metric_printer:
-                metric_printer(out,data.y.reshape(-1, model.output_dim), math.sqrt(loss.item()))
+                metric_printer(out,data.y.reshape(-1, model.output_dim), math.sqrt(loss.item() / len(data.y)))
 
     avg_loss = total_loss / total_samples
     return math.sqrt(avg_loss)
@@ -71,20 +71,16 @@ def test_multidata(model, test_loaders, criterion, metric_printer=None):
     total_samples = 0
     for loader in test_loaders: total_samples += len(loader)
     with torch.no_grad(): #, tqdm(total=total_samples, desc="Testing", postfix={"Test RMSE": 0.0}) as pbar:
-        cur_sampled = 0
         for loader in test_loaders:
             for data in loader:
                 data = data.to(model.device)
                 out = model(data)
                 loss = criterion(out, data.y.reshape(-1, model.output_dim))
                 total_loss += loss.item()
-                total_samples += len(data)
+                total_samples += len(data.y)
 
                 if metric_printer:
-                    metric_printer(out,data.y.reshape(-1, model.output_dim), math.sqrt(loss.item()))
-
-                # pbar.update(1)
-                # pbar.set_postfix({"Test RMSE": math.sqrt(total_loss / cur_sampled)})
+                    metric_printer(out,data.y.reshape(-1, model.output_dim), math.sqrt(loss.item() / len(data.y)))
 
     if total_samples > 0: avg_loss = total_loss / total_samples
     else:
