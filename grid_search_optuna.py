@@ -180,7 +180,7 @@ def main(args):
 
     Path(f'{args.log_path}').mkdir(parents=True, exist_ok=True)
     storage = optuna.storages.JournalStorage(
-        optuna.storages.journal.JournalFileBackend(f"{args.log_path}/optuna_journal_storage_fix_rmse_only_amd.log")
+        optuna.storages.journal.JournalFileBackend(f"{args.log_path}/optuna_journal_storage_diff_rmse.log")
     )
 
     time_string = datetime.datetime.now().strftime('%d-%b-%Y-%H%M')
