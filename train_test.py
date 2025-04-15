@@ -3,6 +3,15 @@ import torch
 from tqdm import tqdm
 from abc import ABC, abstractmethod
 
+class SSLELoss(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.mse = torch.nn.MSELoss(reduction='sum')
+        
+    def forward(self, pred, actual):
+        return self.mse(torch.log(pred + 1), torch.log(actual + 1))
+
+
 def train(model, train_loader, optimizer, criterion):
     model.train()
     total_loss = 0.0
@@ -16,7 +25,7 @@ def train(model, train_loader, optimizer, criterion):
         loss.backward()
         optimizer.step()
         total_loss += loss.detach().item()
-        total_samples += 1
+        total_samples += len(data)
 
     return math.sqrt(total_loss / total_samples)
 
@@ -34,7 +43,7 @@ def train_multidata(model, train_loaders, optimizer, criterion):
             optimizer.step()
 
             total_loss += loss.detach().item()
-            total_samples += 1
+            total_samples += len(data)
 
     return math.sqrt(total_loss / total_samples)
 
@@ -43,7 +52,6 @@ def test(model, loader, criterion, metric_printer=None):
     total_loss = 0.0
     total_samples = 0
     with torch.no_grad():
-        # for data in tqdm(loader, desc="Testing"):
         for data in loader:
             data = data.to(model.device)
             out = model(data)
@@ -53,7 +61,7 @@ def test(model, loader, criterion, metric_printer=None):
 
             if metric_printer:
                 metric_printer(out,data.y.reshape(-1, model.output_dim), math.sqrt(loss.item()))
-                
+
     avg_loss = total_loss / total_samples
     return math.sqrt(avg_loss)
 

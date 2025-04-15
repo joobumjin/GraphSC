@@ -10,7 +10,7 @@ from torch.nn import MSELoss
 import optuna
 
 from preprocessing import get_loaders
-from train_test import train, train_multidata, test, test_multidata
+from train_test import train, train_multidata, test, test_multidata, SSLELoss
 import GNN.src.gnn_multiple as GCNs
 from GNN.src import test_acc
 
@@ -42,7 +42,9 @@ def train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, 
     opt_args = {name: arg for (arg, name) in zip([learning_rate, weight_decay], ["lr", "weight_decay"]) if arg is not None}
     optimizer = torch.optim.Adam(model.parameters(), **opt_args)
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma)
-    criterion = MSELoss()
+    logsse = SSLELoss()
+    sse = MSELoss(reduction='sum') #sum squared error
+    mse = MSELoss()
     if len(train_loaders) > 1: train_fn = train_multidata
     else: 
         train_fn = train
@@ -59,10 +61,10 @@ def train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, 
     epoch_tqdm = tqdm(range(1, num_epochs + 1), desc="Training Epochs", postfix={"Train RMSE": 0.0, "Valid RMSE": 0.0})
     
     for epoch in epoch_tqdm:
-        train_rmse = train_fn(model, train_loaders, optimizer, criterion)
+        train_rmse = train_fn(model, train_loaders, optimizer, sse)
         scheduler.step()
 
-        val_rmse = test_fn(model, val_loaders, criterion)
+        val_rmse = test_fn(model, val_loaders, sse)
 
         train_losses.append(train_rmse)
         val_losses.append(val_rmse)
@@ -105,10 +107,10 @@ def objective(trial, target, model_constructors, data_details, train_loaders, va
     num_epochs = 300
 
     #Tuning
-    num_gcn = trial.suggest_int("num_gcn", 2, 5)
-    num_dense = trial.suggest_int("num_dense", 2, 5)
-    hidden_size = trial.suggest_int("hidden_size", 1, 160, step=16)
-    dense_hidden = trial.suggest_int("dense_hidden", 1, 512, step=32)
+    num_gcn = trial.suggest_int("num_gcn", 3, 5)
+    num_dense = trial.suggest_int("num_dense", 3, 5)
+    hidden_size = trial.suggest_int("hidden_size", 1, 200, step=16)
+    dense_hidden = trial.suggest_int("dense_hidden", 1, 600, step=32)
     # num_gcn = 4
     # num_dense = 5
     # hidden_size = 128
@@ -147,19 +149,19 @@ def main(args):
             extra_data_dirs[f"Test_{data_type}"] = f"{args.extra_data}/{data_type}/Test_{data_type}.pkl"
 
     model_constructors = {
-        "G2_D2": GCNs.GCN_G2_D2,
-        "G2_D3": GCNs.GCN_G2_D3,
-        "G2_D4": GCNs.GCN_G2_D4,
-        "G2_D5": GCNs.GCN_G2_D5,
-        "G3_D2": GCNs.GCN_G3_D2,
+        # "G2_D2": GCNs.GCN_G2_D2,
+        # "G2_D3": GCNs.GCN_G2_D3,
+        # "G2_D4": GCNs.GCN_G2_D4,
+        # "G2_D5": GCNs.GCN_G2_D5,
+        # "G3_D2": GCNs.GCN_G3_D2,
         "G3_D3": GCNs.GCN_G3_D3,
         "G3_D4": GCNs.GCN_G3_D4,
         "G3_D5": GCNs.GCN_G3_D5,
-        "G4_D2": GCNs.GCN_G4_D2,
+        # "G4_D2": GCNs.GCN_G4_D2,
         "G4_D3": GCNs.GCN_G4_D3,
         "G4_D4": GCNs.GCN_G4_D4,
         "G4_D5": GCNs.GCN_G4_D5,
-        "G5_D2": GCNs.GCN_G5_D2,
+        # "G5_D2": GCNs.GCN_G5_D2,
         "G5_D3": GCNs.GCN_G5_D3,
         "G5_D4": GCNs.GCN_G5_D4,
         "G5_D5": GCNs.GCN_G5_D5
@@ -186,7 +188,6 @@ def main(args):
     study = optuna.create_study(study_name=f"{time_string}_optimize_{args.pred}",storage = storage, direction="minimize")
     study.set_metric_names(["RMSE"])
     study.optimize(lambda trial: objective(trial, target, model_constructors, data_details, train_loaders, val_loaders, test_loaders, data_path = args.data))
-    # study.optimize(lambda trial: objective(trial, target, Modular_GCN, data_details, train_loader, val_loader, test_loader), n_trials=100)
 
     print(f"Best value: {study.best_value} (params: {study.best_params})")
 
