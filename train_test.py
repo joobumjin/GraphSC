@@ -57,7 +57,7 @@ def test(model, loader, criterion, metric_printer=None):
             out = model(data)
             loss = criterion(out, data.y.reshape(-1, model.output_dim))
             total_loss += loss.item()
-            total_samples += 1
+            total_samples += len(data)
 
             if metric_printer:
                 metric_printer(out,data.y.reshape(-1, model.output_dim), math.sqrt(loss.item()))
@@ -78,7 +78,7 @@ def test_multidata(model, test_loaders, criterion, metric_printer=None):
                 out = model(data)
                 loss = criterion(out, data.y.reshape(-1, model.output_dim))
                 total_loss += loss.item()
-                cur_sampled += 1
+                total_samples += len(data)
 
                 if metric_printer:
                     metric_printer(out,data.y.reshape(-1, model.output_dim), math.sqrt(loss.item()))
