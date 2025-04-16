@@ -61,7 +61,7 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
     epoch_tqdm = tqdm(range(1, num_epochs + 1), desc="Training Epochs", postfix={"Train RMSE": 0.0, "Valid RMSE": 0.0})
     
     for epoch in epoch_tqdm:
-        printer = StandardInlinePrint() if epoch == num_epochs else None
+        printer = StandardInlinePrint() if epoch == num_epochs - 1 else None
         train_rmse = train_fn(model, train_loaders, optimizer, train_criterion, metric_printer=printer)
         scheduler.step()
 
@@ -116,7 +116,7 @@ def objective(trial, target, model_constructors, data_details, train_loaders, va
     learning_rate = trial.suggest_float("learning_rate", 1e-7, 5e-3, step=5e-7)
     lr_decay = trial.suggest_float("learning_rate_decay", 0.5, 1.0, step=.05)
     weight_decay = trial.suggest_float("l2_penalty", 0, 1e-2, step=5e-5)
-    dropout_rate = trial.suggest_float("dropout", 0, 0.5, step=0.1)
+    dropout_rate = trial.suggest_float("dropout", 0, 0.8, step=0.1)
 
     model_class = model_constructors[arch_string]
     model = model_class(*data_details, hidden_channels = hidden_size, dense_hidden = dense_hidden, dropout_p=dropout_rate)
@@ -150,7 +150,7 @@ def main(args):
 
     Path(f'{args.log_path}').mkdir(parents=True, exist_ok=True)
     storage = optuna.storages.JournalStorage(
-        optuna.storages.journal.JournalFileBackend(f"{args.log_path}/optuna_journal_storage_diff_rmse.log")
+        optuna.storages.journal.JournalFileBackend(f"{args.log_path}/optuna_journal_storage_log_rmse.log")
     )
 
     time_string = datetime.datetime.now().strftime('%d-%b-%Y-%H%M')

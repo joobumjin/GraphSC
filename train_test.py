@@ -27,7 +27,7 @@ def train(model, train_loader, optimizer, criterion, metric_printer=None):
         total_loss += loss.detach().item()
         total_samples += len(data.y.reshape(-1, model.output_dim))
 
-        if metric_printer:
+        if metric_printer is not None:
                 metric_printer(out,data.y.reshape(-1, model.output_dim), math.sqrt(loss.item() / len(data.y.reshape(-1, model.output_dim))))
 
     return math.sqrt(total_loss / total_samples)
@@ -63,7 +63,7 @@ def test(model, loader, criterion, metric_printer=None, log_train = False):
             total_loss += loss.item()
             total_samples += len(data.y.reshape(-1, model.output_dim))
 
-            if metric_printer:
+            if metric_printer is not None:
                 metric_printer(out,data.y.reshape(-1, model.output_dim), math.sqrt(loss.item() / len(data.y.reshape(-1, model.output_dim))))
 
     avg_loss = total_loss / total_samples
