@@ -9,10 +9,10 @@ class SSLELoss(torch.nn.Module):
         self.mse = torch.nn.MSELoss(reduction='sum')
         
     def forward(self, pred, actual):
-        return self.mse(torch.log(pred + 1), torch.log(actual + 1))
+        return self.mse(torch.log(pred + 1e-4), torch.log(actual + 1e-4))
 
 
-def train(model, train_loader, optimizer, criterion):
+def train(model, train_loader, optimizer, criterion, metric_printer=None):
     model.train()
     total_loss = 0.0
     total_samples = 0
@@ -26,6 +26,9 @@ def train(model, train_loader, optimizer, criterion):
         optimizer.step()
         total_loss += loss.detach().item()
         total_samples += len(data.y.reshape(-1, model.output_dim))
+
+        if metric_printer:
+                metric_printer(out,data.y.reshape(-1, model.output_dim), math.sqrt(loss.item() / len(data.y.reshape(-1, model.output_dim))))
 
     return math.sqrt(total_loss / total_samples)
 
@@ -47,7 +50,7 @@ def train_multidata(model, train_loaders, optimizer, criterion):
 
     return math.sqrt(total_loss / total_samples)
 
-def test(model, loader, criterion, metric_printer=None):
+def test(model, loader, criterion, metric_printer=None, log_train = False):
     model.eval()
     total_loss = 0.0
     total_samples = 0
@@ -55,17 +58,18 @@ def test(model, loader, criterion, metric_printer=None):
         for data in loader:
             data = data.to(model.device)
             out = model(data)
+            if log_train: out = torch.exp(out)
             loss = criterion(out, data.y.reshape(-1, model.output_dim))
             total_loss += loss.item()
             total_samples += len(data.y.reshape(-1, model.output_dim))
 
             if metric_printer:
-                metric_printer(out,data.y.reshape(-1, model.output_dim), math.sqrt(loss.item() / len(data.y)))
+                metric_printer(out,data.y.reshape(-1, model.output_dim), math.sqrt(loss.item() / len(data.y.reshape(-1, model.output_dim))))
 
     avg_loss = total_loss / total_samples
     return math.sqrt(avg_loss)
 
-def test_multidata(model, test_loaders, criterion, metric_printer=None):
+def test_multidata(model, test_loaders, criterion, metric_printer=None, log_train = False):
     model.eval()
     total_loss = 0.0
     total_samples = 0
@@ -75,6 +79,7 @@ def test_multidata(model, test_loaders, criterion, metric_printer=None):
             for data in loader:
                 data = data.to(model.device)
                 out = model(data)
+                if log_train: out = torch.exp(out)
                 loss = criterion(out, data.y.reshape(-1, model.output_dim))
                 total_loss += loss.item()
                 total_samples += len(data.y.reshape(-1, model.output_dim))
@@ -92,3 +97,8 @@ class MetricPrinter(ABC):
     @abstractmethod
     def __call__(self, preds, labels, loss):
         pass
+
+
+class StandardInlinePrint(MetricPrinter):
+    def __call__(self, preds, labels, loss):
+        print(f"Predicted: {preds}, True: {labels}, RMSE: {math.sqrt(loss)}")

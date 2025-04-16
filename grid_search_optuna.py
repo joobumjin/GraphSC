@@ -10,7 +10,7 @@ from torch.nn import MSELoss
 import optuna
 
 from preprocessing import get_loaders
-from train_test import train, train_multidata, test, test_multidata, SSLELoss
+from train_test import train, train_multidata, test, test_multidata, SSLELoss, StandardInlinePrint
 import GNN.src.gnn_multiple as GCNs
 from GNN.src import test_acc
 
@@ -28,13 +28,12 @@ def parse_args(args=None):
     parser.add_argument('--pred',           required=True,  choices=['TER', 'VEGF', 'Both'],        help='Type of Value being Predicted from QBAMs')
     parser.add_argument('--log_path',       default='',                                             help='where the optuna study logs will stored')
     parser.add_argument('--batch_size',     type=int,       default=20,                             help='Model\'s batch size.')
-    parser.add_argument('--extra_data',     required=False, default=None,                           help='File path to the assignment data file.')
 
     if args is None: 
         return parser.parse_args()      ## For calling through command line
     return parser.parse_args(args)      ## For calling through notebook.
 
-def train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, num_epochs, output_filepath = None, img_path = None, convergence_epsilon = None, gamma=0.95, weight_decay = None):
+def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, output_filepath = None, img_path = None, convergence_epsilon = None, gamma=0.95, weight_decay = None):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Using", device)
 
@@ -43,9 +42,9 @@ def train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, 
     opt_args = {name: arg for (arg, name) in zip([learning_rate, weight_decay], ["lr", "weight_decay"]) if arg is not None}
     optimizer = torch.optim.Adam(model.parameters(), **opt_args)
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma)
-    logsse = SSLELoss()
-    sse = MSELoss(reduction='sum') #sum squared error
-    mse = MSELoss()
+    log_train = True
+    train_criterion = SSLELoss() if log_train else MSELoss(reduction='sum')
+    test_criterion = MSELoss(reduction='sum')
     if len(train_loaders) > 1: train_fn = train_multidata
     else: 
         train_fn = train
@@ -62,24 +61,25 @@ def train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, 
     epoch_tqdm = tqdm(range(1, num_epochs + 1), desc="Training Epochs", postfix={"Train RMSE": 0.0, "Valid RMSE": 0.0})
     
     for epoch in epoch_tqdm:
-        train_rmse = train_fn(model, train_loaders, optimizer, sse)
+        printer = StandardInlinePrint() if epoch == num_epochs else None
+        train_rmse = train_fn(model, train_loaders, optimizer, train_criterion, metric_printer=printer)
         scheduler.step()
 
-        val_rmse = test_fn(model, val_loaders, sse)
+        val_rmse = test_fn(model, val_loaders, test_criterion, metric_printer=printer)
 
         train_losses.append(train_rmse)
         val_losses.append(val_rmse)
 
         epoch_tqdm.set_postfix({"Train RMSE": train_rmse, "Valid RMSE": val_rmse})
 
-        if convergence_epsilon is not None:
-            if len(train_losses) > 4:
-                last_3 = np.array(train_losses)[:-4:-1]
-                prev = np.array(train_losses)[-2:-5:-1]
-                avg_loss_diff = np.mean(np.abs(last_3 - prev))
-                if avg_loss_diff < convergence_epsilon:
-                    print(f"Stopping early on epoch {epoch} with average changes in loss {avg_loss_diff}")
-                    break
+        # if convergence_epsilon is not None:
+        #     if len(train_losses) > 4:
+        #         last_3 = np.array(train_losses)[:-4:-1]
+        #         prev = np.array(train_losses)[-2:-5:-1]
+        #         avg_loss_diff = np.mean(np.abs(last_3 - prev))
+        #         if avg_loss_diff < convergence_epsilon:
+        #             print(f"Stopping early on epoch {epoch} with average changes in loss {avg_loss_diff}")
+        #             break
 
     epoch_tqdm.close()
 
@@ -112,13 +112,9 @@ def objective(trial, target, model_constructors, data_details, train_loaders, va
     num_dense = trial.suggest_int("num_dense", 3, 5)
     hidden_size = trial.suggest_int("hidden_size", 1, 200, step=16)
     dense_hidden = trial.suggest_int("dense_hidden", 1, 600, step=32)
-    # num_gcn = 4
-    # num_dense = 5
-    # hidden_size = 128
-    # dense_hidden = 450
     arch_string = f"G{num_gcn}_D{num_dense}"
     learning_rate = trial.suggest_float("learning_rate", 1e-7, 5e-3, step=5e-7)
-    lr_decay = trial.suggest_float("learning_rate_decay", 0.7, 1.0, step=.05)
+    lr_decay = trial.suggest_float("learning_rate_decay", 0.5, 1.0, step=.05)
     weight_decay = trial.suggest_float("l2_penalty", 0, 1e-2, step=5e-5)
     dropout_rate = trial.suggest_float("dropout", 0, 0.5, step=0.1)
 
@@ -127,7 +123,7 @@ def objective(trial, target, model_constructors, data_details, train_loaders, va
 
     print(f"{num_gcn} GCN Layers | {hidden_size} units\n{num_dense} Dense Layers | {dense_hidden}\nDropout Rate: {dropout_rate}\nLearning Rate: {learning_rate} with Decay {lr_decay} and Weight Decay: {weight_decay}")
 
-    _, _ = train_model(train_loaders, val_loaders, test_loaders, model, learning_rate, num_epochs, img_path=f"{data_path}/Train_graphs/{arch_string}_h{hidden_size}_d{dense_hidden}_lr{learning_rate}_decay{lr_decay}.jpeg", gamma=lr_decay, weight_decay=weight_decay)
+    _, _ = train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, img_path=f"{data_path}/Train_graphs/{arch_string}_h{hidden_size}_d{dense_hidden}_lr{learning_rate}_decay{lr_decay}.jpeg", gamma=lr_decay, weight_decay=weight_decay)
 
     test_loss = test_acc.test_model(test_loaders, model, task=target, test_multiple=True)
 
@@ -144,24 +140,12 @@ def main(args):
         data_dirs[f"Valid_{data_type}"] = f"{args.data}/{data_type}/Valid_{data_type}.pkl"
         data_dirs[f"Test_{data_type}"] = f"{args.data}/{data_type}/Test_{data_type}.pkl"
 
-    if args.extra_data is not None:
-        extra_data_dirs = {}
-        for data_type in ['TER', 'VEGF', 'Both', 'Donor']:
-            extra_data_dirs[f"Train_{data_type}"] = f"{args.extra_data}/{data_type}/Train_{data_type}.pkl"
-            extra_data_dirs[f"Valid_{data_type}"] = f"{args.extra_data}/{data_type}/Valid_{data_type}.pkl"
-            extra_data_dirs[f"Test_{data_type}"] = f"{args.extra_data}/{data_type}/Test_{data_type}.pkl"
-
     model_constructors = GCNs.get_model_constructors()
 
     train_loader, val_loader, test_loader, data_details = get_loaders(data_dirs, target, args.batch_size)
     train_loaders = [train_loader]
     val_loaders = [val_loader]
     test_loaders = [test_loader]
-    if args.extra_data is not None:
-        extra_train, extra_val, extra_test, _ = get_loaders(extra_data_dirs, target, args.batch_size)
-        train_loaders.append(extra_train)
-        val_loaders.append(extra_val)
-        test_loaders.append(extra_test)
 
 
     Path(f'{args.log_path}').mkdir(parents=True, exist_ok=True)

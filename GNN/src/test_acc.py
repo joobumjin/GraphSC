@@ -8,7 +8,7 @@ from tqdm import tqdm
 import math
 import matplotlib.pyplot as plt
 
-def test(model, loader, criterion, write_to_file, vis_preds, task, print_met=True):
+def test(model, loader, criterion, write_to_file, vis_preds, task, print_met=True, log_train=False):
     total_loss = 0.0
     total_samples = 0
     f = None
@@ -20,6 +20,7 @@ def test(model, loader, criterion, write_to_file, vis_preds, task, print_met=Tru
             data = data.to(model.device)
             num_samples = len(data.y.reshape(-1, model.output_dim))
             out = model(data)
+            if log_train: out = torch.exp(out)
             
             if vis_preds:
                 if all_preds is not None: 
@@ -31,9 +32,9 @@ def test(model, loader, criterion, write_to_file, vis_preds, task, print_met=Tru
             total_samples += num_samples
 
             if print_met:
-                print(f"Predicted: {out}, True: {label}, RMSE: {math.sqrt(loss.item()/len(data))}")
+                print(f"Predicted: {out}, True: {label}, RMSE: {math.sqrt(loss.item()/num_samples)}")
             if f:
-                f.write(f"Predicted: {out}, True: {label}, RMSE: {math.sqrt(loss.item())}\n")
+                f.write(f"Predicted: {out}, True: {label}, RMSE: {math.sqrt(loss.item()/num_samples)}\n")
 
     if vis_preds:
         label = data.y.reshape(-1, model.output_dim)[0]
@@ -120,9 +121,9 @@ def test_multi(model, loaders, criterion, write_to_file, vis_preds, task, print_
                 total_preds += num_samples
 
                 if print_met:
-                    print(f"Predicted: {out}, True: {data.y.reshape(-1, model.output_dim)}, RMSE: {math.sqrt(loss.item())}")
+                    print(f"Predicted: {out}, True: {data.y.reshape(-1, model.output_dim)}, RMSE: {math.sqrt(loss.item()/num_samples)}")
                 if f:
-                    f.write(f"Predicted: {out}, True: {data.y.reshape(-1, model.output_dim)}, RMSE: {math.sqrt(loss.item())}\n")
+                    f.write(f"Predicted: {out}, True: {data.y.reshape(-1, model.output_dim)}, RMSE: {math.sqrt(loss.item()/num_samples)}\n")
 
     if vis_preds:
         label = data.y.reshape(-1, model.output_dim)[0]
