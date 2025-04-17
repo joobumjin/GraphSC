@@ -20,7 +20,7 @@ def test(model, loader, criterion, write_to_file, vis_preds, task, print_met=Tru
         if write_to_file: f = open(write_to_file, "w")
         for data in loader:
             data = data.to(model.device)
-            label = data.y.reshape(-1, model.output_dim)[0]
+            label = data.y.reshape(-1, model.output_dim)
             num_samples = len(data.y.reshape(-1, model.output_dim))
             out = model(data)
             if log_train: out = torch.exp(out)

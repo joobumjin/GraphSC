@@ -9,7 +9,7 @@ class SSLELoss(torch.nn.Module):
         self.mse = torch.nn.MSELoss(reduction='sum')
         
     def forward(self, pred, actual):
-        return self.mse(torch.log(pred + 1e-4), torch.log(actual + 1e-4))
+        return self.mse(torch.log(pred + 1), torch.log(actual + 1))
 
 
 def train(model, train_loader, optimizer, criterion, metric_printer=None):

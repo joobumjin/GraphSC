@@ -61,11 +61,11 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
     epoch_tqdm = tqdm(range(1, num_epochs + 1), desc="Training Epochs", postfix={"Train RMSE": 0.0, "Valid RMSE": 0.0})
     
     for epoch in epoch_tqdm:
-        printer = StandardInlinePrint() if epoch == num_epochs - 1 else None
-        train_rmse = train_fn(model, train_loaders, optimizer, train_criterion, metric_printer=printer)
+        # printer = StandardInlinePrint() if epoch == num_epochs - 1 else None
+        train_rmse = train_fn(model, train_loaders, optimizer, train_criterion)
         scheduler.step()
 
-        val_rmse = test_fn(model, val_loaders, test_criterion, metric_printer=printer)
+        val_rmse = test_fn(model, val_loaders, test_criterion)
 
         train_losses.append(train_rmse)
         val_losses.append(val_rmse)
