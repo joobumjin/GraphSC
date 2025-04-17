@@ -113,7 +113,7 @@ def objective(trial, target, model_constructors, data_details, train_loaders, va
     hidden_size = trial.suggest_int("hidden_size", 64, 200, step=16)
     dense_hidden = trial.suggest_int("dense_hidden", 128, 512, step=32)
     arch_string = f"G{num_gcn}_D{num_dense}"
-    learning_rate = trial.suggest_float("learning_rate", 0.0001, 0.005, step=4e-4)
+    learning_rate = trial.suggest_float("learning_rate", 0.0001, 0.005, step=0.0004)
     lr_decay = trial.suggest_float("learning_rate_decay", 0.5, 1.0, step=.1)
     weight_decay = 0.005 #trial.suggest_float("l2_penalty", 0, 1e-2, step=5e-5)
     dropout_rate = trial.suggest_float("dropout", 0.2, 0.7, step=0.1)
@@ -140,6 +140,8 @@ def main(args):
         data_dirs[f"Valid_{data_type}"] = f"{args.data}/{data_type}/Valid_{data_type}.pkl"
         data_dirs[f"Test_{data_type}"] = f"{args.data}/{data_type}/Test_{data_type}.pkl"
 
+    Path(f"{args.data}/{target}").mkdir(parents=True, exist_ok=True)
+
     model_constructors = GCNs.get_model_constructors()
 
     train_loader, val_loader, test_loader, data_details = get_loaders(data_dirs, target, args.batch_size)
@@ -150,14 +152,14 @@ def main(args):
 
     Path(f'{args.log_path}').mkdir(parents=True, exist_ok=True)
     storage = optuna.storages.JournalStorage(
-        optuna.storages.journal.JournalFileBackend(f"{args.log_path}/optuna_journal_storage_log_rmse.log")
+        optuna.storages.journal.JournalFileBackend(f"{args.log_path}/optuna_amd_log_rmse.log")
     )
 
     time_string = datetime.datetime.now().strftime('%d-%b-%Y-%H%M')
 
     study = optuna.create_study(study_name=f"{time_string}_optimize_{args.pred}",storage = storage, direction="minimize")
-    study.set_metric_names(["RMSE"])
-    study.optimize(lambda trial: objective(trial, target, model_constructors, data_details, train_loaders, val_loaders, test_loaders, data_path = args.data))
+    study.set_metric_names(["RMSLE"])
+    study.optimize(lambda trial: objective(trial, target, model_constructors, data_details, train_loaders, val_loaders, test_loaders, data_path = f"{args.data}/{target}"), n_trials=200)
 
     print(f"Best value: {study.best_value} (params: {study.best_params})")
 
