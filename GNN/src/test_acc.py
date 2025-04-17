@@ -14,6 +14,8 @@ def test(model, loader, criterion, write_to_file, vis_preds, task, print_met=Tru
     f = None
     all_preds = None
 
+    if print_met: print("-----------------------------------------")
+
     with torch.no_grad():
         if write_to_file: f = open(write_to_file, "w")
         for data in loader:

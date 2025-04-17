@@ -42,7 +42,7 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
     opt_args = {name: arg for (arg, name) in zip([learning_rate, weight_decay], ["lr", "weight_decay"]) if arg is not None}
     optimizer = torch.optim.Adam(model.parameters(), **opt_args)
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma)
-    log_train = True
+    log_train = False
     train_criterion = SSLELoss() if log_train else MSELoss(reduction='sum')
     test_criterion = MSELoss(reduction='sum')
     if len(train_loaders) > 1: train_fn = train_multidata
@@ -125,7 +125,10 @@ def objective(trial, target, model_constructors, data_details, train_loaders, va
 
     _, _ = train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, img_path=f"{data_path}/Train_graphs/{arch_string}_h{hidden_size}_d{dense_hidden}_lr{learning_rate}_decay{lr_decay}.jpeg", gamma=lr_decay, weight_decay=weight_decay)
 
-    test_loss = test_acc.test_model(test_loaders, model, task=target, test_multiple=True)
+    print(f"Validation Stats")
+    _ = test_acc.test_model(val_loaders, model, task=target, test_multiple=False)
+    print(f"Test Stats")
+    test_loss = test_acc.test_model(test_loaders, model, task=target, test_multiple=False)
 
     return test_loss
 
@@ -140,7 +143,7 @@ def main(args):
         data_dirs[f"Valid_{data_type}"] = f"{args.data}/{data_type}/Valid_{data_type}.pkl"
         data_dirs[f"Test_{data_type}"] = f"{args.data}/{data_type}/Test_{data_type}.pkl"
 
-    Path(f"{args.data}/{target}").mkdir(parents=True, exist_ok=True)
+    Path(f"{args.data}/{target}/Train_graphs").mkdir(parents=True, exist_ok=True)
 
     model_constructors = GCNs.get_model_constructors()
 
@@ -152,13 +155,13 @@ def main(args):
 
     Path(f'{args.log_path}').mkdir(parents=True, exist_ok=True)
     storage = optuna.storages.JournalStorage(
-        optuna.storages.journal.JournalFileBackend(f"{args.log_path}/optuna_amd_log_rmse.log")
+        optuna.storages.journal.JournalFileBackend(f"{args.log_path}/optuna_am_rmse.log")
     )
 
     time_string = datetime.datetime.now().strftime('%d-%b-%Y-%H%M')
 
     study = optuna.create_study(study_name=f"{time_string}_optimize_{args.pred}",storage = storage, direction="minimize")
-    study.set_metric_names(["RMSLE"])
+    study.set_metric_names(["RMSE"])
     study.optimize(lambda trial: objective(trial, target, model_constructors, data_details, train_loaders, val_loaders, test_loaders, data_path = f"{args.data}/{target}"), n_trials=200)
 
     print(f"Best value: {study.best_value} (params: {study.best_params})")
