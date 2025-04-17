@@ -108,15 +108,15 @@ def objective(trial, target, model_constructors, data_details, train_loaders, va
     num_epochs = 300
 
     #Tuning
-    num_gcn = trial.suggest_int("num_gcn", 3, 5)
-    num_dense = trial.suggest_int("num_dense", 3, 5)
-    hidden_size = trial.suggest_int("hidden_size", 1, 200, step=16)
-    dense_hidden = trial.suggest_int("dense_hidden", 1, 600, step=32)
+    num_gcn = trial.suggest_int("num_gcn", 4, 5)
+    num_dense = trial.suggest_int("num_dense", 4, 5)
+    hidden_size = trial.suggest_int("hidden_size", 64, 200, step=16)
+    dense_hidden = trial.suggest_int("dense_hidden", 128, 512, step=32)
     arch_string = f"G{num_gcn}_D{num_dense}"
-    learning_rate = trial.suggest_float("learning_rate", 1e-7, 5e-3, step=5e-7)
-    lr_decay = trial.suggest_float("learning_rate_decay", 0.5, 1.0, step=.05)
-    weight_decay = trial.suggest_float("l2_penalty", 0, 1e-2, step=5e-5)
-    dropout_rate = trial.suggest_float("dropout", 0, 0.8, step=0.1)
+    learning_rate = trial.suggest_float("learning_rate", 0.0001, 0.005, step=4e-4)
+    lr_decay = trial.suggest_float("learning_rate_decay", 0.5, 1.0, step=.1)
+    weight_decay = 0.005 #trial.suggest_float("l2_penalty", 0, 1e-2, step=5e-5)
+    dropout_rate = trial.suggest_float("dropout", 0.2, 0.7, step=0.1)
 
     model_class = model_constructors[arch_string]
     model = model_class(*data_details, hidden_channels = hidden_size, dense_hidden = dense_hidden, dropout_p=dropout_rate)

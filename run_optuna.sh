@@ -16,8 +16,8 @@ conda activate qbam
 # Run program
 cd /users/bjoo2/code/qbam/qbam_gnn
 
-# declare -a arr=("TER" "VEGF" "Both")
-declare -a arr=("TER")
+declare -a arr=("TER" "VEGF" "Both")
+# declare -a arr=("TER")
 for i in "${arr[@]}"
 do
     echo "Optuna Searching on $i"
