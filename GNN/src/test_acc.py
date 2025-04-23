@@ -21,7 +21,7 @@ def test(model, loader, criterion, write_to_file, vis_preds, task, print_met=Tru
         for data in loader:
             data = data.to(model.device)
             label = data.y.reshape(-1, model.output_dim)
-            num_samples = len(data.y.reshape(-1, model.output_dim))
+            num_samples = torch.numel(data.y)
             out = model(data)
             if log_train: out = torch.exp(out)
             

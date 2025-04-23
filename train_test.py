@@ -25,7 +25,7 @@ def train(model, train_loader, optimizer, criterion, metric_printer=None):
         loss.backward()
         optimizer.step()
         total_loss += loss.detach().item()
-        total_samples += len(data.y.reshape(-1, model.output_dim))
+        total_samples += torch.numel(data.y)
 
         if metric_printer is not None:
                 metric_printer(out,data.y.reshape(-1, model.output_dim), math.sqrt(loss.item() / len(data.y.reshape(-1, model.output_dim))))
@@ -46,7 +46,8 @@ def train_multidata(model, train_loaders, optimizer, criterion):
             optimizer.step()
 
             total_loss += loss.detach().item()
-            total_samples += len(data.y.reshape(-1, model.output_dim))
+            # total_samples += len(data.y.reshape(-1, model.output_dim))
+            total_samples += torch.numel(data.y)
 
     return math.sqrt(total_loss / total_samples)
 
@@ -61,7 +62,8 @@ def test(model, loader, criterion, metric_printer=None, log_train = False):
             if log_train: out = torch.exp(out)
             loss = criterion(out, data.y.reshape(-1, model.output_dim))
             total_loss += loss.item()
-            total_samples += len(data.y.reshape(-1, model.output_dim))
+            total_samples += torch.numel(data.y)
+            # total_samples += len(data.y.reshape(-1, model.output_dim))
 
             if metric_printer is not None:
                 metric_printer(out,data.y.reshape(-1, model.output_dim), math.sqrt(loss.item() / len(data.y.reshape(-1, model.output_dim))))
@@ -82,7 +84,8 @@ def test_multidata(model, test_loaders, criterion, metric_printer=None, log_trai
                 if log_train: out = torch.exp(out)
                 loss = criterion(out, data.y.reshape(-1, model.output_dim))
                 total_loss += loss.item()
-                total_samples += len(data.y.reshape(-1, model.output_dim))
+                total_samples += torch.numel(data.y)
+                # total_samples += len(data.y.reshape(-1, model.output_dim))
 
                 if metric_printer:
                     metric_printer(out,data.y.reshape(-1, model.output_dim), math.sqrt(loss.item() / len(data.y)))

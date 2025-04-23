@@ -98,3 +98,40 @@ class DNN_F(torch.nn.Module):
 
     def forward(self, data):
         return F.relu(self.layers(data.x)).squeeze(dim=(2,3)) #squeeze width and height dimensions
+    
+class DNN_F_Torch(torch.nn.Module):
+    def __init__(self, output_dim):
+        super().__init__()
+
+        self.output_dim = output_dim
+
+        self.layers = Sequential(
+            Conv2d(3, 32, 3, padding="same"),
+            SameMaxPool2d(3, 2),
+            Conv2d(32, 32, 3, padding="same"),
+            SameMaxPool2d(3, 2),
+            Conv2d(32, 64, 3, padding="same"),
+            SameMaxPool2d(3, 2),
+            InceptionLayer(channel_dict={"in": 64, "oneConv": 32, "threeConv_1": 48, "threeConv_2": 64, "fiveConv_1": 8, "fiveConv_2": 16, "poolConv_2": 16, "out":128}),
+            SameMaxPool2d(3, 2),
+            InceptionLayer(channel_dict={"in": 128, "oneConv": 64, "threeConv_1": 96, "threeConv_2": 128, "fiveConv_1": 16, "fiveConv_2": 32, "poolConv_2": 32, "out":256}),
+            SameMaxPool2d(3, 2),
+            InceptionLayer(channel_dict={"in": 256, "oneConv": 192, "threeConv_1": 96, "threeConv_2": 208, "fiveConv_1": 16, "fiveConv_2": 48, "poolConv_2": 64, "out":512}),
+            InceptionLayer(channel_dict={"in": 512, "oneConv": 160, "threeConv_1": 112, "threeConv_2": 224, "fiveConv_1": 24, "fiveConv_2": 64, "poolConv_2": 64, "out":512}),
+            InceptionLayer(channel_dict={"in": 512, "oneConv": 160, "threeConv_1": 112, "threeConv_2": 224, "fiveConv_1": 24, "fiveConv_2": 64, "poolConv_2": 64, "out":512}),
+            SameMaxPool2d(3, 2),
+            InceptionLayer(channel_dict={"in": 512, "oneConv": 384, "threeConv_1": 192, "threeConv_2": 384, "fiveConv_1": 48, "fiveConv_2": 128, "poolConv_2": 128, "out":1024}),
+            InceptionLayer(channel_dict={"in": 1024, "oneConv": 384, "threeConv_1": 192, "threeConv_2": 384, "fiveConv_1": 48, "fiveConv_2": 128, "poolConv_2": 128, "out":1024}),
+            InceptionLayer(channel_dict={"in": 1024, "oneConv": 384, "threeConv_1": 192, "threeConv_2": 384, "fiveConv_1": 48, "fiveConv_2": 128, "poolConv_2": 128, "out":1024}),
+            SameMaxPool2d(3, 2),
+            InceptionLayer(channel_dict={"in": 1024, "oneConv": 384, "threeConv_1": 192, "threeConv_2": 384, "fiveConv_1": 48, "fiveConv_2": 128, "poolConv_2": 128, "out":1024}),
+            InceptionLayer(channel_dict={"in": 1024, "oneConv": 384, "threeConv_1": 192, "threeConv_2": 384, "fiveConv_1": 48, "fiveConv_2": 128, "poolConv_2": 128, "out":1024}),
+            InceptionLayer(channel_dict={"in": 1024, "oneConv": 384, "threeConv_1": 192, "threeConv_2": 384, "fiveConv_1": 48, "fiveConv_2": 128, "poolConv_2": 128, "out":1024}),
+            SameMaxPool2d(3, 2),
+            AvgPool2d((4,4)),
+            Conv2d(1024, output_dim, (1,1), padding="same")
+        )
+
+
+    def forward(self, x):
+        return F.relu(self.layers(x)).squeeze(dim=(2,3)) #squeeze width and height dimensions
