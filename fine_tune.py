@@ -155,7 +155,7 @@ def main(args):
     #pretraining
     loss_graph_path = f"{args.data}/pretrain_{pretrain_target}/Train_graphs/{arch_string}_h{hidden_size}_d{dense_hidden}.jpeg"
     time_string = datetime.datetime.now().strftime('%d-%b-%Y-%H%M')
-    test_pretrain_loss = optimize(pretrain_target, model, optimizer, scheduler, train_loaders, val_loaders, test_loaders, num_epochs=200, img_path = loss_graph_path)
+    test_pretrain_loss = optimize(pretrain_target, model, optimizer, scheduler, train_loaders, val_loaders, test_loaders, num_epochs=1, img_path = loss_graph_path)
 
     #next step
     transfer_target = args.trans_pred
@@ -174,6 +174,7 @@ def main(args):
         param.requires_grad = False
 
     #perform swap on last layer to new linear probe
+    model.out_dim = data_details[1]
     model.out_linear = torch.nn.Linear(dense_hidden, data_details[1])
     for param in model.out_linear.parameters():
         param.requires_grad = True
@@ -182,7 +183,7 @@ def main(args):
 
     #finetuning
     loss_graph_path = f"{args.data}/transfer_{transfer_target}/Train_graphs/{arch_string}_h{hidden_size}_d{dense_hidden}.jpeg"
-    test_transfer_loss = optimize(transfer_target, model, optimizer, scheduler, train_loaders, val_loaders, test_loaders, num_epochs=100, img_path = loss_graph_path)
+    test_transfer_loss = optimize(transfer_target, model, optimizer, scheduler, train_loaders, val_loaders, test_loaders, num_epochs=1, img_path = loss_graph_path)
 
     with open(f'{pretrain_target}to{transfer_target}_{time_string}.log', 'w') as out_log:
         out_log.write(f"Pretraining {pretrain_target}: Final Test Loss {test_pretrain_loss}")
