@@ -138,17 +138,17 @@ def main(args):
     model_constructors = GCNs.get_model_constructors()
     num_gcn = 4
     num_dense = 4
-    hidden_size = 144 # trial.suggest_int("hidden_size", 64, 200, step=16)
-    dense_hidden = 256
+    hidden_size = 128 # trial.suggest_int("hidden_size", 64, 200, step=16)
+    dense_hidden = 128
     arch_string = f"G{num_gcn}_D{num_dense}"
-    dropout_rate = 0.06
+    dropout_rate = 0.4
 
     model_class = model_constructors[arch_string]
     model = model_class(*data_details, hidden_channels = hidden_size, dense_hidden = dense_hidden, dropout_p=dropout_rate)
     print(f"{num_gcn} GCN Layers | {hidden_size} units\n{num_dense} Dense Layers | {dense_hidden}\nDropout Rate: {dropout_rate}")
 
     learning_rate = 0.004
-    lr_decay = 0.6
+    lr_decay = 0.8
     weight_decay = 0.005 #trial.suggest_float("l2_penalty", 0, 1e-2, step=5e-5)
     opt_args = {name: arg for (arg, name) in zip([learning_rate, weight_decay],  ["lr", "weight_decay"]) if arg is not None}
     optimizer = torch.optim.Adam(model.parameters(), **opt_args)
