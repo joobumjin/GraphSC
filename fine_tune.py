@@ -145,10 +145,17 @@ def main(args):
     model = model_class(*data_details, hidden_channels = hidden_size, dense_hidden = dense_hidden, dropout_p=dropout_rate)
     print(f"{num_gcn} GCN Layers | {hidden_size} units\n{num_dense} Dense Layers | {dense_hidden}\nDropout Rate: {dropout_rate}")
 
+    learning_rate = 0.004
+    lr_decay = 0.6
+    weight_decay = 0.005 #trial.suggest_float("l2_penalty", 0, 1e-2, step=5e-5)
+    opt_args = {name: arg for (arg, name) in zip([learning_rate, weight_decay],  ["lr", "weight_decay"]) if arg is not None}
+    optimizer = torch.optim.Adam(model.parameters(), **opt_args)
+    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, lr_decay)
+
     #pretraining
     loss_graph_path = f"{args.data}/pretrain_{pretrain_target}/Train_graphs/{arch_string}_h{hidden_size}_d{dense_hidden}.jpeg"
     time_string = datetime.datetime.now().strftime('%d-%b-%Y-%H%M')
-    test_pretrain_loss = optimize(pretrain_target, model, train_loaders, val_loaders, test_loaders, num_epochs=200, img_path = loss_graph_path)
+    test_pretrain_loss = optimize(pretrain_target, model, optimizer, scheduler, train_loaders, val_loaders, test_loaders, num_epochs=200, img_path = loss_graph_path)
 
     #next step
     transfer_target = args.trans_pred
@@ -170,10 +177,6 @@ def main(args):
     model.out_linear = torch.nn.Linear(dense_hidden, data_details[1])
     for param in model.out_Linear.parameters():
         param.requires_grad = True
-    learning_rate = 0.004
-    lr_decay = 0.6
-    weight_decay = 0.005 #trial.suggest_float("l2_penalty", 0, 1e-2, step=5e-5)
-    opt_args = {name: arg for (arg, name) in zip([learning_rate, weight_decay],  ["lr", "weight_decay"]) if arg is not None}
     optimizer = torch.optim.Adam(model.out_linear.parameters(), **opt_args)
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, lr_decay)
 
