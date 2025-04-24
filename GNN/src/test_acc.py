@@ -7,6 +7,10 @@ from torch.nn import MSELoss
 from tqdm import tqdm
 import math
 import matplotlib.pyplot as plt
+import seaborn as sns
+
+sns.set_theme()
+
 
 def test(model, loader, criterion, write_to_file, vis_preds, task, print_met=True, log_train=False):
     total_loss = 0.0
