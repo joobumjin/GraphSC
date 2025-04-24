@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --partition=gpu --gres=gpu:1  --output=optuna_shuffle_data.out
+#SBATCH --partition=gpu --gres=gpu:1  --output=trasnfer.out
 #SBATCH -N 1
 #SBATCH -n 4
 #SBATCH -t 60:00:00
