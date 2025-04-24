@@ -183,7 +183,7 @@ def main(args):
 
     #finetuning
     loss_graph_path = f"{args.data}/transfer_{transfer_target}/Train_graphs/{arch_string}_h{hidden_size}_d{dense_hidden}.jpeg"
-    test_transfer_loss = optimize(transfer_target, model, optimizer, scheduler, train_loaders, val_loaders, test_loaders, num_epochs=50, img_path = loss_graph_path)
+    test_transfer_loss = optimize(transfer_target, model, optimizer, scheduler, train_loaders, val_loaders, test_loaders, num_epochs=100, img_path = loss_graph_path)
 
     with open(f'{pretrain_target}to{transfer_target}_{time_string}.log', 'w') as out_log:
         out_log.write(f"Pretraining {pretrain_target}: Final Test Loss {test_pretrain_loss}")
