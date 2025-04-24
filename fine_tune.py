@@ -175,7 +175,7 @@ def main(args):
 
     #perform swap on last layer to new linear probe
     model.out_linear = torch.nn.Linear(dense_hidden, data_details[1])
-    for param in model.out_Linear.parameters():
+    for param in model.out_linear.parameters():
         param.requires_grad = True
     optimizer = torch.optim.Adam(model.out_linear.parameters(), **opt_args)
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, lr_decay)
