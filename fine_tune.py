@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from torch.nn import MSELoss
-import optuna
+import seaborn as sns
 
 from preprocessing import get_loaders
 from train_test import train, train_multidata, test, test_multidata, SSLELoss, StandardInlinePrint
@@ -35,6 +35,8 @@ def parse_args(args=None):
     return parser.parse_args(args)      ## For calling through notebook.
 
 def train_model(train_loaders, val_loaders, model, optimizer, scheduler, num_epochs, output_filepath = None, img_path = None, convergence_epsilon = None):
+    sns.set_theme()
+
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Using", device)
 

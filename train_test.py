@@ -2,10 +2,6 @@ import math
 import torch
 from tqdm import tqdm
 from abc import ABC, abstractmethod
-import seaborn as sns
-
-sns.set_theme()
-
 
 class SSLELoss(torch.nn.Module):
     def __init__(self):
