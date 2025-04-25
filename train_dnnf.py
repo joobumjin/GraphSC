@@ -117,7 +117,7 @@ def main(args):
 
     model = DNN_F(out_dim)
 
-    train_loss = train_model(train_loaders, valid_loader, test_loader, model, learning_rate=args.learning_rate, num_epochs=200, img_path = args.graph_path)
+    train_loss = train_model(train_loaders, valid_loader, test_loader, model, learning_rate=args.lr, num_epochs=200, img_path = args.graph_path)
     test_loss = test_acc.test_model(test_loader, model, task=target)
 
     print(f"Final Test Loss: {test_loss}")
