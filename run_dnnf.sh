@@ -17,7 +17,7 @@ conda activate qbam
 cd /users/bjoo2/code/qbam/qbam_gnn
 
 # declare -a arr=("TER" "VEGF" "Both")
-declare -a arr=("TER")
+declare -a arr=("VEGF")
 for i in "${arr[@]}"
 do
     echo "Training DNN F on $i"
