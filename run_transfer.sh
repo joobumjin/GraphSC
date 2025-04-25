@@ -16,8 +16,10 @@ conda activate qbam
 # Run program
 cd /users/bjoo2/code/qbam/qbam_gnn
 
-echo "Pretraining TER Transfering onto VEGF"
-python3 fine_tune.py --data /users/bjoo2/data/bjoo2/qbam/data --pre_pred "TER" --trans_pred "VEGF" --log_path /users/bjoo2/code/qbam/qbam_gnn/optuna_logs/
+# echo "Pretraining TER Transfering onto VEGF"
+# python3 fine_tune.py --data /users/bjoo2/data/bjoo2/qbam/data --pre_pred "TER" --trans_pred "VEGF" --log_path /users/bjoo2/code/qbam/qbam_gnn/optuna_logs/
 
-echo "Pretraining TER Transfering onto VEGF"
-python3 fine_tune.py --data /users/bjoo2/data/bjoo2/qbam/data --pre_pred "VEGF" --trans_pred "TER" --log_path /users/bjoo2/code/qbam/qbam_gnn/optuna_logs/
+for x in {1..100} ; do
+    echo "Pretraining TER Transfering onto VEGF"
+    python3 fine_tune.py --data /users/bjoo2/data/bjoo2/qbam/data --pre_pred "VEGF" --trans_pred "TER" --log_path /users/bjoo2/code/qbam/qbam_gnn/optuna_logs/
+done
