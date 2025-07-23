@@ -154,11 +154,12 @@ def main(args):
                 print(f"Num Dense Layers {num_dense}")
                 print("___________________________________")
 
+                hyper_param_dir = f"{args.pred}/lr{learning_rate}_e{num_epochs}" 
+
                 Path(f'{args.chkpt_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
                 Path(f'{args.img_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
                 Path(f'{args.results_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
-
-                hyper_param_dir = f"{args.pred}/lr{learning_rate}_e{num_epochs}" 
+                
                 output_filepath = f'{args.chkpt_path}/{hyper_param_dir}/g{num_gcn}_d{num_dense}_Abs_model.pth'
                 img_path = f"{args.img_path}/{hyper_param_dir}/g{num_gcn}_d{num_dense}_RMSE_Loss_Graph.jpg"
                 results_file = f'{args.results_path}/{hyper_param_dir}/g{num_gcn}_d{num_dense}_sample_preds.txt'
