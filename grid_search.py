@@ -43,7 +43,7 @@ def parse_args(args=None):
 
 def plot_losses(loss_dict, img_path):
     plt.figure(figsize=(10, 6))
-    for loss_label, loss_list in loss_dict:
+    for loss_label, loss_list in loss_dict.items():
         plt.plot(np.array(loss_list), label=f"{loss_label}")
     plt.xlabel('Epoch')
     plt.ylabel('RMSE')
@@ -94,13 +94,13 @@ def train_model(train_loader, val_loader, test_loader, model, output_filepath, i
         val_losses.append(val_rmse)
         test_losses.append(test_rmse)
 
-        if len(train_losses) > 4:
-            last_3 = np.array(train_losses)[:-4:-1]
-            prev = np.array(train_losses)[-2:-5:-1]
-            avg_loss_diff = np.mean(np.abs(last_3 - prev))
-            if avg_loss_diff < convergence_epsilon:
-                print(f"Stopping early on epoch {epoch} with average changes in loss {avg_loss_diff}")
-                break
+        # if len(train_losses) > 4:
+        #     last_3 = np.array(train_losses)[:-4:-1]
+        #     prev = np.array(train_losses)[-2:-5:-1]
+            # avg_loss_diff = np.mean(np.abs(last_3 - prev))
+            # if avg_loss_diff < convergence_epsilon:
+            #     print(f"Stopping early on epoch {epoch} with average changes in loss {avg_loss_diff}")
+            #     break
 
         if epoch % 20 == 0:
             print(f'\nEpoch: {epoch:03d}, Train RMSE: {train_rmse:.4f}, Val RMSE: {val_rmse:.4f}\n')
@@ -159,7 +159,7 @@ def main(args):
                 Path(f'{args.chkpt_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
                 Path(f'{args.img_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
                 Path(f'{args.results_path}/{hyper_param_dir}').mkdir(parents=True, exist_ok=True)
-                
+
                 output_filepath = f'{args.chkpt_path}/{hyper_param_dir}/g{num_gcn}_d{num_dense}_Abs_model.pth'
                 img_path = f"{args.img_path}/{hyper_param_dir}/g{num_gcn}_d{num_dense}_RMSE_Loss_Graph.jpg"
                 results_file = f'{args.results_path}/{hyper_param_dir}/g{num_gcn}_d{num_dense}_sample_preds.txt'
