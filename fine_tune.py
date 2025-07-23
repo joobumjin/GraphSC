@@ -190,7 +190,7 @@ def main(args):
     with open(f'{pretrain_target}to{transfer_target}.log', 'a') as out_log:
         out_log.write(f"Pretraining {pretrain_target}: Final Test Loss {test_pretrain_loss}")
         out_log.write(f"Finetuning {transfer_target}: Final Test Loss: {test_transfer_loss}")
-        out_log.write(f"----------------------------------")
+        out_log.write(f"----------------------------------\n")
 
 
 ## END UTILITY METHODS
