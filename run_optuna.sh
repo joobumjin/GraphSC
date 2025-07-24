@@ -17,10 +17,12 @@ conda activate qbam
 cd /users/bjoo2/code/qbam/qbam_gnn
 
 # declare -a arr=("TER" "VEGF" "Both")
-declare -a arr=("VEGF" "Both")
-for i in "${arr[@]}"
-do
-    echo "Optuna Searching on $i"
-    python3 grid_search_optuna.py --data /users/bjoo2/data/bjoo2/qbam/data --pred "$i" --log_path /users/bjoo2/code/qbam/qbam_gnn/optuna_logs/
-    # python3 grid_search_optuna.py --data /users/bjoo2/data/bjoo2/qbam/data/combined_data/graphs --pred "$i" --log_path /users/bjoo2/code/qbam/qbam_gnn/optuna_logs
-done
+# declare -a arr=("VEGF" "Both")
+# for i in "${arr[@]}"
+# do
+#     echo "Optuna Searching on $i"
+#     python3 grid_search_optuna.py --data /users/bjoo2/data/bjoo2/qbam/data --pred "$i" --log_path /users/bjoo2/code/qbam/qbam_gnn/optuna_logs/
+#     # python3 grid_search_optuna.py --data /users/bjoo2/data/bjoo2/qbam/data/combined_data/graphs --pred "$i" --log_path /users/bjoo2/code/qbam/qbam_gnn/optuna_logs
+# done
+
+python3 grid_search_optuna.py --data /users/bjoo2/scratch/csam_data/csam10 --pred TER --log_path /users/bjoo2/code/qbam/qbam_gnn/optuna_logs/ --study_name csam_data10

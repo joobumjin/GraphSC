@@ -26,6 +26,7 @@ def parse_args(args=None):
     parser = argparse.ArgumentParser(description="Specify Hyperparameters to Optimize for the GNN", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--data',           required=True,                                          help='File path to the assignment data file.')
     parser.add_argument('--pred',           required=True,  choices=['TER', 'VEGF', 'Both'],        help='Type of Value being Predicted from QBAMs')
+    parser.add_argument('--study_name',     required=True,                                          help='Name of the logto which the Optuna study shall be saved')
     parser.add_argument('--log_path',       default='',                                             help='where the optuna study logs will stored')
     parser.add_argument('--batch_size',     type=int,       default=20,                             help='Model\'s batch size.')
 
@@ -160,7 +161,9 @@ def main(args):
 
     time_string = datetime.datetime.now().strftime('%d-%b-%Y-%H%M')
 
-    study = optuna.create_study(study_name=f"{time_string}_optimize_{args.pred}",storage = storage, direction="minimize")
+    # study = optuna.create_study(study_name=f"{time_string}_optimize_{args.pred}",storage = storage, direction="minimize")
+    study = optuna.create_study(study_name=args.study_name, storage = storage, direction="minimize")
+
     study.set_metric_names(["RMSE"])
     study.optimize(lambda trial: objective(trial, target, model_constructors, data_details, train_loaders, val_loaders, test_loaders, data_path = f"{args.data}/{target}"), n_trials=50)
 
