@@ -25,4 +25,4 @@ cd /users/bjoo2/code/qbam/qbam_gnn
 #     # python3 grid_search_optuna.py --data /users/bjoo2/data/bjoo2/qbam/data/combined_data/graphs --pred "$i" --log_path /users/bjoo2/code/qbam/qbam_gnn/optuna_logs
 # done
 
-python3 grid_search_optuna.py --data /users/bjoo2/scratch/csam_data/csam10 --pred TER --log_path /users/bjoo2/code/qbam/qbam_gnn/optuna_logs/ --study_name csam_data10
+python3 grid_search_optuna.py --data /users/bjoo2/scratch/csam_data/csam15 --pred TER --log_path /users/bjoo2/code/qbam/qbam_gnn/optuna_logs/ --study_name csam_data15
