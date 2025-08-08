@@ -14,5 +14,5 @@ source /oscar/runtime/software/external/miniconda3/23.11.0/etc/profile.d/conda.s
 conda activate cellpose3
 
 # Run program
-cd /users/bjoo2/code/qbam/qbam_gnn
+cd /users/bjoo2/code/qbam/qbam_gnn/preprocessing
 python upsample.py
