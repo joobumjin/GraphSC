@@ -23,7 +23,7 @@ for folder in tqdm(range(2,3)):
     print(len(files))
     for file in tqdm(files):
         images = [io.imread(f) for f in [file]]
-        masks, flows, styles, = model.eval(images, diameter=None, normalize={"tile_norm_blocksize": 0})    
+        masks, flows, styles, = model.eval(images, batch_size=12, diameter=None, normalize={"tile_norm_blocksize": 0})    
     
         io.masks_flows_to_seg(images,
                               masks,
