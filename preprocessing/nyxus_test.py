@@ -3,6 +3,9 @@ import numpy as np
 from tifffile import imread
 from PIL import Image
 
+import faulthandler
+faulthandler.enable()
+
 from nyxus import Nyxus
 nyx = Nyxus(["*ALL*"])
 
