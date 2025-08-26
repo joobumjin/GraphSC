@@ -14,8 +14,6 @@ source /gpfs/runtime/opt/miniconda/4.12.0/etc/profile.d/conda.sh
 
 conda activate cellpose4
 
-conda list
-
 # Run program
 cd /users/bjoo2/code/qbam/qbam_gnn/preprocessing
 python nyxus_test.py
