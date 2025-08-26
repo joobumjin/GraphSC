@@ -11,7 +11,7 @@ module load cuda
 module load miniconda3/23.11.0s
 source /gpfs/runtime/opt/miniconda/4.12.0/etc/profile.d/conda.sh
 
-conda activate cellpose3
+conda activate cellpose4
 
 # Run program
 cd /users/bjoo2/code/qbam/qbam_gnn/preprocessing
