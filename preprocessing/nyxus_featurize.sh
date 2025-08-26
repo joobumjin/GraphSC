@@ -5,6 +5,7 @@
 #SBATCH -n 4
 #SBATCH -t 60:00:00
 #SBATCH --mem=100g
+#SBATCH -o nyxus_test.out
 
 # Load a CUDA module
 module load cuda
