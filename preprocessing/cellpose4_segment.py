@@ -33,15 +33,19 @@ for folder in tqdm(range(2,3)):
                               # channels=[3, 0],
                               )
 
-        io.save_masks(images,
-                      masks,
-                      flows,
-                      [file],
-                      channels=None, # channels=[3,0],
-                      png=False, # save masks as PNGs and save example image
-                      tif=False, # save masks as TIFFs
-                      save_txt=False, # save txt outlines for ImageJ
-                      save_flows=False, # save flows as TIFFs
-                      save_outlines=True, # save outlines as TIFFs
-                      save_mpl=False # make matplotlib fig to view (WARNING: SLOW W/ LARGE IMAGES)
-                      )
+        # Path(f"{data_dir}/masks").mkdir(parents=False, exist_ok=True)
+
+        # io.save_masks(images,
+        #               masks,
+        #               flows,
+        #               [file],
+        #               channels=None, # channels=[3,0],
+        #               png=False, # save masks as PNGs and save example image
+        #               tif=False, # save masks as TIFFs
+        #               save_txt=False, # save txt outlines for ImageJ
+        #               save_flows=False, # save flows as TIFFs
+        #               save_outlines=True, # save outlines as TIFFs
+        #               save_mpl=False, # make matplotlib fig to view (WARNING: SLOW W/ LARGE IMAGES)
+        #               in_folders=True,
+        #               savedir=f"{data_dir}/masks"
+        #               )

@@ -42,7 +42,7 @@ class GCN_G2_D2(torch.nn.Module):
         self.dropout = Dropout(p=dropout_p)
 
         self.linear1 = Linear(self.output_dim, self.dense_hidden)
-        self.linear2 = Linear(self.dense_hidden, self.output_dim)
+        self.out_linear = Linear(self.dense_hidden, self.output_dim)
 
 
     def forward(self, data):
@@ -61,7 +61,7 @@ class GCN_G2_D2(torch.nn.Module):
 
         x = F.leaky_relu(self.linear1(x))
         x = self.dropout(x)
-        x = self.linear2(x)
+        x = self.out_linear(x)
 
         return x
 
@@ -85,7 +85,7 @@ class GCN_G2_D3(torch.nn.Module):
 
         self.linear1 = Linear(self.output_dim, self.dense_hidden)
         self.linear2 = Linear(self.dense_hidden, self.dense_hidden)
-        self.linear3 = Linear(self.dense_hidden, self.output_dim)
+        self.out_linear = Linear(self.dense_hidden, self.output_dim)
 
 
     def forward(self, data):
@@ -106,7 +106,7 @@ class GCN_G2_D3(torch.nn.Module):
         x = self.dropout(x)
         x = F.leaky_relu(self.linear2(x))
         x = self.dropout(x)
-        x = self.linear3(x)
+        x = self.out_linear(x)
 
         return x
     
@@ -131,7 +131,7 @@ class GCN_G2_D4(torch.nn.Module):
         self.linear1 = Linear(self.output_dim, self.dense_hidden)
         self.linear2 = Linear(self.dense_hidden, self.dense_hidden)
         self.linear3 = Linear(self.dense_hidden, self.dense_hidden)
-        self.linear4 = Linear(self.dense_hidden, self.output_dim)
+        self.out_linear = Linear(self.dense_hidden, self.output_dim)
 
 
     def forward(self, data):
@@ -154,7 +154,7 @@ class GCN_G2_D4(torch.nn.Module):
         x = self.dropout(x)
         x = F.leaky_relu(self.linear3(x))
         x = self.dropout(x)
-        x = self.linear4(x)
+        x = self.out_linear(x)
 
         return x
     
@@ -180,7 +180,7 @@ class GCN_G2_D5(torch.nn.Module):
         self.linear2 = Linear(self.dense_hidden, self.dense_hidden)
         self.linear3 = Linear(self.dense_hidden, self.dense_hidden)
         self.linear4 = Linear(self.dense_hidden, self.dense_hidden)
-        self.linear5 = Linear(self.dense_hidden, self.output_dim)
+        self.out_linear = Linear(self.dense_hidden, self.output_dim)
 
 
     def forward(self, data):
@@ -206,7 +206,7 @@ class GCN_G2_D5(torch.nn.Module):
         x = self.dropout(x)
         x = F.leaky_relu(self.linear4(x))
         x = self.dropout(x)
-        x = self.linear5(x)
+        x = self.out_linear(x)
 
         return x
 
@@ -234,7 +234,7 @@ class GCN_G3_D2(torch.nn.Module):
         self.dropout = Dropout(p=dropout_p)
 
         self.linear1 = Linear(self.output_dim, self.dense_hidden)
-        self.linear2 = Linear(self.dense_hidden, self.output_dim)
+        self.out_linear = Linear(self.dense_hidden, self.output_dim)
 
 
     def forward(self, data):
@@ -258,7 +258,7 @@ class GCN_G3_D2(torch.nn.Module):
 
         x = F.leaky_relu(self.linear1(x))
         x = self.dropout(x)
-        x = self.linear2(x)
+        x = self.out_linear(x)
 
         return x
 
@@ -285,7 +285,7 @@ class GCN_G3_D3(torch.nn.Module):
 
         self.linear1 = Linear(self.output_dim, self.dense_hidden)
         self.linear2 = Linear(self.dense_hidden, self.dense_hidden)
-        self.linear3 = Linear(self.dense_hidden, self.output_dim)
+        self.out_linear = Linear(self.dense_hidden, self.output_dim)
 
 
     def forward(self, data):
@@ -312,7 +312,7 @@ class GCN_G3_D3(torch.nn.Module):
         x = self.dropout(x)
         x = F.leaky_relu(self.linear2(x))
         x = self.dropout(x)
-        x = self.linear3(x)
+        x = self.out_linear(x)
 
         return x
     
@@ -340,7 +340,7 @@ class GCN_G3_D4(torch.nn.Module):
         self.linear1 = Linear(self.output_dim, self.dense_hidden)
         self.linear2 = Linear(self.dense_hidden, self.dense_hidden)
         self.linear3 = Linear(self.dense_hidden, self.dense_hidden)
-        self.linear4 = Linear(self.dense_hidden, self.output_dim)
+        self.out_linear = Linear(self.dense_hidden, self.output_dim)
 
 
     def forward(self, data):
@@ -369,7 +369,7 @@ class GCN_G3_D4(torch.nn.Module):
         x = self.dropout(x)
         x = F.leaky_relu(self.linear3(x))
         x = self.dropout(x)
-        x = self.linear4(x)
+        x = self.out_linear(x)
 
         return x
     
@@ -398,7 +398,7 @@ class GCN_G3_D5(torch.nn.Module):
         self.linear2 = Linear(self.dense_hidden, self.dense_hidden)
         self.linear3 = Linear(self.dense_hidden, self.dense_hidden)
         self.linear4 = Linear(self.dense_hidden, self.dense_hidden)
-        self.linear5 = Linear(self.dense_hidden, self.output_dim)
+        self.out_linear = Linear(self.dense_hidden, self.output_dim)
 
 
     def forward(self, data):
@@ -429,7 +429,7 @@ class GCN_G3_D5(torch.nn.Module):
         x = self.dropout(x)
         x = F.leaky_relu(self.linear4(x))
         x = self.dropout(x)
-        x = self.linear5(x)
+        x = self.out_linear(x)
 
         return x
 
@@ -460,7 +460,7 @@ class GCN_G4_D2(torch.nn.Module):
         self.dropout = Dropout(p=dropout_p)
 
         self.linear1 = Linear(self.output_dim, self.dense_hidden)
-        self.linear2 = Linear(self.dense_hidden, self.output_dim)
+        self.out_linear = Linear(self.dense_hidden, self.output_dim)
 
 
     def forward(self, data):
@@ -490,7 +490,7 @@ class GCN_G4_D2(torch.nn.Module):
 
         x = F.leaky_relu(self.linear1(x))
         x = self.dropout(x)
-        x = self.linear2(x)
+        x = self.out_linear(x)
 
         return x
 
@@ -520,7 +520,7 @@ class GCN_G4_D3(torch.nn.Module):
 
         self.linear1 = Linear(self.output_dim, self.dense_hidden)
         self.linear2 = Linear(self.dense_hidden, self.dense_hidden)
-        self.linear3 = Linear(self.dense_hidden, self.output_dim)
+        self.out_linear = Linear(self.dense_hidden, self.output_dim)
 
 
     def forward(self, data):
@@ -552,7 +552,7 @@ class GCN_G4_D3(torch.nn.Module):
         x = self.dropout(x)
         x = F.leaky_relu(self.linear2(x))
         x = self.dropout(x)
-        x = self.linear3(x)
+        x = self.out_linear(x)
 
         return x
     
@@ -719,7 +719,7 @@ class GCN_G5_D2(torch.nn.Module):
         self.dropout = Dropout(p=dropout_p)
 
         self.linear1 = Linear(self.output_dim, self.dense_hidden)
-        self.linear2 = Linear(self.dense_hidden, self.output_dim)
+        self.out_linear = Linear(self.dense_hidden, self.output_dim)
 
 
     def forward(self, data):
@@ -753,7 +753,7 @@ class GCN_G5_D2(torch.nn.Module):
 
         x = F.leaky_relu(self.linear1(x))
         x = self.dropout(x)
-        x = self.linear2(x)
+        x = self.out_linear(x)
 
         return x
 
@@ -786,7 +786,7 @@ class GCN_G5_D3(torch.nn.Module):
 
         self.linear1 = Linear(self.output_dim, self.dense_hidden)
         self.linear2 = Linear(self.dense_hidden, self.dense_hidden)
-        self.linear3 = Linear(self.dense_hidden, self.output_dim)
+        self.out_linear = Linear(self.dense_hidden, self.output_dim)
 
 
     def forward(self, data):
@@ -823,7 +823,7 @@ class GCN_G5_D3(torch.nn.Module):
         x = self.dropout(x)
         x = F.leaky_relu(self.linear2(x))
         x = self.dropout(x)
-        x = self.linear3(x)
+        x = self.out_linear(x)
 
         return x
     
