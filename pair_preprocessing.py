@@ -53,7 +53,7 @@ def get_loaders(data_dirs, target, batch_size):
     check_for_nan(val_dataset)
     check_for_nan(test_dataset)
 
-    num_features = train_dataset[0].x.shape[1]  # Number of features per node
+    num_features = train_dataset[0].x1.shape[1]  # Number of features per node
     num_targets = train_dataset[0].y.shape[0]
 
     detail_list = [num_features, num_targets]

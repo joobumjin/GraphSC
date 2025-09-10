@@ -16,5 +16,5 @@ conda activate qbam
 # Run program
 cd /users/bjoo2/code/qbam/qbam_gnn
 
-echo "Optuna Searching on Donor"
+echo "Training Merge Model on Donor"
 python3 merge_donor.py --data /users/bjoo2/data/bjoo2/qbam/data --pred Donor
