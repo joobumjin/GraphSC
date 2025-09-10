@@ -27,7 +27,7 @@ class PairData(Data):
 
 def check_for_nan(dataset):
     for i, data in enumerate(dataset):
-        if torch.isnan(data.x).any():
+        if torch.isnan(data.x1).any() or torch.isnan(data.x2).any() :
             print(f"NaN found in features at index {i}")
         if torch.isnan(data.y).any():
             print(f"NaN found in target at index {i}")
