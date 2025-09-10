@@ -6,10 +6,11 @@ from collections import namedtuple
 DataPoint = namedtuple('DataPoint', ['x', 'edge_index', 'batch'])
 
 class GCN_Merge(torch.nn.Module):
-    def __init__(self, gnn1, gnn2, freeze_gnns = False):
+    def __init__(self, gnn1, gnn2, output_dim=1, freeze_gnns = False):
         super().__init__()
         self.gnn1 = gnn1
         self.gnn2 = gnn2
+        self.output_dim = output_dim
 
         if freeze_gnns:
             for param in gnn1.parameters():
@@ -22,7 +23,7 @@ class GCN_Merge(torch.nn.Module):
 
         self.dropout = Dropout(p=0.5)
 
-        self.pred_head = Linear(gnn1.dense_hidden * 2, 1)
+        self.pred_head = Linear(gnn1.dense_hidden * 2, self.output_dim)
         for param in self.pred_head.parameters():
             param.requires_grad = False
 
