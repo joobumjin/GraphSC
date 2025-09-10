@@ -8,7 +8,7 @@ import numpy as np
 import torch
 from torch.nn import MSELoss
 
-from pair_preprocessing import get_loaders
+from pair_preprocessing import PairData, get_loaders
 from train_test import train, train_multidata, test, test_multidata, SSLELoss, StandardInlinePrint
 import GNN.src.gnn_multiple as GCNs
 from GNN.src import test_acc
