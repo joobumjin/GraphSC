@@ -8,7 +8,7 @@ class Accuracy(torch.nn.Module):
         super().__init__()
         
     def forward(self, pred, actual):
-        return torch.sum(pred==actual)
+        return torch.sum(torch.gt(pred, 0.5)==(actual==1.0))
 
 
 def train(model, train_loader, optimizer, criterion, metric_printer=None):
