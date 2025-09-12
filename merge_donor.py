@@ -81,7 +81,7 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
     epoch_tqdm.close()
 
     train_losses = np.array(train_losses)
-    val_metrics = {crit: np.array(history) for crit, history in test_crits.items()}
+    val_metrics = {crit: np.array(history) for crit, history in val_metrics.items()}
 
     if output_filepath:
         torch.save(model.state_dict(), output_filepath)
