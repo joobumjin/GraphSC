@@ -6,10 +6,10 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from torch.nn import MSELoss
+from torch.nn import BCELoss
 
 from pair_preprocessing import PairData, get_loaders
-from train_test import train, train_multidata, test, test_multidata, SSLELoss, StandardInlinePrint
+from train_test import Accuracy, train, train_multidata, test, test_multidata, StandardInlinePrint
 import GNN.src.gnn_multiple as GCNs
 from GNN.src import test_acc
 from GNN.src.gnn_merge import GCN_Merge
@@ -43,9 +43,12 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
     opt_args = {name: arg for (arg, name) in zip([learning_rate, weight_decay], ["lr", "weight_decay"]) if arg is not None}
     optimizer = torch.optim.Adam(model.parameters(), **opt_args)
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma)
-    log_train = False
-    train_criterion = SSLELoss() if log_train else MSELoss(reduction='sum')
-    test_criterion = MSELoss(reduction='sum')
+    crit_string = "BCE"
+    train_criterion = BCELoss(reduction='sum')
+    test_crits = {
+        "BCE": BCELoss(reduction='sum'),
+        "Acc": Accuracy()
+    }
     if len(train_loaders) > 1: train_fn = train_multidata
     else: 
         train_fn = train
@@ -57,43 +60,55 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
         val_loaders = val_loaders[0]
 
     train_losses = []
-    val_losses = []
+    val_metrics = {crit: [] for crit in test_crits}
 
-    epoch_tqdm = tqdm(range(1, num_epochs + 1), desc="Training Epochs", postfix={"Train RMSE": 0.0, "Valid RMSE": 0.0})
+    epoch_tqdm = tqdm(range(1, num_epochs + 1), desc="Training Epochs", postfix={f"Train {crit_string}": 0.0, f"Valid {crit_string}": 0.0, f"Valid Acc": 0.0})
     
     for _ in epoch_tqdm:
-        train_rmse = train_fn(model, train_loaders, optimizer, train_criterion)
+        train_loss = train_fn(model, train_loaders, optimizer, train_criterion)
         scheduler.step()
 
-        val_rmse = test_fn(model, val_loaders, test_criterion)
+        train_losses.append(train_loss)
+        postfix = {f"Train {crit_string}": train_loss}
 
-        train_losses.append(train_rmse)
-        val_losses.append(val_rmse)
+        for crit, crit_obj in test_crits.items():
+            metric = test_fn(model, val_loaders, crit_obj)
+            val_metrics[crit].append(metric)
+            postfix[f"Valid {crit}"] = metric
 
-        epoch_tqdm.set_postfix({"Train RMSE": train_rmse, "Valid RMSE": val_rmse})
+        epoch_tqdm.set_postfix(postfix)
 
     epoch_tqdm.close()
 
     train_losses = np.array(train_losses)
-    val_losses = np.array(val_losses)
+    val_metrics = {crit: np.array(history) for crit, history in test_crits.items()}
 
     if output_filepath:
         torch.save(model.state_dict(), output_filepath)
         print("Saved the model to:", output_filepath)
 
     if img_path:
-        plt.figure(figsize=(10, 6))
-        plt.plot(train_losses, label='Training RMSE')
-        plt.plot(val_losses, label='Validation RMSE')
-        plt.xlabel('Epoch')
-        plt.ylabel('RMSE')
-        plt.title('Training and Validation RMSE')
+        fig, ax1 = plt.subplots(figsize=(10, 6))
+
+        ax1.set_xlabel('Epoch')
+        ax1.set_ylabel('BCE')
+        ax1.plot(train_losses, label='Training BCE', color='tab:blue')
+        ax1.plot(val_metrics["BCE"], label='Validation BCE', color="tab:orange")
+        ax1.tick_params(axis='y')
+
+        ax2 = ax1.twinx()  # instantiate a second Axes that shares the same x-axis
+
+        ax2.set_ylabel('Accuracy', color="tab:red")  # we already handled the x-label with ax1
+        ax2.plot(val_metrics["Acc"], label='Validation Accuracy')
+
+        fig.tight_layout()  # otherwise the right y-label is slightly clipped
+        plt.title('Training BCE and Validation BCE/Acc')
         plt.legend()
         plt.savefig(img_path)
         plt.close()
         print(f"Saved graph to {img_path}")
 
-    return train_losses[-1], val_losses[-1]
+    return train_losses[-1], val_metrics["BCE"][-1]
 
 def main(args):
     target = args.pred

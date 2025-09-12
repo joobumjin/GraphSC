@@ -3,13 +3,12 @@ import torch
 from tqdm import tqdm
 from abc import ABC, abstractmethod
 
-class SSLELoss(torch.nn.Module):
+class Accuracy(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.mse = torch.nn.MSELoss(reduction='sum')
         
     def forward(self, pred, actual):
-        return self.mse(pred, torch.log(actual + 1))
+        return torch.sum(pred==actual)
 
 
 def train(model, train_loader, optimizer, criterion, metric_printer=None):
