@@ -129,7 +129,7 @@ def main(args):
     val_loaders = [val_loader]
     test_loaders = [test_loader]
 
-    num_epochs = 300
+    num_epochs = 100
 
     #Tuning
     num_gcn = 4
