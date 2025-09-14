@@ -4,6 +4,7 @@ import datetime
 
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+import seaborn as sns
 import numpy as np
 import torch
 from torch.nn import BCELoss
@@ -93,37 +94,46 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
     train_metrics = {crit: np.array(history) for crit, history in train_metrics.items()}
     val_metrics = {crit: np.array(history) for crit, history in val_metrics.items()}
 
+    #model saving
     if output_filepath:
         torch.save(model.state_dict(), output_filepath)
         print("Saved the model to:", output_filepath)
 
+    #plotting
+    fig, ax1 = plt.subplots(figsize=(10, 6))
+
+    ax1.set_xlabel('Epoch')
+    ax1.set_ylabel('BCE')
+    ax1.plot(train_losses, label='Training BCE', color='tab:blue')
+    ax1.plot(val_metrics["BCE"], label='Validation BCE', color="tab:orange")
+    ax1.legend()
+    ax1.tick_params(axis='y')
+
+    ax2 = ax1.twinx()  # instantiate a second Axes that shares the same x-axis
+
+    ax2.set_ylabel('Accuracy')  # we already handled the x-label with ax1
+    ax2.plot(train_metrics["Acc"], label='Train Accuracy', color="tab:green")
+    ax2.plot(val_metrics["Acc"], label='Validation Accuracy', color="tab:red")
+    ax2.legend()
+
+    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    plt.title('Training and Validation BCE/Acc')
+    plt.legend()
+
     if img_path:
-        fig, ax1 = plt.subplots(figsize=(10, 6))
-
-        ax1.set_xlabel('Epoch')
-        ax1.set_ylabel('BCE')
-        ax1.plot(train_losses, label='Training BCE', color='tab:blue')
-        ax1.plot(val_metrics["BCE"], label='Validation BCE', color="tab:orange")
-        ax1.legend()
-        ax1.tick_params(axis='y')
-
-        ax2 = ax1.twinx()  # instantiate a second Axes that shares the same x-axis
-
-        ax2.set_ylabel('Accuracy')  # we already handled the x-label with ax1
-        ax2.plot(train_metrics["Acc"], label='Train Accuracy', color="tab:green")
-        ax2.plot(val_metrics["Acc"], label='Validation Accuracy', color="tab:red")
-        ax2.legend()
-
-        fig.tight_layout()  # otherwise the right y-label is slightly clipped
-        plt.title('Training and Validation BCE/Acc')
-        plt.legend()
         plt.savefig(img_path)
-        plt.close()
         print(f"Saved graph to {img_path}")
+
+    if wandb_run: wandb_run.log({"chart": plt})
+
+    plt.close()
+
 
     return train_losses[-1], val_metrics["BCE"][-1]
 
 def main(args):
+    sns.set_theme()
+
     target = args.pred
     print(f"Training {target}")
 
