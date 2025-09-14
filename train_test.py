@@ -9,6 +9,15 @@ class Accuracy(torch.nn.Module):
         
     def forward(self, pred, actual):
         return torch.sum(torch.gt(pred, 0.5)==(actual==1.0))
+    
+class SSLELoss(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.root = True
+        self.mse = torch.nn.MSELoss(reduction='sum')
+
+    def forward(self, pred, actual):
+        return self.mse(pred, torch.log(actual + 1))
 
 
 def train(model, train_loader, optimizer, criterion, metric_printer=None):
@@ -29,7 +38,11 @@ def train(model, train_loader, optimizer, criterion, metric_printer=None):
         if metric_printer is not None:
                 metric_printer(out,data.y.reshape(-1, model.output_dim), math.sqrt(loss.item() / len(data.y.reshape(-1, model.output_dim))))
 
-    return math.sqrt(total_loss / total_samples)
+    metric = total_loss / total_samples
+    if hasattr(criterion, "root") and criterion.root:
+        metric = math.sqrt(metric)
+
+    return metric
 
 def train_multidata(model, train_loaders, optimizer, criterion):
     model.train()
@@ -48,7 +61,11 @@ def train_multidata(model, train_loaders, optimizer, criterion):
             # total_samples += len(data.y.reshape(-1, model.output_dim))
             total_samples += torch.numel(data.y)
 
-    return math.sqrt(total_loss / total_samples)
+    metric = total_loss / total_samples
+    if hasattr(criterion, "root") and criterion.root:
+        metric = math.sqrt(metric)
+
+    return metric
 
 def test(model, loader, criterion, metric_printer=None, log_train = False):
     model.eval()
@@ -62,13 +79,12 @@ def test(model, loader, criterion, metric_printer=None, log_train = False):
             loss = criterion(out, data.y.reshape(-1, model.output_dim))
             total_loss += loss.item()
             total_samples += torch.numel(data.y)
-            # total_samples += len(data.y.reshape(-1, model.output_dim))
 
-            if metric_printer is not None:
-                metric_printer(out,data.y.reshape(-1, model.output_dim), math.sqrt(loss.item() / len(data.y.reshape(-1, model.output_dim))))
+    metric = total_loss / total_samples
+    if hasattr(criterion, "root") and criterion.root:
+        metric = math.sqrt(metric)
 
-    avg_loss = total_loss / total_samples
-    return math.sqrt(avg_loss)
+    return metric
 
 def test_multidata(model, test_loaders, criterion, metric_printer=None, log_train = False):
     model.eval()
@@ -84,16 +100,12 @@ def test_multidata(model, test_loaders, criterion, metric_printer=None, log_trai
                 loss = criterion(out, data.y.reshape(-1, model.output_dim))
                 total_loss += loss.item()
                 total_samples += torch.numel(data.y)
-                # total_samples += len(data.y.reshape(-1, model.output_dim))
+    
+    metric = total_loss / total_samples
+    if hasattr(criterion, "root") and criterion.root:
+        metric = math.sqrt(metric)
 
-                if metric_printer:
-                    metric_printer(out,data.y.reshape(-1, model.output_dim), math.sqrt(loss.item() / len(data.y)))
-
-    if total_samples > 0: avg_loss = total_loss / total_samples
-    else:
-        print("ERROR: 0 len dataset")
-        return total_loss
-    return math.sqrt(avg_loss)
+    return metric
 
 class MetricPrinter(ABC):
     @abstractmethod

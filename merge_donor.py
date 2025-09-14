@@ -1,6 +1,7 @@
 import argparse
 from pathlib import Path
 import datetime
+import wandb
 
 from tqdm import tqdm
 import matplotlib.pyplot as plt
@@ -14,9 +15,6 @@ from train_test import Accuracy, train, train_multidata, test, test_multidata, S
 import GNN.src.gnn_multiple as GCNs
 from GNN.src import test_acc
 from GNN.src.gnn_merge import GCN_Merge
-
-import wandb
-
 
 def parse_args(args=None):
     """ 
@@ -82,12 +80,14 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
     epoch_tqdm = tqdm(range(1, num_epochs + 1), desc="Training Epochs", postfix={f"Train {crit_string}": 0.0, "Train Acc": 0.0, f"Valid {crit_string}": 0.0, f"Valid Acc": 0.0})
     
     for _ in epoch_tqdm:
+        #train
         train_loss = train_fn(model, train_loaders, optimizer, train_criterion)
         scheduler.step()
 
         train_losses.append(train_loss)
         postfix = {f"Train {crit_string}": train_loss}
 
+        #eval
         for crit_dict, metric_dict, loader, split in zip([train_crits, test_crits], [train_metrics, val_metrics], [train_loaders, val_loaders], ["Train", "Valid"]):
             for crit, crit_obj in crit_dict.items():
                 metric = test_fn(model, loader, crit_obj)
