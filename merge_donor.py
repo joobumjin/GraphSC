@@ -38,7 +38,9 @@ def parse_args(args=None):
     return parser.parse_args(args)      ## For calling through notebook.
 
 def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, output_filepath = None, img_path = None, gamma=0.95, weight_decay = None, wandb_run = None):
-    
+    #
+    #setup
+    #
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Using", device)
 
@@ -56,6 +58,14 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
         "BCE": BCELoss(reduction='sum'),
         "Acc": Accuracy()
     }
+    
+    train_losses = []
+    train_metrics = {crit: [] for crit in train_crits}
+    val_metrics = {crit: [] for crit in test_crits}
+
+    #
+    #data
+    #
     if len(train_loaders) > 1: train_fn = train_multidata
     else: 
         train_fn = train
@@ -66,10 +76,9 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
         test_fn = test
         val_loaders = val_loaders[0]
 
-    train_losses = []
-    train_metrics = {crit: [] for crit in train_crits}
-    val_metrics = {crit: [] for crit in test_crits}
-
+    #
+    #run
+    #
     epoch_tqdm = tqdm(range(1, num_epochs + 1), desc="Training Epochs", postfix={f"Train {crit_string}": 0.0, "Train Acc": 0.0, f"Valid {crit_string}": 0.0, f"Valid Acc": 0.0})
     
     for _ in epoch_tqdm:
@@ -90,54 +99,59 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
 
     epoch_tqdm.close()
 
+    #
+    #output formating
+    #
     train_losses = np.array(train_losses)
     train_metrics = {crit: np.array(history) for crit, history in train_metrics.items()}
     val_metrics = {crit: np.array(history) for crit, history in val_metrics.items()}
 
+    #
     #model saving
+    #
     if output_filepath:
         torch.save(model.state_dict(), output_filepath)
         print("Saved the model to:", output_filepath)
 
+    #
     #plotting
+    # 
+    #losses
     fig, ax1 = plt.subplots(figsize=(10, 6))
-
     ax1.set_xlabel('Epoch')
     ax1.set_ylabel('BCE')
     ax1.plot(train_losses, label='Training BCE', color='tab:blue')
     ax1.plot(val_metrics["BCE"], label='Validation BCE', color="tab:orange")
     ax1.legend()
     ax1.tick_params(axis='y')
-
-    ax2 = ax1.twinx()  # instantiate a second Axes that shares the same x-axis
-
-    ax2.set_ylabel('Accuracy')  # we already handled the x-label with ax1
+    #accs
+    ax2 = ax1.twinx()
+    ax2.set_ylabel('Accuracy')
     ax2.plot(train_metrics["Acc"], label='Train Accuracy', color="tab:green")
     ax2.plot(val_metrics["Acc"], label='Validation Accuracy', color="tab:red")
     ax2.legend()
-
-    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    #outoutting
+    fig.tight_layout()  
     plt.title('Training and Validation BCE/Acc')
     plt.legend()
 
     if img_path:
         plt.savefig(img_path)
         print(f"Saved graph to {img_path}")
-
     if wandb_run: wandb_run.log({"chart": plt})
 
     plt.close()
-
 
     return train_losses[-1], val_metrics["BCE"][-1]
 
 def main(args):
     sns.set_theme()
 
+    #
+    # get data
+    #
     target = args.pred
     print(f"Training {target}")
-
-    # Start a new wandb run to track this script.
 
     data_dirs = {}
     for data_type in ['TER', 'VEGF', 'Both', 'Donor']:
@@ -154,9 +168,10 @@ def main(args):
     val_loaders = [val_loader]
     test_loaders = [test_loader]
 
+    #
+    #hyper params
+    #
     num_epochs = 100
-
-    #Tuning
     num_gcn = 4
     num_dense = 5
     hidden_size = 144
@@ -181,7 +196,9 @@ def main(args):
         "dropout_rate": dropout_rate,
     }
 
-
+    #
+    #build models
+    #
     model_class = model_constructors[arch_string]
     model1 = model_class(*data_details, hidden_channels = hidden_size, dense_hidden = dense_hidden, dropout_p=dropout_rate)
     model2 = model_class(*data_details, hidden_channels = hidden_size, dense_hidden = dense_hidden, dropout_p=dropout_rate)
@@ -195,6 +212,9 @@ def main(args):
 
     loss_graph_path = f"{args.data}/Train_graphs/Merge.jpeg"
 
+    #
+    #run
+    #
     with wandb.init(entity="bumjin_joo-brown-university", project="qbam-donor", name="Test-Merge", config=config) as run:
         run.watch(model1)
         run.watch(model2)
