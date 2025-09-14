@@ -78,9 +78,9 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
         train_losses.append(train_loss)
         postfix = {f"Train {crit_string}": train_loss}
 
-        for crit_dict, loaders, split in zip([train_metrics, val_metrics], [train_loaders, val_loaders], ["Train", "Valid"]):
+        for crit_dict, loader, split in zip([train_crits, test_crits], [train_loaders, val_loaders], ["Train", "Valid"]):
             for crit, crit_obj in crit_dict.items():
-                metric = test_fn(model, loaders, crit_obj)
+                metric = test_fn(model, loader, crit_obj)
                 train_metrics[crit].append(metric)
                 postfix[f"{split} {crit}"] = metric
 
@@ -188,6 +188,7 @@ def main(args):
         run.watch(model1)
         run.watch(model2)
         run.watch(gnn_merge)
+
         _, _ = train_model(train_loaders, 
                         val_loaders, 
                         gnn_merge, 
