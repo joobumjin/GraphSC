@@ -177,7 +177,8 @@ def main(args):
     model2 = model_class(*data_details, hidden_channels = hidden_size, dense_hidden = dense_hidden, dropout_p=dropout_rate)
     gnn_merge = GCN_Merge(model1, model2)
 
-    print(f"{num_gcn} GCN Layers | {hidden_size} units\n\
+    print(f"\
+            {num_gcn} GCN Layers | {hidden_size} units\n\
             {num_dense} Dense Layers | {dense_hidden}\n\
             Dropout Rate: {dropout_rate}\n\
             Learning Rate: {learning_rate} with Decay {lr_decay} and Weight Decay: {weight_decay}")
