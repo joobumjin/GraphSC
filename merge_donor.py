@@ -175,9 +175,9 @@ def main(args):
     num_gcn = 4
     num_dense = 5
     hidden_size = 144
-    dense_hidden = 512
+    dense_hidden = 256
     arch_string = f"G{num_gcn}_D{num_dense}"
-    learning_rate = 0.001
+    learning_rate = 0.0003
     lr_decay = 0.5
     weight_decay = 0.005
     dropout_rate = 0.5
