@@ -23,7 +23,7 @@ class GCN_Merge(torch.nn.Module):
 
         self.dropout = Dropout(p=0.5)
 
-        self.pred_head = Linear(gnn1.dense_hidden * 2, self.output_dim)
+        self.pred_head = Linear(gnn1.dense_hidden * 2, self.output_dim) # W [1024, 1]
         for param in self.pred_head.parameters():
             param.requires_grad = False
 

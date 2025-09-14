@@ -14,6 +14,8 @@ import GNN.src.gnn_multiple as GCNs
 from GNN.src import test_acc
 from GNN.src.gnn_merge import GCN_Merge
 
+import wandb
+
 
 def parse_args(args=None):
     """ 
@@ -34,7 +36,8 @@ def parse_args(args=None):
         return parser.parse_args()      ## For calling through command line
     return parser.parse_args(args)      ## For calling through notebook.
 
-def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, output_filepath = None, img_path = None, convergence_epsilon = None, gamma=0.95, weight_decay = None):
+def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, output_filepath = None, img_path = None, gamma=0.95, weight_decay = None, wandb_run = None):
+    
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Using", device)
 
@@ -45,6 +48,9 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma)
     crit_string = "BCE"
     train_criterion = BCELoss(reduction='sum')
+    train_crits = {
+        "Acc": Accuracy()
+    }
     test_crits = {
         "BCE": BCELoss(reduction='sum'),
         "Acc": Accuracy()
@@ -60,9 +66,10 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
         val_loaders = val_loaders[0]
 
     train_losses = []
+    train_metrics = {crit: [] for crit in train_crits}
     val_metrics = {crit: [] for crit in test_crits}
 
-    epoch_tqdm = tqdm(range(1, num_epochs + 1), desc="Training Epochs", postfix={f"Train {crit_string}": 0.0, f"Valid {crit_string}": 0.0, f"Valid Acc": 0.0})
+    epoch_tqdm = tqdm(range(1, num_epochs + 1), desc="Training Epochs", postfix={f"Train {crit_string}": 0.0, "Train Acc": 0.0, f"Valid {crit_string}": 0.0, f"Valid Acc": 0.0})
     
     for _ in epoch_tqdm:
         train_loss = train_fn(model, train_loaders, optimizer, train_criterion)
@@ -71,16 +78,19 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
         train_losses.append(train_loss)
         postfix = {f"Train {crit_string}": train_loss}
 
-        for crit, crit_obj in test_crits.items():
-            metric = test_fn(model, val_loaders, crit_obj)
-            val_metrics[crit].append(metric)
-            postfix[f"Valid {crit}"] = metric
+        for crit_dict, loaders, split in zip([train_metrics, val_metrics], [train_loaders, val_loaders], ["Train", "Valid"]):
+            for crit, crit_obj in crit_dict.items():
+                metric = test_fn(model, loaders, crit_obj)
+                train_metrics[crit].append(metric)
+                postfix[f"{split} {crit}"] = metric
 
+        if wandb_run: wandb_run.log(postfix)
         epoch_tqdm.set_postfix(postfix)
 
     epoch_tqdm.close()
 
     train_losses = np.array(train_losses)
+    train_metrics = {crit: np.array(history) for crit, history in train_metrics.items()}
     val_metrics = {crit: np.array(history) for crit, history in val_metrics.items()}
 
     if output_filepath:
@@ -94,15 +104,18 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
         ax1.set_ylabel('BCE')
         ax1.plot(train_losses, label='Training BCE', color='tab:blue')
         ax1.plot(val_metrics["BCE"], label='Validation BCE', color="tab:orange")
+        ax1.legend()
         ax1.tick_params(axis='y')
 
         ax2 = ax1.twinx()  # instantiate a second Axes that shares the same x-axis
 
-        ax2.set_ylabel('Accuracy', color="tab:red")  # we already handled the x-label with ax1
-        ax2.plot(val_metrics["Acc"], label='Validation Accuracy')
+        ax2.set_ylabel('Accuracy')  # we already handled the x-label with ax1
+        ax2.plot(train_metrics["Acc"], label='Train Accuracy', color="tab:green")
+        ax2.plot(val_metrics["Acc"], label='Validation Accuracy', color="tab:red")
+        ax2.legend()
 
         fig.tight_layout()  # otherwise the right y-label is slightly clipped
-        plt.title('Training BCE and Validation BCE/Acc')
+        plt.title('Training and Validation BCE/Acc')
         plt.legend()
         plt.savefig(img_path)
         plt.close()
@@ -113,6 +126,8 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
 def main(args):
     target = args.pred
     print(f"Training {target}")
+
+    # Start a new wandb run to track this script.
 
     data_dirs = {}
     for data_type in ['TER', 'VEGF', 'Both', 'Donor']:
@@ -142,22 +157,46 @@ def main(args):
     weight_decay = 0.005
     dropout_rate = 0.5
 
+    config={
+        "architecture": "GATv2-Donor-Merge",
+        "dataset": "Donor",
+        "epochs": num_epochs,
+        "num_gcn": num_gcn,
+        "num_dense": num_dense,
+        "hidden_size": hidden_size,
+        "dense_hidden": dense_hidden,
+        "learning_rate": learning_rate,
+        "lr_decay": lr_decay,
+        "weight_decay": weight_decay,
+        "dropout_rate": dropout_rate,
+    }
+
+
     model_class = model_constructors[arch_string]
     model1 = model_class(*data_details, hidden_channels = hidden_size, dense_hidden = dense_hidden, dropout_p=dropout_rate)
     model2 = model_class(*data_details, hidden_channels = hidden_size, dense_hidden = dense_hidden, dropout_p=dropout_rate)
     gnn_merge = GCN_Merge(model1, model2)
 
-    print(f"{num_gcn} GCN Layers | {hidden_size} units\n{num_dense} Dense Layers | {dense_hidden}\nDropout Rate: {dropout_rate}\nLearning Rate: {learning_rate} with Decay {lr_decay} and Weight Decay: {weight_decay}")
+    print(f"{num_gcn} GCN Layers | {hidden_size} units\n\
+            {num_dense} Dense Layers | {dense_hidden}\n\
+            Dropout Rate: {dropout_rate}\n\
+            Learning Rate: {learning_rate} with Decay {lr_decay} and Weight Decay: {weight_decay}")
 
     loss_graph_path = f"{args.data}/Train_graphs/Merge.jpeg"
-    _, _ = train_model(train_loaders, 
-                       val_loaders, 
-                       gnn_merge, 
-                       learning_rate, 
-                       num_epochs, 
-                       img_path=loss_graph_path, 
-                       gamma=lr_decay, 
-                       weight_decay=weight_decay)
+
+    with wandb.init(entity="bumjin_joo-brown-university", project="qbam-donor", name="Test-Merge", config=config) as run:
+        run.watch(model1)
+        run.watch(model2)
+        run.watch(gnn_merge)
+        _, _ = train_model(train_loaders, 
+                        val_loaders, 
+                        gnn_merge, 
+                        learning_rate, 
+                        num_epochs, 
+                        img_path=loss_graph_path, 
+                        gamma=lr_decay, 
+                        weight_decay=weight_decay,
+                        wandb_run = run)
 
     print(f"Validation Stats")
     _ = test_acc.test_model(val_loaders, gnn_merge, task=target, test_multiple=False)
