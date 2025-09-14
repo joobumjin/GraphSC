@@ -50,6 +50,7 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
     crit_string = "BCE"
     train_criterion = BCELoss(reduction='sum')
     train_crits = {
+        "BCE1": BCELoss(reduction='sum'),
         "Acc": Accuracy()
     }
     test_crits = {
@@ -178,7 +179,7 @@ def main(args):
     dense_hidden = 256
     arch_string = f"G{num_gcn}_D{num_dense}"
     learning_rate = 0.0003
-    lr_decay = 0.5
+    lr_decay = 0.25
     weight_decay = 0.005
     dropout_rate = 0.5
 
