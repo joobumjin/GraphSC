@@ -205,8 +205,8 @@ def main(args):
     gnn_merge = GCN_Merge(model1, model2)
 
     print(f"#########################################################################################\n"
-            f"{num_gcn} GCN Layers | {hidden_size} units\n"
-            f"{num_dense} Dense Layers | {dense_hidden}\n"
+            f"{num_gcn} GCN Layers\t|\t{hidden_size} units\n"
+            f"{num_dense} Dense Layers\t|\t{dense_hidden}\n"
             f"Dropout Rate: {dropout_rate}\n"
             f"Learning Rate: {learning_rate} with Decay {lr_decay} and Weight Decay: {weight_decay}\n"
             f"#########################################################################################")
