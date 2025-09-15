@@ -11,7 +11,7 @@ import torch
 from torch.nn import BCELoss
 
 from pair_preprocessing import PairData, get_loaders
-from train_test import Accuracy, train, train_multidata, test, test_multidata, StandardInlinePrint
+from train_test import Accuracy, train, fake_train, train_multidata, test, test_multidata, StandardInlinePrint
 import GNN.src.gnn_multiple as GCNs
 from GNN.src import test_acc
 from GNN.src.gnn_merge import GCN_Merge
@@ -69,11 +69,13 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
     else: 
         train_fn = train
         train_loaders = train_loaders[0]
+        print(f"Train Loader Length: {len(train_loaders)}")
 
     if len(val_loaders) > 1: test_fn = test_multidata
     else: 
         test_fn = test
         val_loaders = val_loaders[0]
+        print(f"Valid Loader Length: {len(val_loaders)}")
 
     #
     #run
@@ -87,6 +89,9 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
 
         train_losses.append(train_loss)
         postfix = {f"Train {crit_string}": train_loss}
+
+        fake_train_loss = fake_train(model, train_loaders, optimizer, train_criterion)
+        postfix = {f"Train BCE2": fake_train_loss}
 
         #eval
         for crit_dict, metric_dict, loader, split in zip([train_crits, test_crits], [train_metrics, val_metrics], [train_loaders, val_loaders], ["Train", "Valid"]):

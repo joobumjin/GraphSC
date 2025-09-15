@@ -39,8 +39,26 @@ def train(model, train_loader, optimizer, criterion, metric_printer=None):
                 metric_printer(out,data.y.reshape(-1, model.output_dim), math.sqrt(loss.item() / len(data.y.reshape(-1, model.output_dim))))
 
     metric = total_loss / total_samples
-    if hasattr(criterion, "root") and criterion.root:
-        metric = math.sqrt(metric)
+
+    if hasattr(criterion, "root") and criterion.root: metric = math.sqrt(metric)
+
+    return metric
+
+def fake_train(model, train_loader, optimizer, criterion, metric_printer=None):
+    model.eval()
+    total_loss = 0.0
+    total_samples = 0
+
+    for data in train_loader:
+        data = data.to(model.device)  # Move data to the same device as the model
+        out = model(data)
+        loss = criterion(out, data.y.reshape(-1, model.output_dim))
+        total_loss += loss.detach().item()
+        total_samples += torch.numel(data.y)
+
+    metric = total_loss / total_samples
+
+    if hasattr(criterion, "root") and criterion.root: metric = math.sqrt(metric)
 
     return metric
 
@@ -58,12 +76,11 @@ def train_multidata(model, train_loaders, optimizer, criterion):
             optimizer.step()
 
             total_loss += loss.detach().item()
-            # total_samples += len(data.y.reshape(-1, model.output_dim))
             total_samples += torch.numel(data.y)
 
     metric = total_loss / total_samples
-    if hasattr(criterion, "root") and criterion.root:
-        metric = math.sqrt(metric)
+
+    if hasattr(criterion, "root") and criterion.root: metric = math.sqrt(metric)
 
     return metric
 
@@ -81,8 +98,8 @@ def test(model, loader, criterion, metric_printer=None, log_train = False):
             total_samples += torch.numel(data.y)
 
     metric = total_loss / total_samples
-    if hasattr(criterion, "root") and criterion.root:
-        metric = math.sqrt(metric)
+
+    if hasattr(criterion, "root") and criterion.root: metric = math.sqrt(metric)
 
     return metric
 
@@ -102,8 +119,8 @@ def test_multidata(model, test_loaders, criterion, metric_printer=None, log_trai
                 total_samples += torch.numel(data.y)
     
     metric = total_loss / total_samples
-    if hasattr(criterion, "root") and criterion.root:
-        metric = math.sqrt(metric)
+    
+    if hasattr(criterion, "root") and criterion.root: metric = math.sqrt(metric)
 
     return metric
 
