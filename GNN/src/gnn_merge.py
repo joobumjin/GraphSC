@@ -1,12 +1,12 @@
 import torch
 import torch.nn.functional as F
-from torch.nn import Linear, Dropout, Identity
+from torch.nn import ModuleList, Linear, Dropout, Identity
 from collections import namedtuple
 
 DataPoint = namedtuple('DataPoint', ['x', 'edge_index', 'batch'])
 
 class GCN_Merge(torch.nn.Module):
-    def __init__(self, gnn1, gnn2, output_dim=1, freeze_gnns = False):
+    def __init__(self, gnn1, gnn2, output_dim=1, head_depth=1, freeze_gnns = False):
         super().__init__()
         self.gnn1 = gnn1
         self.gnn2 = gnn2
@@ -23,9 +23,8 @@ class GCN_Merge(torch.nn.Module):
 
         self.dropout = Dropout(p=0.5)
 
-        self.pred_head = Linear(gnn1.dense_hidden * 2, self.output_dim) # W [1024, 1]
-        for param in self.pred_head.parameters():
-            param.requires_grad = False
+        self.pred_head = ModuleList([Linear(gnn1.dense_hidden * 2, gnn1.dense_hidden * 2) for _ in range(head_depth-1)] + \
+                                    [Linear(gnn1.dense_hidden * 2, self.output_dim)])
 
     def forward(self, pair_data):
         data_1, data_2 = DataPoint(pair_data.x1, pair_data.edge_index1, pair_data.x1_batch), \
@@ -35,7 +34,8 @@ class GCN_Merge(torch.nn.Module):
 
         x = torch.cat((emb1, emb2), dim=-1)
         x = self.dropout(x)
-        x = self.pred_head(x)
+        for layer in self.pred_head:
+            x = layer(x)
         x = F.sigmoid(x)
 
         return x

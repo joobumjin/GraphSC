@@ -19,7 +19,6 @@ class SSLELoss(torch.nn.Module):
     def forward(self, pred, actual):
         return self.mse(pred, torch.log(actual + 1))
 
-
 def train(model, train_loader, optimizer, criterion, metric_printer=None):
     model.train()
     total_loss = 0.0

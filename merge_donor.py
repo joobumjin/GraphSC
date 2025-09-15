@@ -178,9 +178,9 @@ def main(args):
     dense_hidden = 128
     arch_string = f"G{num_gcn}_D{num_dense}"
     learning_rate = 0.0003
-    lr_decay = 0.05
+    lr_decay = 0.1
     weight_decay = 0.005
-    dropout_rate = 0.05
+    dropout_rate = 0.25
 
     config={
         "architecture": "GATv2-Donor-Merge",
@@ -216,7 +216,7 @@ def main(args):
     #
     #run
     #
-    with wandb.init(entity="bumjin_joo-brown-university", project="qbam-donor", name="Test-Merge", config=config) as run:
+    with wandb.init(entity="bumjin_joo-brown-university", project="qbam-donor", name="Fix-Merge", config=config) as run:
         run.watch(model1)
         run.watch(model2)
         run.watch(gnn_merge)
