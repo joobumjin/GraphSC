@@ -44,24 +44,6 @@ def train(model, train_loader, optimizer, criterion, metric_printer=None):
 
     return metric
 
-def fake_train(model, train_loader, optimizer, criterion, metric_printer=None):
-    model.eval()
-    total_loss = 0.0
-    total_samples = 0
-
-    for data in train_loader:
-        data = data.to(model.device)  # Move data to the same device as the model
-        out = model(data)
-        loss = criterion(out, data.y.reshape(-1, model.output_dim))
-        total_loss += loss.detach().item()
-        total_samples += torch.numel(data.y)
-
-    metric = total_loss / total_samples
-
-    if hasattr(criterion, "root") and criterion.root: metric = math.sqrt(metric)
-
-    return metric
-
 def train_multidata(model, train_loaders, optimizer, criterion):
     model.train()
     total_loss = 0.0

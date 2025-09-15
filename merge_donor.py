@@ -11,7 +11,7 @@ import torch
 from torch.nn import BCELoss
 
 from pair_preprocessing import PairData, get_loaders
-from train_test import Accuracy, train, fake_train, train_multidata, test, test_multidata, StandardInlinePrint
+from train_test import Accuracy, train, train_multidata, test, test_multidata, StandardInlinePrint
 import GNN.src.gnn_multiple as GCNs
 from GNN.src import test_acc
 from GNN.src.gnn_merge import GCN_Merge
@@ -50,7 +50,6 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
     crit_string = "BCE"
     train_criterion = BCELoss(reduction='sum')
     train_crits = {
-        "BCE1": BCELoss(reduction='sum'),
         "Acc": Accuracy()
     }
     test_crits = {
@@ -69,13 +68,11 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
     else: 
         train_fn = train
         train_loaders = train_loaders[0]
-        print(f"Train Loader Length: {len(train_loaders)}")
 
     if len(val_loaders) > 1: test_fn = test_multidata
     else: 
         test_fn = test
         val_loaders = val_loaders[0]
-        print(f"Valid Loader Length: {len(val_loaders)}")
 
     #
     #run
@@ -89,9 +86,6 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
 
         train_losses.append(train_loss)
         postfix = {f"Train {crit_string}": train_loss}
-
-        fake_train_loss = fake_train(model, train_loaders, optimizer, train_criterion)
-        postfix = {f"Train BCE2": fake_train_loss}
 
         #eval
         for crit_dict, metric_dict, loader, split in zip([train_crits, test_crits], [train_metrics, val_metrics], [train_loaders, val_loaders], ["Train", "Valid"]):
@@ -180,13 +174,13 @@ def main(args):
     num_epochs = 100
     num_gcn = 4
     num_dense = 5
-    hidden_size = 144
-    dense_hidden = 256
+    hidden_size = 128
+    dense_hidden = 128
     arch_string = f"G{num_gcn}_D{num_dense}"
     learning_rate = 0.0003
-    lr_decay = 0.25
+    lr_decay = 0.05
     weight_decay = 0.005
-    dropout_rate = 0.5
+    dropout_rate = 0.05
 
     config={
         "architecture": "GATv2-Donor-Merge",
@@ -210,11 +204,12 @@ def main(args):
     model2 = model_class(*data_details, hidden_channels = hidden_size, dense_hidden = dense_hidden, dropout_p=dropout_rate)
     gnn_merge = GCN_Merge(model1, model2)
 
-    print(f"#########################################################################################\n\
-            {num_gcn} GCN Layers | {hidden_size} units\n\
-            {num_dense} Dense Layers | {dense_hidden}\n\
-            Dropout Rate: {dropout_rate}\n\
-            Learning Rate: {learning_rate} with Decay {lr_decay} and Weight Decay: {weight_decay}\n#########################################################################################")
+    print(f"#########################################################################################\n"
+            f"{num_gcn} GCN Layers | {hidden_size} units\n"
+            f"{num_dense} Dense Layers | {dense_hidden}\n"
+            f"Dropout Rate: {dropout_rate}\n"
+            f"Learning Rate: {learning_rate} with Decay {lr_decay} and Weight Decay: {weight_decay}\n"
+            f"#########################################################################################")
 
     loss_graph_path = f"{args.data}/Train_graphs/Merge.jpeg"
 
