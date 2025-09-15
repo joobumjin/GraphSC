@@ -171,16 +171,17 @@ def main(args):
     #
     #hyper params
     #
-    num_epochs = 100
+    num_epochs = 150
     num_gcn = 4
     num_dense = 5
     hidden_size = 128
-    dense_hidden = 128
+    dense_hidden = 256
     arch_string = f"G{num_gcn}_D{num_dense}"
     learning_rate = 0.0003
     lr_decay = 0.1
     weight_decay = 0.005
     dropout_rate = 0.25
+    head_depth = 3
 
     config={
         "architecture": "GATv2-Donor-Merge",
@@ -202,11 +203,12 @@ def main(args):
     model_class = model_constructors[arch_string]
     model1 = model_class(*data_details, hidden_channels = hidden_size, dense_hidden = dense_hidden, dropout_p=dropout_rate)
     model2 = model_class(*data_details, hidden_channels = hidden_size, dense_hidden = dense_hidden, dropout_p=dropout_rate)
-    gnn_merge = GCN_Merge(model1, model2)
+    gnn_merge = GCN_Merge(model1, model2, head_depth=head_depth)
 
     print(f"#########################################################################################\n"
             f"{num_gcn} GCN Layers\t|\t{hidden_size} units\n"
             f"{num_dense} Dense Layers\t|\t{dense_hidden}\n"
+            f"{head_depth} Dense in Head\t|\t{2*dense_hidden}\n"
             f"Dropout Rate: {dropout_rate}\n"
             f"Learning Rate: {learning_rate} with Decay {lr_decay} and Weight Decay: {weight_decay}\n"
             f"#########################################################################################")
