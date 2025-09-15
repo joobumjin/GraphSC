@@ -120,16 +120,19 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
     fig, ax1 = plt.subplots(figsize=(10, 6))
     ax1.set_xlabel('Epoch')
     ax1.set_ylabel('BCE')
-    ax1.plot(train_losses, label='Training BCE', color='tab:blue')
-    ax1.plot(val_metrics["BCE"], label='Validation BCE', color="tab:orange")
-    ax1.legend()
+    p1 = ax1.plot(train_losses, label='Training BCE', color='tab:blue')
+    p2 = ax1.plot(val_metrics["BCE"], label='Validation BCE', color="tab:orange")
+    # ax1.legend()
     ax1.tick_params(axis='y')
     #accs
     ax2 = ax1.twinx()
     ax2.set_ylabel('Accuracy')
-    ax2.plot(train_metrics["Acc"], label='Train Accuracy', color="tab:green")
-    ax2.plot(val_metrics["Acc"], label='Validation Accuracy', color="tab:red")
-    ax2.legend()
+    p3 = ax2.plot(train_metrics["Acc"], label='Train Accuracy', color="tab:green")
+    p4 = ax2.plot(val_metrics["Acc"], label='Validation Accuracy', color="tab:red")
+    # ax2.legend()
+
+    ax1.legend(handles=p1+p2+p3+p4, loc='best')
+
     #outoutting
     fig.tight_layout()  
     plt.title('Training and Validation BCE/Acc')
