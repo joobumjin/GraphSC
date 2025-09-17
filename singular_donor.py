@@ -221,7 +221,7 @@ def main(args):
     #run
     #
     with wandb.init(entity="bumjin_joo-brown-university", project="qbam-donor", name="Modular Singular", config=config) as run:
-        run.watch(model)
+        # run.watch(model)
 
         _, _ = train_model(train_loaders, 
                         val_loaders, 
