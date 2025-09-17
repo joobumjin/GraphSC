@@ -1,6 +1,6 @@
 import torch
 import torch.nn.functional as F
-import torch_geometric as geom
+import torch_geometric.nn as geom
 from torch_geometric.nn import GATv2Conv, global_mean_pool, BatchNorm
 import torch.nn as nn
 from torch.nn import Linear, Dropout, LeakyReLU
