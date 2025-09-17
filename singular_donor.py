@@ -13,8 +13,9 @@ from torch.nn import BCEWithLogitsLoss
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
 from preprocessing import get_loaders
-from train_test import Accuracy, train, train_multidata, test, test_multidata, StandardInlinePrint
-import GNN.src.gnn_multiple as GCNs
+from train_test import Accuracy, train, train_multidata, test, test_multidata
+# import GNN.src.gnn_multiple as GCNs
+from GNN.src.gnn_modular import Modular_GNN
 from GNN.src import test_acc
 
 def parse_args(args=None):
@@ -165,7 +166,7 @@ def main(args):
 
     Path(f"{args.data}/{target}/Train_graphs").mkdir(parents=True, exist_ok=True)
 
-    model_constructors = GCNs.get_model_constructors()
+    # model_constructors = GCNs.get_model_constructors()
 
     train_loader, val_loader, test_loader, data_details = get_loaders(data_dirs, target, args.batch_size)
     train_loaders = [train_loader]
@@ -175,42 +176,40 @@ def main(args):
     #
     #hyper params
     #
-    num_epochs = 150
-    num_gcn = 4
-    num_dense = 5
-    hidden_size = 128
-    dense_hidden = 256
-    arch_string = f"G{num_gcn}_D{num_dense}"
-    learning_rate = 0.0003
-    lr_decay = 0.1
-    weight_decay = 0.005
-    dropout_rate = 0.25
+
+    model_args = {
+        "num_node_features": data_details[0], 
+        "output_dim": data_details[1],  
+        "num_gcn": 4, 
+        "num_dense": 5, 
+        "hidden_channels": 128, 
+        "dense_hidden": 256, 
+        "dropout_p": 0.25
+    }
 
     config={
         "architecture": "GATv2",
         "dataset": "Donor",
-        "epochs": num_epochs,
-        "num_gcn": num_gcn,
-        "num_dense": num_dense,
-        "hidden_size": hidden_size,
-        "dense_hidden": dense_hidden,
-        "learning_rate": learning_rate,
-        "lr_decay": lr_decay,
-        "weight_decay": weight_decay,
-        "dropout_rate": dropout_rate,
+        "epochs": 150,
+        "learning_rate": 0.0003,
+        "lr_decay": 0.1,
+        "weight_decay": 0.005,
     }
+
+    config = {**model_args, **config}
 
     #
     #build models
     #
-    model_class = model_constructors[arch_string]
-    model = model_class(*data_details, hidden_channels = hidden_size, dense_hidden = dense_hidden, dropout_p=dropout_rate)
+    # model_class = model_constructors[arch_string]
+    # model = model_class(*data_details, hidden_channels = hidden_size, dense_hidden = dense_hidden, dropout_p=dropout_rate)
+    model = Modular_GNN(**model_args)
 
     print(f"#########################################################################################\n"
-            f"{num_gcn} GCN Layers\t|\t{hidden_size} units\n"
-            f"{num_dense} Dense Layers\t|\t{dense_hidden}\n"
-            f"Dropout Rate: {dropout_rate}\n"
-            f"Learning Rate: {learning_rate} with Decay {lr_decay} and Weight Decay: {weight_decay}\n"
+            f"{model_args["num_gcn"]} GCN Layers\t|\t{model_args["hidden_channels"]} units\n"
+            f"{model_args["num_dense"]} Dense Layers\t|\t{model_args["dense_hidden"]}\n"
+            f"Dropout Rate: {model_args["dropout_p"]}\n"
+            f"Learning Rate: {config["learning_rate"]} with Decay {config["lr_decay"]} and Weight Decay: {config["weight_decay"]}\n"
             f"#########################################################################################")
 
     loss_graph_path = f"{args.data}/Train_graphs/Singular.jpeg"
@@ -218,17 +217,17 @@ def main(args):
     #
     #run
     #
-    with wandb.init(entity="bumjin_joo-brown-university", project="qbam-donor", name="Singular Model", config=config) as run:
+    with wandb.init(entity="bumjin_joo-brown-university", project="qbam-donor", name="Modular Model", config=config) as run:
         run.watch(model)
 
         _, _ = train_model(train_loaders, 
                         val_loaders, 
                         model, 
-                        learning_rate, 
-                        num_epochs, 
+                        config["learning_rate"], 
+                        config["num_epochs"], 
                         img_path=loss_graph_path, 
-                        gamma=lr_decay, 
-                        weight_decay=weight_decay,
+                        gamma=config["lr_decay"], 
+                        weight_decay=config["weight_decay"],
                         wandb_run = run)
 
     print(f"Validation Stats")

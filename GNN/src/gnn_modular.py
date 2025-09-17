@@ -1,10 +1,12 @@
 import torch
 import torch.nn.functional as F
+import torch_geometric as geom
 from torch_geometric.nn import GATv2Conv, global_mean_pool, BatchNorm
-from torch.nn import ModuleList, Linear, Dropout
+import torch.nn as nn
+from torch.nn import Linear, Dropout, LeakyReLU
 
-class Modular_GCN(torch.nn.Module):
-    def __init__(self, num_node_features, output_dim, num_dense = 2, num_gcn = 3, hidden_channels=128, num_heads=8):
+class Modular_GNN(torch.nn.Module):
+    def __init__(self, num_node_features, output_dim,  num_dense = 2, num_gcn = 3, hidden_channels=128, dense_hidden=128, num_heads=8, dropout_p=0.5):
         super().__init__()
         self.num_node_features = num_node_features
         self.output_dim = output_dim
@@ -13,39 +15,52 @@ class Modular_GCN(torch.nn.Module):
 
         edge_dim = 0 if output_dim == 1 else 1
 
+        #build GAT Network
         gat_layers = [
-            GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=edge_dim),
-        ]
-        b_norm_layers = [BatchNorm(self.hidden_channels * self.num_heads),]
+            (GATv2Conv(self.num_node_features, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=edge_dim), 'x, edge_index -> x'),
+            (BatchNorm(self.hidden_channels * self.num_heads), 'x -> x'),
+            LeakyReLU(inplace=True)
+        ] #input layer
+
         for _ in range(num_gcn - 2):
-            gat_layers.append(GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=edge_dim))
-            b_norm_layers.append(BatchNorm(self.hidden_channels * self.num_heads))
-        gat_layers.append(GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=edge_dim))
-        b_norm_layers.append(BatchNorm(self.output_dim))
+            gat_layers += [
+              (GATv2Conv(self.hidden_channels * self.num_heads, self.hidden_channels, heads=self.num_heads, concat=True, edge_dim=edge_dim), 'x, edge_index -> x'),
+              (BatchNorm(self.hidden_channels * self.num_heads), 'x -> x'),
+              LeakyReLU(inplace=True)
+            ]
+      
+        gat_layers += [
+            (GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=edge_dim), 'x, edge_index -> x'),
+            (BatchNorm(self.output_dim), 'x -> x'),
+            LeakyReLU(inplace=True)
 
-        self.gats = ModuleList(gat_layers)
-        self.b_norms = ModuleList(b_norm_layers)
+        ]
 
-        self.dropout = Dropout(p=0.5)
-        dense_layers = [Linear(self.output_dim, self.hidden_channels)]
-        dense_layers = dense_layers + [Linear(self.hidden_channels, self.hidden_channels) for _ in range(num_dense - 2)]
-        dense_layers.append(Linear(self.hidden_channels, self.output_dim)) #for donor prediction, try both output dim of 1 and 2
+        self.gat_net = geom.Sequential('x, edge_index -> x', gat_layers)
 
-        self.dense_head = ModuleList(dense_layers)
+        #Build Dense Prediction Head
+        dense_layers = [
+          Linear(self.output_dim, self.hidden_channels),
+          LeakyReLU(inplace=True),
+          Dropout(p=dropout_p)
+        ]
+        for _ in range(num_dense - 2):
+          dense_layers += [
+            Linear(self.hidden_channels, self.hidden_channels),
+            LeakyReLU(inplace=True),
+            Dropout(p=dropout_p)
+          ]
+        dense_layers.append(Linear(self.hidden_channels, self.output_dim))
+
+        self.dense_head = nn.Sequential(*dense_layers)
 
     def forward(self, data):
         x, edge_index, batch = data.x, data.edge_index, data.batch
 
-        for gat, b_norm in zip(self.gats, self.b_norms):
-          x = gat(x, edge_index)
-          x = b_norm(x)
-          x = F.leaky_relu(x)
+        x = self.gat_net(x, edge_index)
 
         x = global_mean_pool(x, batch)
 
-        for dense in self.dense_head:
-          x = dense(x)
-          x = F.leaky_relu(x)
-          x = self.dropout(x)
+        x = self.dense_head(x)
 
         return x
