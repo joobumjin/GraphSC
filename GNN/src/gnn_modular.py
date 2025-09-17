@@ -10,6 +10,7 @@ class Modular_GNN(torch.nn.Module):
         super().__init__()
         self.num_node_features = num_node_features
         self.output_dim = output_dim
+        self.dense_hidden = dense_hidden
         self.hidden_channels = hidden_channels
         self.num_heads = num_heads
 
