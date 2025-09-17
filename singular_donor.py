@@ -149,6 +149,38 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
 
     return train_losses[-1], val_metrics["BCE"][-1]
 
+def eval(test_loaders, model, wandb_run = None):
+     #
+    #setup
+    #
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print("Using", device)
+
+    model = model.to(device)
+    model.device = device
+
+    test_crits = {
+        "BCE": BCEWithLogitsLoss(reduction='sum'),
+        "Acc": Accuracy()
+    }
+
+    #
+    #data
+    #
+    if len(test_loaders) > 1: test_fn = test_multidata
+    else: 
+        test_fn = test
+        test_loaders = test_loaders[0]
+
+    #
+    #run
+    #
+    for crit_dict, loader, split in zip([test_crits], [test_loaders], ["Test"]):
+        for crit, crit_obj in crit_dict.items():
+            if wandb_run: 
+                wandb_run.summary[f"{split} {crit}"] = test_fn(model, loader, crit_obj)
+
+
 def main(args):
     sns.set_theme()
 
@@ -215,7 +247,6 @@ def main(args):
             f"Learning Rate: {config["learning_rate"]} with Decay {config["lr_decay"]} and Weight Decay: {config["weight_decay"]}\n"
             f"#########################################################################################")
 
-    loss_graph_path = f"{args.data}/Train_graphs/Singular.jpeg"
 
     #
     #run
@@ -228,15 +259,11 @@ def main(args):
                         model, 
                         config["learning_rate"], 
                         config["epochs"], 
-                        img_path=loss_graph_path, 
                         gamma=config["lr_decay"], 
                         weight_decay=config["weight_decay"],
                         wandb_run = run)
-
-    print(f"Validation Stats")
-    _ = test_acc.test_model(val_loaders, model, task=target, test_multiple=False)
-    print(f"Test Stats")
-    test_loss = test_acc.test_model(test_loaders, model, task=target, test_multiple=False)
+        
+        eval(test_loaders, model, wandb_run = run)
 
 
 ## END UTILITY METHODS
