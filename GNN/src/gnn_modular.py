@@ -36,7 +36,7 @@ class Modular_GNN(torch.nn.Module):
 
         ]
 
-        self.gat_net = geom.Sequential('x, edge_index -> x', gat_layers)
+        self.gat_net = geom.Sequential('x, edge_index', gat_layers)
 
         #Build Dense Prediction Head
         dense_layers = [
