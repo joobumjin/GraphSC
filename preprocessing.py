@@ -29,7 +29,6 @@ def load_dataset_from_pickle(pickle_file):
     
 def print_stats(train_dataset, val_dataset, test_dataset, num_features, num_targets, print_detailed = False):
     print("###################################")
-    print()
     print(f'Number of training graphs: {len(train_dataset)}')
     print(f'Number of validation graphs: {len(val_dataset)}')
     print(f'Number of test graphs: {len(test_dataset)}')
@@ -49,7 +48,6 @@ def print_stats(train_dataset, val_dataset, test_dataset, num_features, num_targ
         print(f'Has self-loops: {data.has_self_loops()}')
         print(f'Is undirected: {data.is_undirected()}')
         print('=============================================================')
-        print()
         print(f'Number of training graphs: {len(train_dataset)}')
         print(f'Number of test graphs: {len(val_dataset)}')
         print('=============================================================')
