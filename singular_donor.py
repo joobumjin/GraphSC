@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 import torch
-from torch.nn import BCELoss
+from torch.nn import BCEWithLogitsLoss
 
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
@@ -49,12 +49,12 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
     optimizer = torch.optim.Adam(model.parameters(), **opt_args)
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma)
     crit_string = "BCE"
-    train_criterion = BCELoss(reduction='sum')
+    train_criterion = BCEWithLogitsLoss(reduction='sum')
     train_crits = {
         "Acc": Accuracy()
     }
     test_crits = {
-        "BCE": BCELoss(reduction='sum'),
+        "BCE": BCEWithLogitsLoss(reduction='sum'),
         "Acc": Accuracy()
     }
     
@@ -219,7 +219,7 @@ def main(args):
     #run
     #
     with wandb.init(entity="bumjin_joo-brown-university", project="qbam-donor", name="Singular Model", config=config) as run:
-        # run.watch(model)
+        run.watch(model)
 
         _, _ = train_model(train_loaders, 
                         val_loaders, 
