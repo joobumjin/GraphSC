@@ -227,7 +227,7 @@ def main(args):
                         val_loaders, 
                         model, 
                         config["learning_rate"], 
-                        config["num_epochs"], 
+                        config["epochs"], 
                         img_path=loss_graph_path, 
                         gamma=config["lr_decay"], 
                         weight_decay=config["weight_decay"],
