@@ -31,26 +31,24 @@ class Modular_GNN(torch.nn.Module):
       
         gat_layers += [
             (GATv2Conv(self.hidden_channels * self.num_heads, self.output_dim, heads=1, concat=False, edge_dim=edge_dim), 'x, edge_index -> x'),
-            (BatchNorm(self.output_dim), 'x -> x'),
-            LeakyReLU(inplace=True)
-
+            (BatchNorm(self.output_dim), 'x -> x')
         ]
 
         self.gat_net = geom.Sequential('x, edge_index', gat_layers)
 
         #Build Dense Prediction Head
         dense_layers = [
-          Linear(self.output_dim, self.hidden_channels),
+          Linear(self.output_dim, self.dense_hidden),
           LeakyReLU(inplace=True),
           Dropout(p=dropout_p)
         ]
         for _ in range(num_dense - 2):
           dense_layers += [
-            Linear(self.hidden_channels, self.hidden_channels),
+            Linear(self.dense_hidden, self.dense_hidden),
             LeakyReLU(inplace=True),
             Dropout(p=dropout_p)
           ]
-        dense_layers.append(Linear(self.hidden_channels, self.output_dim))
+        dense_layers.append(Linear(self.dense_hidden, self.output_dim))
 
         self.dense_head = nn.Sequential(*dense_layers)
 

@@ -204,6 +204,9 @@ def main(args):
     # model_class = model_constructors[arch_string]
     # model = model_class(*data_details, hidden_channels = hidden_size, dense_hidden = dense_hidden, dropout_p=dropout_rate)
     model = Modular_GNN(**model_args)
+    #actually build the weights to get grad tracking
+    dummy_batch = next(iter(val_loader))
+    _ = model(dummy_batch)
 
     print(f"#########################################################################################\n"
             f"{model_args["num_gcn"]} GCN Layers\t|\t{model_args["hidden_channels"]} units\n"
