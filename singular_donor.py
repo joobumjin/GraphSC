@@ -220,8 +220,8 @@ def main(args):
     }
 
     config={
-        "architecture": "GATv2",
-        "dataset": "Donor",
+        "architecture": "GATv2 Modular",
+        "dataset": "Donor, Singular Graph",
         "epochs": 150,
         "learning_rate": 0.0003,
         "lr_decay": 0.1,
