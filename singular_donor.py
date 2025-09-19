@@ -137,7 +137,7 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
     if img_path:
         plt.savefig(img_path)
         print(f"Saved graph to {img_path}")
-        
+
     if wandb_run: wandb_run.log({"chart": plt})
 
     plt.close()
@@ -227,7 +227,7 @@ def main(args):
     model_args = {
         "num_node_features": data_details[0], 
         "output_dim": data_details[1],  
-        "num_gcn": 3, 
+        "num_gcn": 3, #max 2-3
         "num_dense": 4, 
         "hidden_channels": 128, 
         "dense_hidden": 256, 
@@ -238,7 +238,7 @@ def main(args):
         "architecture": "GATv2 Modular",
         "dataset": "Donor, Singular Graph",
         "epochs": 150,
-        "learning_rate": 1e-6,
+        "learning_rate": 5e-8,
         "lr_decay": 0.1,
         "weight_decay": 0.005,
     }
@@ -262,7 +262,11 @@ def main(args):
 
     #
     #run
-    with wandb.init(entity="bumjin_joo-brown-university", project="qbam-donor", name="Modular Singular, LR1e-6", config=config) as run:
+    with wandb.init(
+        entity="bumjin_joo-brown-university", 
+        project="qbam-donor", 
+        name=f"Modular Singular, LR{config["learning_rate"]}", 
+        config=config) as run:
         # run.watch(model)
 
         _, _ = train_model(train_loaders, 
