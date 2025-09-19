@@ -228,18 +228,18 @@ def main(args):
         "num_node_features": data_details[0], 
         "output_dim": data_details[1],  
         "num_gcn": 3, #max 2-3
-        "num_dense": 4, 
+        "num_dense": 5, 
         "hidden_channels": 256, 
-        "dense_hidden": 512, 
-        "dropout_p": 0.25
+        "dense_hidden": 256, 
+        "dropout_p": 0.10
     }
 
     config={
         "architecture": "GATv2 Modular",
         "dataset": "Donor, Singular Graph",
         "epochs": 150,
-        "learning_rate": 5e-8,
-        "lr_decay": 0,
+        "learning_rate": 1e-5,
+        "lr_decay": 0.1,
         "weight_decay": 0.005,
     }
 
@@ -266,7 +266,8 @@ def main(args):
         entity="bumjin_joo-brown-university", 
         project="qbam-donor", 
         name=f"Modular Singular, LR{config["learning_rate"]}", 
-        config=config) as run:
+        config=config
+    ) as run:
         # run.watch(model)
 
         _, _ = train_model(train_loaders, 
