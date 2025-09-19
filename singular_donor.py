@@ -229,8 +229,8 @@ def main(args):
         "output_dim": data_details[1],  
         "num_gcn": 3, #max 2-3
         "num_dense": 4, 
-        "hidden_channels": 128, 
-        "dense_hidden": 256, 
+        "hidden_channels": 256, 
+        "dense_hidden": 512, 
         "dropout_p": 0.25
     }
 
@@ -238,8 +238,8 @@ def main(args):
         "architecture": "GATv2 Modular",
         "dataset": "Donor, Singular Graph",
         "epochs": 150,
-        "learning_rate": 5e-8,
-        "lr_decay": 0.1,
+        "learning_rate": 1e-8,
+        "lr_decay": 0,
         "weight_decay": 0.005,
     }
 
