@@ -238,7 +238,7 @@ def main(args):
         "architecture": "GATv2 Modular",
         "dataset": "Donor, Singular Graph",
         "epochs": 150,
-        "learning_rate": 1e-8,
+        "learning_rate": 5e-8,
         "lr_decay": 0,
         "weight_decay": 0.005,
     }
