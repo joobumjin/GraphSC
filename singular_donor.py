@@ -40,7 +40,6 @@ def parse_args(args=None):
 def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, output_filepath = None, img_path = None, gamma=0.95, weight_decay = None, wandb_run = None):
     #
     #setup
-    #
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Using", device)
 
@@ -65,7 +64,6 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
 
     #
     #data
-    #
     if len(train_loaders) > 1: train_fn = train_multidata
     else: 
         train_fn = train
@@ -78,7 +76,6 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
 
     #
     #run
-    #
     epoch_tqdm = tqdm(range(1, num_epochs + 1), desc="Training Epochs", postfix={f"Train {crit_string}": 0.0, "Train Acc": 0.0, f"Valid {crit_string}": 0.0, f"Valid Acc": 0.0})
     
     for _ in epoch_tqdm:
@@ -103,22 +100,19 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
 
     #
     #output formating
-    #
     train_losses = np.array(train_losses)
     train_metrics = {crit: np.array(history) for crit, history in train_metrics.items()}
     val_metrics = {crit: np.array(history) for crit, history in val_metrics.items()}
 
     #
     #model saving
-    #
     if output_filepath:
         torch.save(model.state_dict(), output_filepath)
         print("Saved the model to:", output_filepath)
 
     #
     #plotting
-    # 
-    #losses
+    # losses
     fig, ax1 = plt.subplots(figsize=(10, 6))
     ax1.set_xlabel('Epoch')
     ax1.set_ylabel('BCE')
@@ -143,6 +137,7 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
     if img_path:
         plt.savefig(img_path)
         print(f"Saved graph to {img_path}")
+        
     if wandb_run: wandb_run.log({"chart": plt})
 
     plt.close()
@@ -150,9 +145,8 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
     return train_losses[-1], val_metrics["BCE"][-1]
 
 def eval(test_loaders, model, wandb_run = None):
-     #
-    #setup
     #
+    #setup
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Using", device)
 
@@ -166,15 +160,13 @@ def eval(test_loaders, model, wandb_run = None):
 
     #
     #data
-    #
     if len(test_loaders) > 1: test_fn = test_multidata
     else: 
         test_fn = test
         test_loaders = test_loaders[0]
 
     #
-    #run
-    #
+    #evaluate
     for crit_dict, loader, split in zip([test_crits], [test_loaders], ["Test"]):
         for crit, crit_obj in crit_dict.items():
             if wandb_run: 
@@ -225,8 +217,6 @@ def main(args):
 
     Path(f"{args.data}/{target}/Train_graphs").mkdir(parents=True, exist_ok=True)
 
-    # model_constructors = GCNs.get_model_constructors()
-
     train_loader, val_loader, test_loader, data_details = get_loaders(data_dirs, target, args.batch_size)
     train_loaders = [train_loader]
     val_loaders = [val_loader]
@@ -234,13 +224,11 @@ def main(args):
 
     #
     #hyper params
-    #
-
     model_args = {
         "num_node_features": data_details[0], 
         "output_dim": data_details[1],  
-        "num_gcn": 4, 
-        "num_dense": 5, 
+        "num_gcn": 3, 
+        "num_dense": 4, 
         "hidden_channels": 128, 
         "dense_hidden": 256, 
         "dropout_p": 0.25
@@ -259,25 +247,21 @@ def main(args):
 
     #
     #build models
-    #
-    # model_class = model_constructors[arch_string]
-    # model = model_class(*data_details, hidden_channels = hidden_size, dense_hidden = dense_hidden, dropout_p=dropout_rate)
     model = Modular_GNN(**model_args)
     #actually build the weights to get grad tracking
     dummy_batch = next(iter(val_loader))
     _ = model(dummy_batch)
 
-    print(f"#########################################################################################\n"
+    print(f"###############################################################################\n"
             f"{model_args["num_gcn"]} GCN Layers\t| {model_args["hidden_channels"]} units\n"
             f"{model_args["num_dense"]} Dense Layers\t| {model_args["dense_hidden"]} units\n"
             f"Dropout Rate: {model_args["dropout_p"]}\n"
             f"Learning Rate: {config["learning_rate"]} with Decay {config["lr_decay"]} and Weight Decay: {config["weight_decay"]}\n"
-            f"#########################################################################################")
+            f"###############################################################################")
 
 
     #
     #run
-    #
     with wandb.init(entity="bumjin_joo-brown-university", project="qbam-donor", name="Modular Singular, LR1e-6", config=config) as run:
         # run.watch(model)
 
