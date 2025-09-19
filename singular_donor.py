@@ -180,6 +180,33 @@ def eval(test_loaders, model, wandb_run = None):
             if wandb_run: 
                 wandb_run.summary[f"{split} {crit}"] = test_fn(model, loader, crit_obj)
 
+# def objective(trial, target, model_constructors, data_details, train_loaders, val_loaders, test_loaders, data_path = None):
+#     num_epochs = 300
+
+#     #Tuning
+#     num_gcn = trial.suggest_int("num_gcn", 4, 5)
+#     num_dense = trial.suggest_int("num_dense", 4, 5)
+#     hidden_size = 144 # trial.suggest_int("hidden_size", 64, 200, step=16)
+#     dense_hidden = trial.suggest_int("dense_hidden", 128, 512, step=32)
+#     arch_string = f"G{num_gcn}_D{num_dense}"
+#     learning_rate = trial.suggest_float("learning_rate", 0.001, 0.005, step=0.001)
+#     lr_decay = trial.suggest_float("learning_rate_decay", 0.5, 1.0, step=.1)
+#     weight_decay = 0.005 #trial.suggest_float("l2_penalty", 0, 1e-2, step=5e-5)
+#     dropout_rate = trial.suggest_float("dropout", 0.2, 0.7, step=0.1)
+
+#     model_class = model_constructors[arch_string]
+#     model = model_class(*data_details, hidden_channels = hidden_size, dense_hidden = dense_hidden, dropout_p=dropout_rate)
+
+#     print(f"{num_gcn} GCN Layers | {hidden_size} units\n{num_dense} Dense Layers | {dense_hidden}\nDropout Rate: {dropout_rate}\nLearning Rate: {learning_rate} with Decay {lr_decay} and Weight Decay: {weight_decay}")
+
+#     _, _ = train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, img_path=f"{data_path}/Train_graphs/{arch_string}_h{hidden_size}_d{dense_hidden}_lr{learning_rate}_decay{lr_decay}.jpeg", gamma=lr_decay, weight_decay=weight_decay)
+
+#     print(f"Validation Stats")
+#     _ = test_acc.test_model(val_loaders, model, task=target, test_multiple=False)
+#     print(f"Test Stats")
+#     test_loss = test_acc.test_model(test_loaders, model, task=target, test_multiple=False)
+
+#     return test_loss
 
 def main(args):
     sns.set_theme()
@@ -223,7 +250,7 @@ def main(args):
         "architecture": "GATv2 Modular",
         "dataset": "Donor, Singular Graph",
         "epochs": 150,
-        "learning_rate": 0.0003,
+        "learning_rate": 1e-6,
         "lr_decay": 0.1,
         "weight_decay": 0.005,
     }
@@ -251,7 +278,7 @@ def main(args):
     #
     #run
     #
-    with wandb.init(entity="bumjin_joo-brown-university", project="qbam-donor", name="Modular Singular", config=config) as run:
+    with wandb.init(entity="bumjin_joo-brown-university", project="qbam-donor", name="Modular Singular, LR1e-6", config=config) as run:
         # run.watch(model)
 
         _, _ = train_model(train_loaders, 
