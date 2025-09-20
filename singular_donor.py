@@ -2,6 +2,7 @@ import argparse
 from pathlib import Path    
 import datetime
 import wandb
+import optuna
 
 from tqdm import tqdm
 import matplotlib.pyplot as plt
@@ -30,8 +31,6 @@ def parse_args(args=None):
     parser = argparse.ArgumentParser(description="Specify Hyperparameters to Optimize for the GNN", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--data',           required=True,                                          help='File path to the assignment data file.')
     parser.add_argument('--pred',           required=True,  choices=['Donor'],                      help='Type of Value being Predicted from QBAMs')
-    # parser.add_argument('--study_name',     required=True,                                          help='Name of the log to which the Optuna study shall be saved')
-    # parser.add_argument('--log_path',       default='',                                             help='where the optuna study logs will stored')
     parser.add_argument('--batch_size',     type=int,       default=20,                             help='Model\'s batch size.')
 
     if args is None: 
@@ -157,6 +156,8 @@ def eval(test_loaders, model, wandb_run = None):
         "Acc": Accuracy()
     }
 
+    acc = 0
+
     #
     #data
     if len(test_loaders) > 1: test_fn = test_multidata
@@ -168,36 +169,73 @@ def eval(test_loaders, model, wandb_run = None):
     #evaluate
     for crit_dict, loader, split in zip([test_crits], [test_loaders], ["Test"]):
         for crit, crit_obj in crit_dict.items():
-            if wandb_run: 
-                wandb_run.summary[f"{split} {crit}"] = test_fn(model, loader, crit_obj)
+            metric_calc = test_fn(model, loader, crit_obj)
+            if wandb_run: wandb_run.summary[f"{split} {crit}"] = metric_calc
+            if crit == "Acc": acc = metric_calc
 
-# def objective(trial, target, model_constructors, data_details, train_loaders, val_loaders, test_loaders, data_path = None):
-#     num_epochs = 300
+    return acc
 
-#     #Tuning
-#     num_gcn = trial.suggest_int("num_gcn", 4, 5)
-#     num_dense = trial.suggest_int("num_dense", 4, 5)
-#     hidden_size = 144 # trial.suggest_int("hidden_size", 64, 200, step=16)
-#     dense_hidden = trial.suggest_int("dense_hidden", 128, 512, step=32)
-#     arch_string = f"G{num_gcn}_D{num_dense}"
-#     learning_rate = trial.suggest_float("learning_rate", 0.001, 0.005, step=0.001)
-#     lr_decay = trial.suggest_float("learning_rate_decay", 0.5, 1.0, step=.1)
-#     weight_decay = 0.005 #trial.suggest_float("l2_penalty", 0, 1e-2, step=5e-5)
-#     dropout_rate = trial.suggest_float("dropout", 0.2, 0.7, step=0.1)
+def objective(trial, data_details, train_loaders, val_loaders, test_loaders, layer_dict):
+    #
+    #hyper params
+    layer = trial.suggest_categorical(layer_dict.keys())
 
-#     model_class = model_constructors[arch_string]
-#     model = model_class(*data_details, hidden_channels = hidden_size, dense_hidden = dense_hidden, dropout_p=dropout_rate)
+    model_args = {
+        "num_node_features": data_details[0], 
+        "output_dim": data_details[1],  
+        "num_gcn": trial.suggest_int("num_gcn", 2, 3),
+        "num_dense": trial.suggest_int("num_dense", 3, 5), 
+        "hidden_channels": trial.suggest_int("hidden_size", 64, 256, step=64), 
+        "dense_hidden": trial.suggest_int("hidden_size", 64, 256, step=64), 
+        "dropout_p": trial.suggest_float("dropout", 0.1, 0.7, step=0.1),
+        "gnn_layer": layer_dict[layer]
+    }
 
-#     print(f"{num_gcn} GCN Layers | {hidden_size} units\n{num_dense} Dense Layers | {dense_hidden}\nDropout Rate: {dropout_rate}\nLearning Rate: {learning_rate} with Decay {lr_decay} and Weight Decay: {weight_decay}")
+    config={
+        "architecture": f"{layer} Modular",
+        "dataset": "Donor, Singular Graph",
+        "epochs": 150,
+        "learning_rate": trial.suggest_float("learning_rate", 0.0001, 0.005, step=0.0001),
+        "lr_decay": trial.suggest_float("learning_rate_decay", 0.1, 1.0, step=.1),
+        "weight_decay": trial.suggest_float("l2_penalty", 0, 1e-2, step=5e-5),
+    }
 
-#     _, _ = train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, img_path=f"{data_path}/Train_graphs/{arch_string}_h{hidden_size}_d{dense_hidden}_lr{learning_rate}_decay{lr_decay}.jpeg", gamma=lr_decay, weight_decay=weight_decay)
+    config = {**model_args, **config}
+    print(f"###############################################################################\n"
+            f"{model_args["num_gcn"]} {layer} Layers\t| {model_args["hidden_channels"]} units\n"
+            f"{model_args["num_dense"]} Dense Layers\t| {model_args["dense_hidden"]} units\n"
+            f"Dropout Rate: {model_args["dropout_p"]}\n"
+            f"Learning Rate: {config["learning_rate"]} with Decay {config["lr_decay"]} and Weight Decay: {config["weight_decay"]}\n"
+            f"###############################################################################")
 
-#     print(f"Validation Stats")
-#     _ = test_acc.test_model(val_loaders, model, task=target, test_multiple=False)
-#     print(f"Test Stats")
-#     test_loss = test_acc.test_model(test_loaders, model, task=target, test_multiple=False)
+    #
+    #build models
+    model = Modular_GNN(**model_args)
+    #actually build the weights to get grad tracking
+    dummy_batch = next(iter(val_loaders[0]))
+    _ = model(dummy_batch)
 
-#     return test_loss
+
+    #
+    #run
+    with wandb.init(
+        entity="bumjin_joo-brown-university", 
+        project="qbam-donor-optuna", 
+        name=f"Singular {layer}, LR{config["learning_rate"]}", 
+        config=config
+    ) as run:
+        _, _ = train_model(train_loaders, 
+                        val_loaders, 
+                        model, 
+                        config["learning_rate"], 
+                        config["epochs"], 
+                        gamma=config["lr_decay"], 
+                        weight_decay=config["weight_decay"],
+                        wandb_run = run)
+        
+        test_acc = eval(test_loaders, model, wandb_run = run)
+
+    return test_acc
 
 def main(args):
     sns.set_theme()
@@ -213,74 +251,20 @@ def main(args):
         data_dirs[f"Valid_{data_type}"] = f"{args.data}/{data_type}/valid_singular_donors.pkl"
         data_dirs[f"Test_{data_type}"] = f"{args.data}/{data_type}/test_singular_donors.pkl"
 
-    Path(f"{args.data}/{target}/Train_graphs").mkdir(parents=True, exist_ok=True)
+    layer_dict = {"Graph": GraphConv, "GCN": GCNConv, "GAT": GATConv, "GATv2": GATv2Conv}
 
     train_loader, val_loader, test_loader, data_details = get_loaders(data_dirs, target, args.batch_size)
     train_loaders = [train_loader]
     val_loaders = [val_loader]
     test_loaders = [test_loader]
 
-    #
-    #hyper params
-    layer = "GAT"
-    layer_dict = {"Graph": GraphConv, "GCN": GCNConv, "GAT": GATConv, "GATv2": GATv2Conv}
+    time_string = datetime.datetime.now().strftime('%d-%b-%Y-%H%M')
+    study = optuna.create_study(study_name=f"{time_string}_optimize_{args.pred}", direction="maximize")
 
-    model_args = {
-        "num_node_features": data_details[0], 
-        "output_dim": data_details[1],  
-        "num_gcn": 3, #max 2-3
-        "num_dense": 5, 
-        "hidden_channels": 128, 
-        "dense_hidden": 128, 
-        "dropout_p": 0.10,
-        "gnn_layer": layer_dict[layer]
-    }
+    study.set_metric_names(["Test Acc"])
+    study.optimize(lambda trial: objective(trial, target, data_details, train_loaders, val_loaders, test_loaders, layer_dict), n_trials=200)
 
-    config={
-        "architecture": f"{layer} Modular",
-        "dataset": "Donor, Singular Graph",
-        "epochs": 150,
-        "learning_rate": 1e-4,
-        "lr_decay": 0.1,
-        "weight_decay": 0.005,
-    }
-
-    config = {**model_args, **config}
-    print(f"###############################################################################\n"
-            f"{model_args["num_gcn"]} {layer} Layers\t| {model_args["hidden_channels"]} units\n"
-            f"{model_args["num_dense"]} Dense Layers\t| {model_args["dense_hidden"]} units\n"
-            f"Dropout Rate: {model_args["dropout_p"]}\n"
-            f"Learning Rate: {config["learning_rate"]} with Decay {config["lr_decay"]} and Weight Decay: {config["weight_decay"]}\n"
-            f"###############################################################################")
-
-    #
-    #build models
-    model = Modular_GNN(**model_args)
-    #actually build the weights to get grad tracking
-    dummy_batch = next(iter(val_loader))
-    _ = model(dummy_batch)
-
-
-    #
-    #run
-    with wandb.init(
-        entity="bumjin_joo-brown-university", 
-        project="qbam-donor", 
-        name=f"Singular {layer}, LR{config["learning_rate"]}", 
-        config=config
-    ) as run:
-        # run.watch(model)
-
-        _, _ = train_model(train_loaders, 
-                        val_loaders, 
-                        model, 
-                        config["learning_rate"], 
-                        config["epochs"], 
-                        gamma=config["lr_decay"], 
-                        weight_decay=config["weight_decay"],
-                        wandb_run = run)
-        
-        eval(test_loaders, model, wandb_run = run)
+    print(f"Best value: {study.best_value} (params: {study.best_params})")
 
 
 ## END UTILITY METHODS

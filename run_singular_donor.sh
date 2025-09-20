@@ -17,4 +17,4 @@ conda activate qbam
 cd /users/bjoo2/code/qbam/qbam_gnn
 
 echo "Training Singular Model on Donor"
-python3 singular_donor.py --data /users/bjoo2/data/bjoo2/qbam/data/DonorSingular --pred Donor
+python3 singular_donor.py --data /users/bjoo2/data/bjoo2/qbam/data/DonorSingular --pred Donor 
