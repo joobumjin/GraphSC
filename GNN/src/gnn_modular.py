@@ -48,6 +48,9 @@ class Modular_GNN(torch.nn.Module):
             ]
       
         args["out_channels"] = self.output_dim 
+        if "heads" in args.keys(): 
+          args["heads"] = 1
+          args["concat"] = False
         gat_layers += [
             (gnn_layer(**args), 'x, edge_index -> x'),
             (BatchNorm(self.output_dim), 'x -> x')
