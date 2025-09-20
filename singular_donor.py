@@ -1,5 +1,5 @@
 import argparse
-from pathlib import Path
+from pathlib import Path    
 import datetime
 import wandb
 
@@ -12,6 +12,7 @@ from torch.nn import BCEWithLogitsLoss
 
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
+from torch_geometric.nn import GraphConv, GCNConv, GATConv, GATv2Conv
 from preprocessing import get_loaders
 from train_test import Accuracy, train, train_multidata, test, test_multidata
 # import GNN.src.gnn_multiple as GCNs
@@ -118,14 +119,12 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
     ax1.set_ylabel('BCE')
     p1 = ax1.plot(train_losses, label='Training BCE', color='tab:blue')
     p2 = ax1.plot(val_metrics["BCE"], label='Validation BCE', color="tab:orange")
-    # ax1.legend()
     ax1.tick_params(axis='y')
     #accs
     ax2 = ax1.twinx()
     ax2.set_ylabel('Accuracy')
     p3 = ax2.plot(train_metrics["Acc"], label='Train Accuracy', color="tab:green")
     p4 = ax2.plot(val_metrics["Acc"], label='Validation Accuracy', color="tab:red")
-    # ax2.legend()
 
     ax1.legend(handles=p1+p2+p3+p4, loc='best')
 
@@ -205,7 +204,6 @@ def main(args):
 
     #
     # get data
-    #
     target = args.pred
     print(f"Training {target}")
 
@@ -224,21 +222,25 @@ def main(args):
 
     #
     #hyper params
+    layer = "GAT"
+    layer_dict = {"Graph": GraphConv, "GCN": GCNConv, "GAT": GATConv, "GATv2": GATv2Conv}
+
     model_args = {
         "num_node_features": data_details[0], 
         "output_dim": data_details[1],  
         "num_gcn": 3, #max 2-3
         "num_dense": 5, 
-        "hidden_channels": 256, 
-        "dense_hidden": 256, 
-        "dropout_p": 0.10
+        "hidden_channels": 128, 
+        "dense_hidden": 128, 
+        "dropout_p": 0.10,
+        "gnn_layer": layer_dict[layer]
     }
 
     config={
-        "architecture": "GATv2 Modular",
+        "architecture": f"{layer} Modular",
         "dataset": "Donor, Singular Graph",
         "epochs": 150,
-        "learning_rate": 1e-5,
+        "learning_rate": 1e-3,
         "lr_decay": 0.1,
         "weight_decay": 0.005,
     }
@@ -259,13 +261,12 @@ def main(args):
             f"Learning Rate: {config["learning_rate"]} with Decay {config["lr_decay"]} and Weight Decay: {config["weight_decay"]}\n"
             f"###############################################################################")
 
-
     #
     #run
     with wandb.init(
         entity="bumjin_joo-brown-university", 
         project="qbam-donor", 
-        name=f"Modular Singular, LR{config["learning_rate"]}", 
+        name=f"Singular {layer}, LR{config["learning_rate"]}", 
         config=config
     ) as run:
         # run.watch(model)
