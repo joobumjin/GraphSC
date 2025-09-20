@@ -196,7 +196,7 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
         "dataset": "Donor, Singular Graph",
         "epochs": 150,
         "learning_rate": trial.suggest_float("learning_rate", 0.0001, 0.005, step=0.0001),
-        "lr_decay": trial.suggest_float("learning_rate_decay", 0.1, 1.0, step=.1),
+        "lr_decay": trial.suggest_float("learning_rate_decay", 0.7, 1.0, step=.1),
         "weight_decay": trial.suggest_float("l2_penalty", 0, 1e-2, step=5e-5),
     }
 
@@ -221,7 +221,7 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
     with wandb.init(
         entity="bumjin_joo-brown-university", 
         project="qbam-donor-optuna", 
-        name=f"Singular {layer}, LR{config["learning_rate"]}", 
+        name=f"Singular {layer}, LR{config["learning_rate"]:.5f}", 
         config=config
     ) as run:
         _, _ = train_model(train_loaders, 
@@ -259,9 +259,9 @@ def main(args):
     test_loaders = [test_loader]
 
     time_string = datetime.datetime.now().strftime('%d-%b-%Y-%H%M')
-    study = optuna.create_study(study_name=f"{time_string}_optimize_{args.pred}", direction="maximize")
+    study = optuna.create_study(study_name=f"{time_string}_optimize_{args.pred}", direction="maximize") #direction=["maximize,minimize"]
+    study.set_metric_names(["Test Acc"]) #["Test Acc", "Test BCE"]
 
-    study.set_metric_names(["Test Acc"])
     study.optimize(lambda trial: objective(trial, data_details, train_loaders, val_loaders, test_loaders, layer_dict), n_trials=200)
 
     print(f"Best value: {study.best_value} (params: {study.best_params})")
