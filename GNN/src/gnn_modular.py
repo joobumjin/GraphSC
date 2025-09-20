@@ -30,9 +30,7 @@ class Modular_GNN(torch.nn.Module):
                 "concat": True,}
         
         args = get_remaining_params(args, gnn_layer)
-        if "heads" not in args.keys(): 
-           self.num_heads = 1
-           print("resetting heads")
+        if "heads" not in args.keys(): self.num_heads = 1
 
         #build GAT Network
         gat_layers = [
