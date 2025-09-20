@@ -1,5 +1,4 @@
 import argparse
-from pathlib import Path    
 import datetime
 import wandb
 import optuna
@@ -16,9 +15,7 @@ from torch_geometric.loader import DataLoader
 from torch_geometric.nn import GraphConv, GCNConv, GATConv, GATv2Conv
 from preprocessing import get_loaders
 from train_test import Accuracy, train, train_multidata, test, test_multidata
-# import GNN.src.gnn_multiple as GCNs
 from GNN.src.gnn_modular import Modular_GNN
-from GNN.src import test_acc
 
 def parse_args(args=None):
     """ 
@@ -37,15 +34,14 @@ def parse_args(args=None):
         return parser.parse_args()      ## For calling through command line
     return parser.parse_args(args)      ## For calling through notebook.
 
-def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, output_filepath = None, img_path = None, gamma=0.95, weight_decay = None, wandb_run = None):
-    #
+def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, output_filepath = None, gamma=0.95, wandb_run = None, trial = None, pruning = False):
     #setup
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Using", device)
 
     model = model.to(device)
     model.device = device
-    opt_args = {name: arg for (arg, name) in zip([learning_rate, weight_decay], ["lr", "weight_decay"]) if arg is not None}
+
     optimizer = torch.optim.Adam(model.parameters(), **opt_args)
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma)
     crit_string = "BCE"
@@ -62,7 +58,6 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
     train_metrics = {crit: [] for crit in train_crits}
     val_metrics = {crit: [] for crit in test_crits}
 
-    #
     #data
     if len(train_loaders) > 1: train_fn = train_multidata
     else: 
@@ -74,11 +69,10 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
         test_fn = test
         val_loaders = val_loaders[0]
 
-    #
     #run
     epoch_tqdm = tqdm(range(1, num_epochs + 1), desc="Training Epochs", postfix={f"Train {crit_string}": 0.0, "Train Acc": 0.0, f"Valid {crit_string}": 0.0, f"Valid Acc": 0.0})
     
-    for _ in epoch_tqdm:
+    for epoch in epoch_tqdm:
         #train
         train_loss = train_fn(model, train_loaders, optimizer, train_criterion)
         scheduler.step()
@@ -96,21 +90,22 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
         if wandb_run: wandb_run.log(postfix)
         epoch_tqdm.set_postfix(postfix)
 
+        if epoch % 30 == 0 and trial and pruning: 
+            trial.report(postfix["Valid Acc"], epoch)
+            if trial.should_prune(): return postfix["Train BCE"], postfix["Valid BCE"], True
+
     epoch_tqdm.close()
 
-    #
     #output formating
     train_losses = np.array(train_losses)
     train_metrics = {crit: np.array(history) for crit, history in train_metrics.items()}
     val_metrics = {crit: np.array(history) for crit, history in val_metrics.items()}
 
-    #
     #model saving
     if output_filepath:
         torch.save(model.state_dict(), output_filepath)
         print("Saved the model to:", output_filepath)
 
-    #
     #plotting
     # losses
     fig, ax1 = plt.subplots(figsize=(10, 6))
@@ -132,18 +127,13 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
     plt.title('Training and Validation BCE/Acc')
     plt.legend()
 
-    if img_path:
-        plt.savefig(img_path)
-        print(f"Saved graph to {img_path}")
-
     if wandb_run: wandb_run.log({"chart": plt})
 
     plt.close()
 
-    return train_losses[-1], val_metrics["BCE"][-1]
+    return train_losses[-1], val_metrics["BCE"][-1], False
 
 def eval(test_loaders, model, wandb_run = None):
-    #
     #setup
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Using", device)
@@ -151,21 +141,18 @@ def eval(test_loaders, model, wandb_run = None):
     model = model.to(device)
     model.device = device
 
+    acc = 0
     test_crits = {
         "BCE": BCEWithLogitsLoss(reduction='sum'),
         "Acc": Accuracy()
     }
 
-    acc = 0
-
-    #
     #data
     if len(test_loaders) > 1: test_fn = test_multidata
     else: 
         test_fn = test
         test_loaders = test_loaders[0]
 
-    #
     #evaluate
     for crit_dict, loader, split in zip([test_crits], [test_loaders], ["Test"]):
         for crit, crit_obj in crit_dict.items():
@@ -174,6 +161,8 @@ def eval(test_loaders, model, wandb_run = None):
             if crit == "Acc": acc = metric_calc
 
     return acc
+
+##############################################################################
 
 def objective(trial, data_details, train_loaders, val_loaders, test_loaders, layer_dict):
     #
@@ -191,16 +180,18 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
         "gnn_layer": layer_dict[layer]
     }
 
-    config={
-        "architecture": f"{layer} Modular",
-        "dataset": "Donor, Singular Graph",
-        "epochs": 150,
+    opt_args = {
         "learning_rate": trial.suggest_float("learning_rate", 0.0001, 0.005, step=0.0001),
-        "lr_decay": trial.suggest_float("learning_rate_decay", 0.7, 1.0, step=.1),
         "weight_decay": trial.suggest_float("l2_penalty", 0, 1e-2, step=5e-5),
     }
 
-    config = {**model_args, **config}
+    config={
+        "graph layer": f"{layer}",
+        "epochs": 100,
+        "lr_decay": trial.suggest_float("learning_rate_decay", 0.7, 1.0, step=.1),
+    }
+
+    config = {**model_args, **opt_args, **config}
     print(f"###############################################################################\n"
             f"{model_args["num_gcn"]} {layer} Layers\t| {model_args["hidden_channels"]} units\n"
             f"{model_args["num_dense"]} Dense Layers\t| {model_args["dense_hidden"]} units\n"
@@ -218,24 +209,37 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
 
     #
     #run
-    with wandb.init(
+    run = wandb.init(
         entity="bumjin_joo-brown-university", 
         project="qbam-donor-optuna", 
         name=f"Singular {layer}, LR{config["learning_rate"]:.5f}", 
         config=config
-    ) as run:
-        _, _ = train_model(train_loaders, 
-                        val_loaders, 
-                        model, 
-                        config["learning_rate"], 
-                        config["epochs"], 
-                        gamma=config["lr_decay"], 
-                        weight_decay=config["weight_decay"],
-                        wandb_run = run)
-        
-        test_acc = eval(test_loaders, model, wandb_run = run)
+    )
+
+    _, _, should_prune = train_model(train_loaders, 
+                    val_loaders, 
+                    model, 
+                    config["learning_rate"], 
+                    config["epochs"], 
+                    gamma=config["lr_decay"], 
+                    weight_decay=config["weight_decay"],
+                    wandb_run = run,
+                    trial = trial)
+    
+    if should_prune:
+        run.summary["state"] = "pruned"
+        wandb.finish(quiet=True)
+        raise optuna.TrialPruned()
+
+    test_acc = eval(test_loaders, model, wandb_run = run)
+
+    run.summary["final accuracy"] = test_acc
+    run.summary["state"] = "completed"
+    wandb.finish(quiet=True)
 
     return test_acc
+
+##############################################################################
 
 def main(args):
     sns.set_theme()
