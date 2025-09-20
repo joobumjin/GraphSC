@@ -240,7 +240,7 @@ def main(args):
         "architecture": f"{layer} Modular",
         "dataset": "Donor, Singular Graph",
         "epochs": 150,
-        "learning_rate": 1e-3,
+        "learning_rate": 1e-4,
         "lr_decay": 0.1,
         "weight_decay": 0.005,
     }
