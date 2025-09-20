@@ -222,7 +222,7 @@ def main(args):
 
     #
     #hyper params
-    layer = "GAT"
+    layer = "GATv2"
     layer_dict = {"Graph": GraphConv, "GCN": GCNConv, "GAT": GATConv, "GATv2": GATv2Conv}
 
     model_args = {
