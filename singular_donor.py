@@ -178,7 +178,7 @@ def eval(test_loaders, model, wandb_run = None):
 def objective(trial, data_details, train_loaders, val_loaders, test_loaders, layer_dict):
     #
     #hyper params
-    layer = trial.suggest_categorical(layer_dict.keys())
+    layer = trial.suggest_categorical("layer type", layer_dict.keys())
 
     model_args = {
         "num_node_features": data_details[0], 
