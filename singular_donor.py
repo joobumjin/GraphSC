@@ -251,14 +251,15 @@ def main(args):
     #build models
     model = Modular_GNN(**model_args)
     #actually build the weights to get grad tracking
-    dummy_batch = next(iter(val_loader))
-    _ = model(dummy_batch)
+    # dummy_batch = next(iter(val_loader))
+    # _ = model(dummy_batch)
 
     print(f"###############################################################################\n"
             f"{model_args["num_gcn"]} GCN Layers\t| {model_args["hidden_channels"]} units\n"
             f"{model_args["num_dense"]} Dense Layers\t| {model_args["dense_hidden"]} units\n"
             f"Dropout Rate: {model_args["dropout_p"]}\n"
             f"Learning Rate: {config["learning_rate"]} with Decay {config["lr_decay"]} and Weight Decay: {config["weight_decay"]}\n"
+            f"Testing: {model.num_heads}"
             f"###############################################################################")
 
     #
