@@ -262,7 +262,7 @@ def main(args):
     study = optuna.create_study(study_name=f"{time_string}_optimize_{args.pred}", direction="maximize")
 
     study.set_metric_names(["Test Acc"])
-    study.optimize(lambda trial: objective(trial, target, data_details, train_loaders, val_loaders, test_loaders, layer_dict), n_trials=200)
+    study.optimize(lambda trial: objective(trial, data_details, train_loaders, val_loaders, test_loaders, layer_dict), n_trials=200)
 
     print(f"Best value: {study.best_value} (params: {study.best_params})")
 
