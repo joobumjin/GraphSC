@@ -1,18 +1,18 @@
 import argparse
-from pathlib import Path
 import datetime
 
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
 import torch
-from torch.nn import MSELoss
 import optuna
+import wandb
 
 from preprocessing import get_loaders
-from train_test import train, train_multidata, test, test_multidata, SSLELoss, StandardInlinePrint
-import GNN.src.gnn_multiple as GCNs
-from GNN.src import test_acc
+from train_test import train, train_multidata, test, test_multidata, SSLELoss, RMSELoss
+from torch_geometric.nn import GraphConv, GCNConv, GATConv, GATv2Conv
+from GNN.src.gnn_modular import Modular_GNN
 
 
 def parse_args(args=None):
@@ -34,18 +34,28 @@ def parse_args(args=None):
         return parser.parse_args()      ## For calling through command line
     return parser.parse_args(args)      ## For calling through notebook.
 
-def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, output_filepath = None, img_path = None, convergence_epsilon = None, gamma=0.95, weight_decay = None):
+def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, output_filepath = None, gamma=0.95, wandb_run = None, trial = None, pruning = False):
+    #setup
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Using", device)
 
     model = model.to(device)
     model.device = device
-    opt_args = {name: arg for (arg, name) in zip([learning_rate, weight_decay], ["lr", "weight_decay"]) if arg is not None}
+
     optimizer = torch.optim.Adam(model.parameters(), **opt_args)
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma)
-    log_train = False
-    train_criterion = SSLELoss() if log_train else MSELoss(reduction='sum')
-    test_criterion = MSELoss(reduction='sum')
+    crit_string = "RMSE"
+    train_criterion = RMSELoss(reduction='sum')
+    train_crits = {}
+    test_crits = {
+        "RMSE": RMSELoss(reduction='sum'),
+    }
+    
+    train_losses = []
+    train_metrics = {crit: [] for crit in train_crits}
+    val_metrics = {crit: [] for crit in test_crits}
+
+    #data
     if len(train_loaders) > 1: train_fn = train_multidata
     else: 
         train_fn = train
@@ -56,116 +66,200 @@ def train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, ou
         test_fn = test
         val_loaders = val_loaders[0]
 
-    train_losses = []
-    val_losses = []
-
-    epoch_tqdm = tqdm(range(1, num_epochs + 1), desc="Training Epochs", postfix={"Train RMSE": 0.0, "Valid RMSE": 0.0})
+    #run
+    epoch_tqdm = tqdm(range(1, num_epochs + 1), desc="Training Epochs", postfix={f"Train {crit_string}": 0.0, f"Valid {crit_string}": 0.0})
     
     for epoch in epoch_tqdm:
-        # printer = StandardInlinePrint() if epoch == num_epochs - 1 else None
-        train_rmse = train_fn(model, train_loaders, optimizer, train_criterion)
+        #train
+        train_loss = train_fn(model, train_loaders, optimizer, train_criterion)
         scheduler.step()
 
-        val_rmse = test_fn(model, val_loaders, test_criterion)
+        train_losses.append(train_loss)
+        postfix = {f"Train {crit_string}": train_loss}
 
-        train_losses.append(train_rmse)
-        val_losses.append(val_rmse)
+        #eval
+        for crit_dict, metric_dict, loader, split in zip([train_crits, test_crits], [train_metrics, val_metrics], [train_loaders, val_loaders], ["Train", "Valid"]):
+            for crit, crit_obj in crit_dict.items():
+                metric = test_fn(model, loader, crit_obj)
+                metric_dict[crit].append(metric)
+                postfix[f"{split} {crit}"] = metric
 
-        epoch_tqdm.set_postfix({"Train RMSE": train_rmse, "Valid RMSE": val_rmse})
+        if wandb_run: wandb_run.log(postfix)
+        epoch_tqdm.set_postfix(postfix)
 
-        # if convergence_epsilon is not None:
-        #     if len(train_losses) > 4:
-        #         last_3 = np.array(train_losses)[:-4:-1]
-        #         prev = np.array(train_losses)[-2:-5:-1]
-        #         avg_loss_diff = np.mean(np.abs(last_3 - prev))
-        #         if avg_loss_diff < convergence_epsilon:
-        #             print(f"Stopping early on epoch {epoch} with average changes in loss {avg_loss_diff}")
-        #             break
+        if epoch % 30 == 0 and trial and pruning: 
+            trial.report(postfix["Valid Acc"], epoch)
+            if trial.should_prune(): return postfix["Train BCE"], postfix["Valid BCE"], True
 
     epoch_tqdm.close()
 
+    #output formating
     train_losses = np.array(train_losses)
-    val_losses = np.array(val_losses)
+    train_metrics = {crit: np.array(history) for crit, history in train_metrics.items()}
+    val_metrics = {crit: np.array(history) for crit, history in val_metrics.items()}
 
+    #model saving
     if output_filepath:
         torch.save(model.state_dict(), output_filepath)
         print("Saved the model to:", output_filepath)
 
-    if img_path:
-        plt.figure(figsize=(10, 6))
-        plt.plot(train_losses, label='Training RMSE')
-        plt.plot(val_losses, label='Validation RMSE')
-        plt.xlabel('Epoch')
-        plt.ylabel('RMSE')
-        plt.title('Training and Validation RMSE')
-        plt.legend()
-        plt.savefig(img_path)
-        plt.close()
-        print(f"Saved graph to {img_path}")
+    #plotting
+    # losses
+    fig, ax1 = plt.subplots(figsize=(10, 6))
+    ax1.set_xlabel('Epoch')
+    ax1.set_ylabel('BCE')
+    p1 = ax1.plot(train_losses, label='Training RMSE', color='tab:blue')
+    p2 = ax1.plot(val_metrics["RMSE"], label='Validation RMSE', color="tab:orange")
+    ax1.tick_params(axis='y')
 
-    return train_losses[-1], val_losses[-1]
+    ax1.legend(handles=p1+p2, loc='best')
 
-def objective(trial, target, model_constructors, data_details, train_loaders, val_loaders, test_loaders, data_path = None):
-    num_epochs = 300
+    #outoutting
+    fig.tight_layout()  
+    plt.title('Training and Validation RMSE')
+    plt.legend()
 
-    #Tuning
-    num_gcn = trial.suggest_int("num_gcn", 4, 5)
-    num_dense = trial.suggest_int("num_dense", 4, 5)
-    hidden_size = 144 # trial.suggest_int("hidden_size", 64, 200, step=16)
-    dense_hidden = trial.suggest_int("dense_hidden", 128, 512, step=32)
-    arch_string = f"G{num_gcn}_D{num_dense}"
-    learning_rate = trial.suggest_float("learning_rate", 0.001, 0.005, step=0.001)
-    lr_decay = trial.suggest_float("learning_rate_decay", 0.5, 1.0, step=.1)
-    weight_decay = 0.005 #trial.suggest_float("l2_penalty", 0, 1e-2, step=5e-5)
-    dropout_rate = trial.suggest_float("dropout", 0.2, 0.7, step=0.1)
+    if wandb_run: wandb_run.log({"chart": plt})
 
-    model_class = model_constructors[arch_string]
-    model = model_class(*data_details, hidden_channels = hidden_size, dense_hidden = dense_hidden, dropout_p=dropout_rate)
+    plt.close()
 
-    print(f"{num_gcn} GCN Layers | {hidden_size} units\n{num_dense} Dense Layers | {dense_hidden}\nDropout Rate: {dropout_rate}\nLearning Rate: {learning_rate} with Decay {lr_decay} and Weight Decay: {weight_decay}")
+    return train_losses[-1], val_metrics["RMSE"][-1], False
 
-    _, _ = train_model(train_loaders, val_loaders, model, learning_rate, num_epochs, img_path=f"{data_path}/Train_graphs/{arch_string}_h{hidden_size}_d{dense_hidden}_lr{learning_rate}_decay{lr_decay}.jpeg", gamma=lr_decay, weight_decay=weight_decay)
+def eval(test_loaders, model, wandb_run = None):
+    #setup
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print("Using", device)
 
-    print(f"Validation Stats")
-    _ = test_acc.test_model(val_loaders, model, task=target, test_multiple=False)
-    print(f"Test Stats")
-    test_loss = test_acc.test_model(test_loaders, model, task=target, test_multiple=False)
+    model = model.to(device)
+    model.device = device
 
-    return test_loss
+    rmse = 0
+    test_crits = {
+        "RMSE": RMSELoss(reduction='sum'),
+    }
 
+    #data
+    if len(test_loaders) > 1: test_fn = test_multidata
+    else: 
+        test_fn = test
+        test_loaders = test_loaders[0]
+
+    #evaluate
+    for crit_dict, loader, split in zip([test_crits], [test_loaders], ["Test"]):
+        for crit, crit_obj in crit_dict.items():
+            metric_calc = test_fn(model, loader, crit_obj)
+            if wandb_run: wandb_run.summary[f"{split} {crit}"] = metric_calc
+            if crit == "RMSE": rmse = metric_calc
+
+    return rmse
+
+##############################################################################
+
+def objective(trial, data_details, train_loaders, val_loaders, test_loaders, layer_dict, task):
+    #
+    #hyper params
+    layer = trial.suggest_categorical("layer type", layer_dict.keys())
+
+    model_args = {
+        "num_node_features": data_details[0], 
+        "output_dim": data_details[1],  
+        "num_gcn": trial.suggest_int("num_gcn", 2, 3),
+        "num_dense": trial.suggest_int("num_dense", 3, 5), 
+        "hidden_channels": trial.suggest_int("hidden_size", 64, 256, step=64), 
+        "dense_hidden": trial.suggest_int("hidden_size", 64, 256, step=64), 
+        "dropout_p": trial.suggest_float("dropout", 0.1, 0.7, step=0.1),
+        "gnn_layer": layer_dict[layer]
+    }
+
+    opt_args = {
+        "learning_rate": trial.suggest_float("learning_rate", 0.0001, 0.005, step=0.0001),
+        "weight_decay": trial.suggest_float("l2_penalty", 0, 1e-2, step=5e-5),
+    }
+
+    config={
+        "graph layer": f"{layer}",
+        "epochs": 75,
+        "lr_decay": trial.suggest_float("learning_rate_decay", 0.7, 1.0, step=.1),
+    }
+
+    config = {**model_args, **opt_args, **config}
+    print(f"###############################################################################\n"
+            f"{model_args["num_gcn"]} {layer} Layers\t| {model_args["hidden_channels"]} units\n"
+            f"{model_args["num_dense"]} Dense Layers\t| {model_args["dense_hidden"]} units\n"
+            f"Dropout Rate: {model_args["dropout_p"]}\n"
+            f"Learning Rate: {config["learning_rate"]} with Decay {config["lr_decay"]} and Weight Decay: {config["weight_decay"]}\n"
+            f"###############################################################################")
+
+    #
+    #build models
+    model = Modular_GNN(**model_args)
+    #actually build the weights to get grad tracking
+    dummy_batch = next(iter(val_loaders[0]))
+    _ = model(dummy_batch)
+
+
+    #
+    #run
+    run = wandb.init(
+        entity="bumjin_joo-brown-university", 
+        project=f"qbam-{task}", 
+        name=f"Singular {layer}, LR{config["learning_rate"]:.5f}", 
+        config=config
+    )
+
+    _, _, should_prune = train_model(train_loaders, 
+                    val_loaders, 
+                    model, 
+                    config["learning_rate"], 
+                    config["epochs"], 
+                    gamma=config["lr_decay"], 
+                    weight_decay=config["weight_decay"],
+                    wandb_run = run,
+                    trial = trial)
+    
+    if should_prune:
+        run.summary["state"] = "pruned"
+        wandb.finish(quiet=True)
+        raise optuna.TrialPruned()
+
+    test_rmse = eval(test_loaders, model, wandb_run = run)
+
+    # run.summary["final rmse"] = test_rmse
+    run.summary["state"] = "completed"
+    wandb.finish(quiet=True)
+
+    return test_rmse
+
+##############################################################################
 
 def main(args):
+    sns.set_theme()
+
+    #
+    # get data
     target = args.pred
-    print(f"Optuna Searching {target}")
+    print(f"Training {target}")
 
     data_dirs = {}
-    for data_type in ['TER', 'VEGF', 'Both']: #, 'Donor']:
+    for data_type in ['TER', 'VEGF', 'Both', 'Donor']:
         data_dirs[f"Train_{data_type}"] = f"{args.data}/{data_type}/Train_{data_type}.pkl"
         data_dirs[f"Valid_{data_type}"] = f"{args.data}/{data_type}/Valid_{data_type}.pkl"
         data_dirs[f"Test_{data_type}"] = f"{args.data}/{data_type}/Test_{data_type}.pkl"
 
-    Path(f"{args.data}/{target}/Train_graphs").mkdir(parents=True, exist_ok=True)
-
-    model_constructors = GCNs.get_model_constructors()
+    layer_dict = {"Graph": GraphConv, "GCN": GCNConv, "GAT": GATConv, "GATv2": GATv2Conv}
 
     train_loader, val_loader, test_loader, data_details = get_loaders(data_dirs, target, args.batch_size)
     train_loaders = [train_loader]
     val_loaders = [val_loader]
     test_loaders = [test_loader]
 
-
-    Path(f'{args.log_path}').mkdir(parents=True, exist_ok=True)
-    storage = optuna.storages.JournalStorage(
-        optuna.storages.journal.JournalFileBackend(f"{args.log_path}/optuna_amd_rmse.log")
-    )
-
+    #
+    # optuna optimization
     time_string = datetime.datetime.now().strftime('%d-%b-%Y-%H%M')
-
-    # study = optuna.create_study(study_name=f"{time_string}_optimize_{args.pred}",storage = storage, direction="minimize")
-    study = optuna.create_study(study_name=args.study_name, storage = storage, direction="minimize")
-
+    study = optuna.create_study(study_name=f"{time_string}_optimize_{args.pred}", direction="minimize")
     study.set_metric_names(["RMSE"])
-    study.optimize(lambda trial: objective(trial, target, model_constructors, data_details, train_loaders, val_loaders, test_loaders, data_path = f"{args.data}/{target}"), n_trials=50)
+
+    study.optimize(lambda trial: objective(trial, data_details, train_loaders, val_loaders, test_loaders, layer_dict, args.pred), n_trials=150)
 
     print(f"Best value: {study.best_value} (params: {study.best_params})")
 

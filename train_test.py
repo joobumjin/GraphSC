@@ -18,6 +18,15 @@ class SSLELoss(torch.nn.Module):
 
     def forward(self, pred, actual):
         return self.mse(pred, torch.log(actual + 1))
+    
+class RMSELoss(torch.nn.Module):
+    def __init__(self, reduction='sum'):
+        super().__init__()
+        self.root = True
+        self.mse = torch.nn.MSELoss(reduction=reduction)
+
+    def forward(self, pred, actual):
+        return self.mse(pred, actual)
 
 def train(model, train_loader, optimizer, criterion, metric_printer=None):
     model.train()
