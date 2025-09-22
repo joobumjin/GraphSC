@@ -11,7 +11,7 @@ import torch
 from torch.nn import BCELoss
 
 from preprocessing.pair_preprocessing import PairData, get_loaders
-from train_test import Accuracy, train, train_multidata, test, test_multidata, StandardInlinePrint
+from utils.train_test import Accuracy, train, train_multidata, test, test_multidata, StandardInlinePrint
 import GNN.src.gnn_multiple as GCNs
 from GNN.src import test_acc
 from GNN.src.gnn_merge import GCN_Merge

@@ -13,8 +13,8 @@ import torch
 from torch.nn import MSELoss
 import optuna
 
-from img_preprocessing import get_image_loaders, HealthyData
-from train_test import train_multidata, test, MetricPrinter
+from preprocessing.img_preprocessing import get_image_loaders, HealthyData
+from utils.train_test import train_multidata, test, MetricPrinter
 from GNN.src.dnn_f import DNN_F
 from GNN.src import test_acc
 

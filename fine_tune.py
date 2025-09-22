@@ -10,7 +10,7 @@ from torch.nn import MSELoss
 import seaborn as sns
 
 from preprocessing import get_loaders
-from train_test import train, train_multidata, test, test_multidata, SSLELoss, StandardInlinePrint
+from utils.train_test import train, train_multidata, test, test_multidata, SSLELoss, StandardInlinePrint
 import GNN.src.gnn_multiple as GCNs
 from GNN.src import test_acc
 

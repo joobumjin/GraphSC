@@ -14,8 +14,8 @@ from torch.nn import MSELoss
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
 
-from preprocessing import get_loaders
-from train_test import train, test
+from preprocessing.preprocessing import get_loaders
+from utils.train_test import train, test
 from GNN.src.gnn_modular import Modular_GCN
 import GNN.src.gnn_multiple as GCNs
 from GNN.src import test_acc
