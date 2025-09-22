@@ -87,7 +87,7 @@ def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, output_
         if wandb_run: wandb_run.log(postfix)
         epoch_tqdm.set_postfix(postfix)
 
-        if epoch % 30 == 0 and trial and pruning: 
+        if epoch % 15 == 0 and trial and pruning: 
             trial.report(postfix["Valid Acc"], epoch)
             if trial.should_prune(): return postfix["Train BCE"], postfix["Valid BCE"], True
 
@@ -215,7 +215,8 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
                     gamma=config["lr_decay"], 
                     weight_decay=config["weight_decay"],
                     wandb_run = run,
-                    trial = trial)
+                    trial = trial,
+                    pruning = True)
     
     if should_prune:
         run.summary["state"] = "pruned"
