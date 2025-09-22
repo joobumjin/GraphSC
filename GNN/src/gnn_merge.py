@@ -5,7 +5,7 @@ from collections import namedtuple
 
 DataPoint = namedtuple('DataPoint', ['x', 'edge_index', 'batch'])
 
-class GCN_Merge(torch.nn.Module):
+class GNN_Merge(torch.nn.Module):
     def __init__(self, gnn1, gnn2, output_dim=1, head_depth=1, freeze_gnns = False):
         super().__init__()
         self.gnn1 = gnn1

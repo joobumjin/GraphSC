@@ -187,7 +187,7 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
 
     config={
         "graph layer": f"{layer}",
-        "epochs": 100,
+        "epochs": 75,
         "lr_decay": trial.suggest_float("learning_rate_decay", 0.7, 1.0, step=.1),
     }
 
@@ -224,7 +224,8 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
                     gamma=config["lr_decay"], 
                     weight_decay=config["weight_decay"],
                     wandb_run = run,
-                    trial = trial)
+                    trial = trial,
+                    pruning = True)
     
     if should_prune:
         run.summary["state"] = "pruned"
