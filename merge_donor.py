@@ -10,7 +10,7 @@ import numpy as np
 import torch
 from torch.nn import BCELoss
 
-from pair_preprocessing import PairData, get_loaders
+from preprocessing.pair_preprocessing import PairData, get_loaders
 from train_test import Accuracy, train, train_multidata, test, test_multidata, StandardInlinePrint
 import GNN.src.gnn_multiple as GCNs
 from GNN.src import test_acc
