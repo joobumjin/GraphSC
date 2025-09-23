@@ -200,7 +200,7 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
     run = wandb.init(
         entity="bumjin_joo-brown-university", 
         project=f"qbam-{task}", 
-        name=f"Singular {layer}, LR{config["lr"]:.5f}", 
+        name=f"{layer}, LR{config["lr"]:.5f}", 
         config=config
     )
 
