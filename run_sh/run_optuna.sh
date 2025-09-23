@@ -17,7 +17,7 @@ conda activate qbam
 cd /users/bjoo2/code/qbam/qbam_gnn
 
 # declare -a arr=("TER" "VEGF" "Both")
-declare -a arr=("TER")
+declare -a arr=("VEGF")
 # declare -a arr=("VEGF" "Both")
 for i in "${arr[@]}"
 do
