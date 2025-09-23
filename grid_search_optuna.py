@@ -34,7 +34,7 @@ def parse_args(args=None):
         return parser.parse_args()      ## For calling through command line
     return parser.parse_args(args)      ## For calling through notebook.
 
-def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, output_filepath = None, gamma=0.95, wandb_run = None, trial = None, pruning = False):
+def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, output_filepath = None, gamma=0.95, wandb_run = None, trial = None, pruning = False, task = None):
     #setup
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Using", device)
@@ -50,6 +50,8 @@ def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, output_
     test_crits = {
         "RMSE": RMSELoss(reduction='sum'),
     }
+    
+    if task and task in ['VEGF', 'Both']: test_crits["RMSERatio"] = RMSELoss(reduction='sum', ratio=True)
     
     train_losses = []
     train_metrics = {crit: [] for crit in train_crits}
@@ -125,7 +127,7 @@ def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, output_
 
     return train_losses[-1], val_metrics["RMSE"][-1], False
 
-def eval(test_loaders, model, wandb_run = None):
+def eval(test_loaders, model, wandb_run = None, task = None):
     #setup
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Using", device)
@@ -137,6 +139,9 @@ def eval(test_loaders, model, wandb_run = None):
     test_crits = {
         "RMSE": RMSELoss(reduction='sum'),
     }
+
+    if task and task in ['VEGF', 'Both']: test_crits["RMSERatio"] = RMSELoss(reduction='sum', ratio=True)
+
 
     #data
     if len(test_loaders) > 1: test_fn = test_multidata
@@ -212,14 +217,15 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
                     gamma=config["lr_decay"], 
                     wandb_run = run,
                     trial = trial,
-                    pruning = True)
+                    pruning = True,
+                    task = task)
     
     if should_prune:
         run.summary["state"] = "pruned"
         wandb.finish(quiet=True)
         raise optuna.TrialPruned()
 
-    test_rmse = eval(test_loaders, model, wandb_run = run)
+    test_rmse = eval(test_loaders, model, wandb_run = run, task=task)
 
     # run.summary["final rmse"] = test_rmse
     run.summary["state"] = "completed"

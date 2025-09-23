@@ -20,12 +20,17 @@ class SSLELoss(torch.nn.Module):
         return self.mse(pred, torch.log(actual + 1))
     
 class RMSELoss(torch.nn.Module):
-    def __init__(self, reduction='sum'):
+    def __init__(self, reduction='sum', ratio=False):
         super().__init__()
         self.root = True
+        self.ratio = ratio
         self.mse = torch.nn.MSELoss(reduction=reduction)
 
     def forward(self, pred, actual):
+        #assume that the ratio elements are the first two values
+        if self.ratio:
+            pred = torch.hstack((pred[:, 0] / pred[:, 1], pred[:, 2:]))
+            actual = torch.hstack((actual[:, 0] / actual[:, 1], actual[:, 2:]))
         return self.mse(pred, actual)
 
 def train(model, train_loader, optimizer, criterion, metric_printer=None):
@@ -41,7 +46,10 @@ def train(model, train_loader, optimizer, criterion, metric_printer=None):
         loss.backward()
         optimizer.step()
         total_loss += loss.detach().item()
-        total_samples += torch.numel(data.y)
+        if not hasattr(criterion, "ratio") or not criterion.ratio:
+            total_samples += torch.numel(data.y)
+        else:
+            total_samples += (data.y.shape[0] * (data.y.shape[1] - 1))
 
         if metric_printer is not None:
                 metric_printer(out,data.y.reshape(-1, model.output_dim), math.sqrt(loss.item() / len(data.y.reshape(-1, model.output_dim))))
@@ -85,7 +93,10 @@ def test(model, loader, criterion, metric_printer=None, log_train = False):
             if log_train: out = torch.exp(out)
             loss = criterion(out, data.y.reshape(-1, model.output_dim))
             total_loss += loss.item()
-            total_samples += torch.numel(data.y)
+            if not hasattr(criterion, "ratio") or not criterion.ratio:
+                total_samples += torch.numel(data.y)
+            else:
+                total_samples += (data.y.shape[0] * (data.y.shape[1] - 1))
 
     metric = total_loss / total_samples
 
@@ -98,7 +109,7 @@ def test_multidata(model, test_loaders, criterion, metric_printer=None, log_trai
     total_loss = 0.0
     total_samples = 0
     for loader in test_loaders: total_samples += len(loader)
-    with torch.no_grad(): #, tqdm(total=total_samples, desc="Testing", postfix={"Test RMSE": 0.0}) as pbar:
+    with torch.no_grad(): 
         for loader in test_loaders:
             for data in loader:
                 data = data.to(model.device)
