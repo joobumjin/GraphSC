@@ -11,7 +11,7 @@ import seaborn as sns
 
 from preprocessing import get_loaders
 from utils.train_test import train, train_multidata, test, test_multidata, SSLELoss, StandardInlinePrint
-import GNN.src.gnn_multiple as GCNs
+from GNN.src.gnn_modular import Modular_GNN
 from GNN.src import test_acc
 
 
@@ -135,27 +135,42 @@ def main(args):
     test_loaders = [test_loader]
 
     #build model
-    model_constructors = GCNs.get_model_constructors()
-    num_gcn = 4
-    num_dense = 4
-    hidden_size = 128 # trial.suggest_int("hidden_size", 64, 200, step=16)
-    dense_hidden = 128
-    arch_string = f"G{num_gcn}_D{num_dense}"
-    dropout_rate = 0.4
+    model_args = {
+        "num_node_features": data_details[0], 
+        "output_dim": data_details[1],  
+        "num_gcn": 4,
+        "num_dense": 4,
+        "hidden_channels": 128, 
+        "dense_hidden": 128, 
+        "dropout_p": 0.4,
+    }
+    
+    config={
+        "graph layer": "GATv2",
+        "lr_decay": 0.8
+    }
+    model = Modular_GNN(**model_args)
 
-    model_class = model_constructors[arch_string]
-    model = model_class(*data_details, hidden_channels = hidden_size, dense_hidden = dense_hidden, dropout_p=dropout_rate)
-    print(f"{num_gcn} GCN Layers | {hidden_size} units\n{num_dense} Dense Layers | {dense_hidden}\nDropout Rate: {dropout_rate}")
+    print(f"###############################################################################\n"
+            f"{model_args["num_gcn"]} GATv2 Layers\t| {model_args["hidden_channels"]} units\n"
+            f"{model_args["num_dense"]} Dense Layers\t| {model_args["dense_hidden"]} units\n"
+            f"Dropout Rate: {model_args["dropout_p"]}\n"
+            f"Learning Rate: {config["lr"]} with Decay {config["lr_decay"]} and Weight Decay: {config["weight_decay"]}\n"
+            f"###############################################################################")
 
-    learning_rate = 0.004
-    lr_decay = 0.8
-    weight_decay = 0.005 #trial.suggest_float("l2_penalty", 0, 1e-2, step=5e-5)
-    opt_args = {name: arg for (arg, name) in zip([learning_rate, weight_decay],  ["lr", "weight_decay"]) if arg is not None}
+    #
+    #build models
+    opt_args = {
+        "lr": 0.004,
+        "weight_decay": 0.005
+    }
+
+
     optimizer = torch.optim.Adam(model.parameters(), **opt_args)
-    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, lr_decay)
+    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, config["lr_decay"])
 
     #pretraining
-    loss_graph_path = f"{args.data}/pretrain_{pretrain_target}/Train_graphs/{arch_string}_h{hidden_size}_d{dense_hidden}.jpeg"
+    loss_graph_path = f"{args.data}/pretrain_{pretrain_target}/Train_graphs/transfer.jpeg"
     time_string = datetime.datetime.now().strftime('%d-%b-%Y-%H%M')
     test_pretrain_loss = optimize(pretrain_target, model, optimizer, scheduler, train_loaders, val_loaders, test_loaders, num_epochs=200, img_path = loss_graph_path)
 
@@ -177,14 +192,14 @@ def main(args):
 
     #perform swap on last layer to new linear probe
     model.output_dim = data_details[1]
-    model.out_linear = torch.nn.Linear(dense_hidden, data_details[1])
+    model.out_linear = torch.nn.Linear(model_args["dense_hidden"], data_details[1])
     for param in model.out_linear.parameters():
         param.requires_grad = True
     optimizer = torch.optim.Adam(model.out_linear.parameters(), **opt_args)
-    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, lr_decay)
+    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, config["lr_decay"])
 
     #finetuning
-    loss_graph_path = f"{args.data}/transfer_{transfer_target}/Train_graphs/{arch_string}_h{hidden_size}_d{dense_hidden}.jpeg"
+    loss_graph_path = f"{args.data}/transfer_{transfer_target}/Train_graphs/transfer.jpeg"
     test_transfer_loss = optimize(transfer_target, model, optimizer, scheduler, train_loaders, val_loaders, test_loaders, num_epochs=100, img_path = loss_graph_path)
 
     with open(f'{pretrain_target}to{transfer_target}.log', 'a') as out_log:
