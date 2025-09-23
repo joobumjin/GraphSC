@@ -254,10 +254,10 @@ def main(args):
     #
     # optuna optimization
     time_string = datetime.datetime.now().strftime('%d-%b-%Y-%H%M')
-    study = optuna.create_study(study_name=f"{time_string}_optimize_{args.pred}", direction="minimize")
+    study = optuna.create_study(study_name=f"{time_string}_optimize_{target}", direction="minimize")
     study.set_metric_names(["RMSE"])
 
-    study.optimize(lambda trial: objective(trial, data_details, train_loaders, val_loaders, test_loaders, layer_dict, args.pred), n_trials=150)
+    study.optimize(lambda trial: objective(trial, data_details, train_loaders, val_loaders, test_loaders, layer_dict, target), n_trials=150)
 
     print(f"Best value: {study.best_value} (params: {study.best_params})")
 
