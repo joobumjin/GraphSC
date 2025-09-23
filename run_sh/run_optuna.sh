@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#SBATCH --partition=gpu --gres=gpu:1  --output=optuna_vegf.out
+#SBATCH --partition=gpu --gres=gpu:1  --output=optuna_ter.out
 #SBATCH -N 1
 #SBATCH -n 4
 #SBATCH -t 60:00:00
-#SBATCH --mem=100g
+#SBATCH --mem=32g
 
 # Load a CUDA module
 module load cuda
@@ -17,7 +17,7 @@ conda activate qbam
 cd /users/bjoo2/code/qbam/qbam_gnn
 
 # declare -a arr=("TER" "VEGF" "Both")
-declare -a arr=("VEGF")
+declare -a arr=("TER")
 # declare -a arr=("VEGF" "Both")
 for i in "${arr[@]}"
 do
