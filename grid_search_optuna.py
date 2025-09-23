@@ -222,7 +222,7 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
                     gamma=config["lr_decay"], 
                     wandb_run = run,
                     trial = trial,
-                    pruning = True,
+                    pruning = True if not args.multi_opt else False,
                     task = args.pred)
     
     if should_prune:
