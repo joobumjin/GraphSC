@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --partition=gpu --gres=gpu:1  --output=optuna_both.out
+#SBATCH --partition=gpu --gres=gpu:1  --output=optuna_both_multi.out
 #SBATCH -N 1
 #SBATCH -n 4
 #SBATCH -t 60:00:00
