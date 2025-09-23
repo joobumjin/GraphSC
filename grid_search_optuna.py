@@ -107,7 +107,7 @@ def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, output_
     # losses
     fig, ax1 = plt.subplots(figsize=(10, 6))
     ax1.set_xlabel('Epoch')
-    ax1.set_ylabel('BCE')
+    ax1.set_ylabel('RMSE')
     p1 = ax1.plot(train_losses, label='Training RMSE', color='tab:blue')
     p2 = ax1.plot(val_metrics["RMSE"], label='Validation RMSE', color="tab:orange")
     ax1.tick_params(axis='y')
