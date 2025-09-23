@@ -21,4 +21,5 @@ for i in "${arr[@]}"
 do
     echo "Optuna Searching on $i"
     python3 grid_search_optuna.py --data /users/bjoo2/data/bjoo2/qbam/data --pred "$i"
+    python3 grid_search_optuna.py --data /users/bjoo2/data/bjoo2/qbam/data --pred "$i" --multi_opt
 done

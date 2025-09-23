@@ -24,15 +24,27 @@ def parse_args(args=None):
         parse_args('--type', 'rnn', ...)
     """
     parser = argparse.ArgumentParser(description="Specify Hyperparameters to Optimize for the GNN", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--data',           required=True,                                          help='File path to the assignment data file.')
-    parser.add_argument('--pred',           required=True,  choices=['TER', 'VEGF', 'Both'],        help='Type of Value being Predicted from QBAMs')
-    # parser.add_argument('--study_name',     required=False,                                          help='Name of the logto which the Optuna study shall be saved')
-    # parser.add_argument('--log_path',       default='',                                             help='where the optuna study logs will stored')
-    parser.add_argument('--batch_size',     type=int,       default=20,                             help='Model\'s batch size.')
+    parser.add_argument('--data',           required=True,                                                  help='File path to the assignment data file.')
+    parser.add_argument('--pred',           required=True,          choices=['TER', 'VEGF', 'Both'],        help='Type of Value being Predicted from QBAMs')
+    parser.add_argument('--batch_size',     type=int,               default=20,                             help='Model\'s batch size.')
+    parser.add_argument('--multi_opt',      action="store_true",                                            help='Whether or not to optimize against mutliple objectives')
 
     if args is None: 
         return parser.parse_args()      ## For calling through command line
     return parser.parse_args(args)      ## For calling through notebook.
+
+def get_test_criteria(task = None):
+    test_crits = {
+        "RMSE": RMSELoss(reduction='sum'),
+    }
+    
+    if task and task == 'VEGF': test_crits["VEGF_RMSERatio"] = RMSELoss(reduction='sum', ratio=True)
+    elif task and task == 'Both': 
+        test_crits["TER_RMSE"] = RMSELoss(reduction='sum', start_ind=2, end_ind=3)
+        test_crits["VEGF_RMSE"] = RMSELoss(reduction='sum', start_ind=0, end_ind=2)
+        test_crits["VEGF_RMSERatio"] = RMSELoss(reduction='sum', ratio=True, start_ind=0, end_ind=2)
+
+    return test_crits
 
 def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, output_filepath = None, gamma=0.95, wandb_run = None, trial = None, pruning = False, task = None):
     #setup
@@ -47,11 +59,7 @@ def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, output_
     crit_string = "RMSE"
     train_criterion = RMSELoss(reduction='sum')
     train_crits = {}
-    test_crits = {
-        "RMSE": RMSELoss(reduction='sum'),
-    }
-    
-    if task and task in ['VEGF', 'Both']: test_crits["RMSERatio"] = RMSELoss(reduction='sum', ratio=True)
+    test_crits = get_test_criteria(task)
     
     train_losses = []
     train_metrics = {crit: [] for crit in train_crits}
@@ -136,12 +144,7 @@ def eval(test_loaders, model, wandb_run = None, task = None):
     model.device = device
 
     rmse = 0
-    test_crits = {
-        "RMSE": RMSELoss(reduction='sum'),
-    }
-
-    if task and task in ['VEGF', 'Both']: test_crits["RMSERatio"] = RMSELoss(reduction='sum', ratio=True)
-
+    test_crits = get_test_criteria(task)
 
     #data
     if len(test_loaders) > 1: test_fn = test_multidata
@@ -149,18 +152,21 @@ def eval(test_loaders, model, wandb_run = None, task = None):
         test_fn = test
         test_loaders = test_loaders[0]
 
+    metrics = {}
+
     #evaluate
     for crit_dict, loader, split in zip([test_crits], [test_loaders], ["Test"]):
         for crit, crit_obj in crit_dict.items():
             metric_calc = test_fn(model, loader, crit_obj)
+            metrics[f"{split} {crit}"] = metric_calc
             if wandb_run: wandb_run.summary[f"{split} {crit}"] = metric_calc
             if crit == "RMSE": rmse = metric_calc
-
+    # return tuple([metrics[name] for name in metrics.keys()])
     return rmse
 
 ##############################################################################
 
-def objective(trial, data_details, train_loaders, val_loaders, test_loaders, layer_dict, task):
+def objective(trial, data_details, train_loaders, val_loaders, test_loaders, layer_dict, args):
     #
     #hyper params
     layer = trial.suggest_categorical("layer type", layer_dict.keys())
@@ -199,12 +205,11 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
     #build models
     model = Modular_GNN(**model_args)
 
-
     #
     #run
     run = wandb.init(
         entity="bumjin_joo-brown-university", 
-        project=f"qbam-{task}-Ratio", 
+        project=f"qbam-{args.pred}-Flex{"-Multi" if args.multi_opt else ""}", 
         name=f"{layer}, LR{config["lr"]:.5f}", 
         config=config
     )
@@ -218,14 +223,14 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
                     wandb_run = run,
                     trial = trial,
                     pruning = True,
-                    task = task)
+                    task = args.pred)
     
     if should_prune:
         run.summary["state"] = "pruned"
         wandb.finish(quiet=True)
         raise optuna.TrialPruned()
 
-    test_rmse = eval(test_loaders, model, wandb_run = run, task=task)
+    test_rmse = eval(test_loaders, model, wandb_run = run, task=args.pred)
 
     # run.summary["final rmse"] = test_rmse
     run.summary["state"] = "completed"
@@ -244,7 +249,7 @@ def main(args):
     print(f"Training {target}")
 
     data_dirs = {}
-    for data_type in ['TER', 'VEGF', 'Both', 'Donor']:
+    for data_type in ['TER', 'VEGF', 'Both']:
         data_dirs[f"Train_{data_type}"] = f"{args.data}/{data_type}/Train_{data_type}.pkl"
         data_dirs[f"Valid_{data_type}"] = f"{args.data}/{data_type}/Valid_{data_type}.pkl"
         data_dirs[f"Test_{data_type}"] = f"{args.data}/{data_type}/Test_{data_type}.pkl"
@@ -259,10 +264,15 @@ def main(args):
     #
     # optuna optimization
     time_string = datetime.datetime.now().strftime('%d-%b-%Y-%H%M')
-    study = optuna.create_study(study_name=f"{time_string}_optimize_{target}", direction="minimize")
-    study.set_metric_names(["RMSE"])
+    if args.multi_opt:
+        crits = get_test_criteria(target)
+        study = optuna.create_study(study_name=f"{time_string}_optimize_{target}", directions=["minimize" for _ in crits])
+        study.set_metric_names(list(crits.keys()))
+    else:
+        study = optuna.create_study(study_name=f"{time_string}_optimize_{target}", direction="minimize")
+        study.set_metric_names(["RMSE"])
 
-    study.optimize(lambda trial: objective(trial, data_details, train_loaders, val_loaders, test_loaders, layer_dict, target), n_trials=150)
+    study.optimize(lambda trial: objective(trial, data_details, train_loaders, val_loaders, test_loaders, layer_dict, args), n_trials=150)
 
     print(f"Best value: {study.best_value} (params: {study.best_params})")
 
