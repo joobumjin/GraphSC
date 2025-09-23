@@ -26,8 +26,8 @@ def parse_args(args=None):
     parser = argparse.ArgumentParser(description="Specify Hyperparameters to Optimize for the GNN", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--data',           required=True,                                          help='File path to the assignment data file.')
     parser.add_argument('--pred',           required=True,  choices=['TER', 'VEGF', 'Both'],        help='Type of Value being Predicted from QBAMs')
-    parser.add_argument('--study_name',     required=False,                                          help='Name of the logto which the Optuna study shall be saved')
-    parser.add_argument('--log_path',       default='',                                             help='where the optuna study logs will stored')
+    # parser.add_argument('--study_name',     required=False,                                          help='Name of the logto which the Optuna study shall be saved')
+    # parser.add_argument('--log_path',       default='',                                             help='where the optuna study logs will stored')
     parser.add_argument('--batch_size',     type=int,       default=20,                             help='Model\'s batch size.')
 
     if args is None: 
@@ -207,10 +207,9 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
     _, _, should_prune = train_model(train_loaders, 
                     val_loaders, 
                     model, 
-                    config["learning_rate"], 
-                    config["epochs"], 
+                    opt_args = opt_args,
+                    num_epochs=config["epochs"], 
                     gamma=config["lr_decay"], 
-                    weight_decay=config["weight_decay"],
                     wandb_run = run,
                     trial = trial,
                     pruning = True)

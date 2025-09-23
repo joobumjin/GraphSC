@@ -219,10 +219,9 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
     _, _, should_prune = train_model(train_loaders, 
                     val_loaders, 
                     model, 
-                    config["learning_rate"], 
-                    config["epochs"], 
+                    opt_args = opt_args,
+                    num_epochs=config["epochs"], 
                     gamma=config["lr_decay"], 
-                    weight_decay=config["weight_decay"],
                     wandb_run = run,
                     trial = trial,
                     pruning = True)
