@@ -88,7 +88,7 @@ def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, output_
         epoch_tqdm.set_postfix(postfix)
 
         if epoch % 15 == 0 and trial and pruning: 
-            trial.report(postfix["Valid Acc"], epoch)
+            trial.report(postfix["Valid RMSE"], epoch)
             if trial.should_prune(): return postfix["Train BCE"], postfix["Valid BCE"], True
 
     epoch_tqdm.close()
