@@ -1,10 +1,3 @@
-import argparse
-from tqdm import tqdm
-
-import math
-import os
-from pathlib import Path
-
 import pandas as pd
 import numpy as np
 import pickle
@@ -74,7 +67,7 @@ def get_loaders(data_dirs, target, batch_size, print_data_stats = True, print_de
     check_for_nan(test_dataset)
 
     num_features = train_dataset[0].x.shape[1]  # Number of features per node
-    num_targets = train_dataset[0].y.shape[0]
+    num_targets = train_dataset[0].y.shape[1]
 
     detail_list = [num_features, num_targets]
     
