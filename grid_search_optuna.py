@@ -172,7 +172,7 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
     }
 
     opt_args = {
-        "learning_rate": trial.suggest_float("learning_rate", 0.0001, 0.005, step=0.0001),
+        "lr": trial.suggest_float("learning_rate", 0.0001, 0.005, step=0.0001),
         "weight_decay": trial.suggest_float("l2_penalty", 0, 1e-2, step=5e-5),
     }
 
