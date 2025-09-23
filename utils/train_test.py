@@ -29,8 +29,8 @@ class RMSELoss(torch.nn.Module):
     def forward(self, pred, actual):
         #assume that the ratio elements are the first two values
         if self.ratio:
-            pred = torch.hstack((pred[:, 0] / pred[:, 1], pred[:, 2:]))
-            actual = torch.hstack((actual[:, 0] / actual[:, 1], actual[:, 2:]))
+            pred = torch.hstack((pred[:, 0:1] / pred[:, 1:2], pred[:, 2:]))
+            actual = torch.hstack((actual[:, 0:1] / actual[:, 1:2], actual[:, 2:]))
         return self.mse(pred, actual)
 
 def train(model, train_loader, optimizer, criterion, metric_printer=None):
