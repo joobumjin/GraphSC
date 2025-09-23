@@ -96,6 +96,7 @@ def test(model, loader, criterion, metric_printer=None, log_train = False):
             if not hasattr(criterion, "ratio") or not criterion.ratio:
                 total_samples += torch.numel(data.y)
             else:
+                print(data.y.shape)
                 total_samples += (data.y.shape[0] * (data.y.shape[1] - 1))
 
     metric = total_loss / total_samples
