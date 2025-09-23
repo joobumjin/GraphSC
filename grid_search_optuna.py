@@ -135,7 +135,7 @@ def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, output_
 
     return train_losses[-1], val_metrics["RMSE"][-1], False
 
-def eval(test_loaders, model, wandb_run = None, task = None):
+def eval(test_loaders, model, wandb_run = None, task = None, multi = False):
     #setup
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Using", device)
@@ -160,9 +160,10 @@ def eval(test_loaders, model, wandb_run = None, task = None):
             metric_calc = test_fn(model, loader, crit_obj)
             metrics[f"{split} {crit}"] = metric_calc
             if wandb_run: wandb_run.summary[f"{split} {crit}"] = metric_calc
-            if crit == "RMSE": rmse = metric_calc
-    # return tuple([metrics[name] for name in metrics.keys()])
-    return rmse
+
+    if multi: return tuple([metrics[name] for name in metrics.keys()])
+    
+    return metrics["Test RMSE"]
 
 ##############################################################################
 
@@ -230,13 +231,12 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
         wandb.finish(quiet=True)
         raise optuna.TrialPruned()
 
-    test_rmse = eval(test_loaders, model, wandb_run = run, task=args.pred)
+    test_values = eval(test_loaders, model, wandb_run = run, task=args.pred, multi=args.multi_opt)
 
-    # run.summary["final rmse"] = test_rmse
     run.summary["state"] = "completed"
     wandb.finish(quiet=True)
 
-    return test_rmse
+    return test_values
 
 ##############################################################################
 
