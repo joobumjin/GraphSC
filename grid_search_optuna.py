@@ -193,9 +193,6 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
     #
     #build models
     model = Modular_GNN(**model_args)
-    #actually build the weights to get grad tracking
-    dummy_batch = next(iter(val_loaders[0]))
-    _ = model(dummy_batch)
 
 
     #
