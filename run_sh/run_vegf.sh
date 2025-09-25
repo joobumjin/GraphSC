@@ -3,7 +3,7 @@
 #SBATCH --partition=gpu --gres=gpu:1  --output=optuna_vegf.out
 #SBATCH -N 1
 #SBATCH -n 4
-#SBATCH -t 02:00:00
+#SBATCH -t 100:00:00
 #SBATCH --mem=16g
 
 # Load a CUDA module
