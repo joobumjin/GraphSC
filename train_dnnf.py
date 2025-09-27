@@ -3,6 +3,7 @@ import time
 
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+import seaborn as sns
 import numpy as np
 import torch
 import wandb
@@ -175,6 +176,8 @@ def eval(test_loaders, model, wandb_run = None, task = None, multi = False):
 ##############################################################################
 
 def main(args):
+    sns.set_theme()
+
     target = args.pred
     print(f"Training DNN F on {target} with batch size {args.batch_size}")
 
