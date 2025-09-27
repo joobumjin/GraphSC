@@ -18,11 +18,12 @@ class HealthyData():
 
        return self
     
-def get_image_loaders(base_dir, data_dirs, target, batch_size):
+def get_image_loaders(base_dir, data_dirs, batch_size):
     def collate(data, crop):
         """
         In our cases, we want to collate a list of Data instances
         """
+        #better to prealloc numpy?
         images = torch.Tensor(np.transpose(np.array([sample.x for sample in data]), axes=(0,3,1,2)))
         labels = torch.Tensor(np.array([sample.y for sample in data]))
 
@@ -36,16 +37,18 @@ def get_image_loaders(base_dir, data_dirs, target, batch_size):
     # train_datasets = [Healthy2Dataset(base_dir, train_csv, target) for train_csv in train_csvs]
     # valid_dataset = Healthy2Dataset(base_dir, valid_csv, target)
     # test_dataset = Healthy2Dataset(base_dir, test_csv, target)
+    print(f"Constructing Datasets")
     train_dfs = [pd.read_pickle(f"{base_dir}/{train_pkl}") for train_pkl in train_pkls]
     val_df = pd.read_pickle(f"{base_dir}/{valid_pkl}")
     test_df = pd.read_pickle(f"{base_dir}/{test_pkl}")
+    
+    num_targets = test_df[0].y.shape[1]
 
-
+    print(f"Constructing Dataloaders")
     train_loaders = [DataLoader(df, batch_size = batch_size, collate_fn=lambda data: collate(data, crop=crop)) for df in train_dfs]
     valid_loaders = [DataLoader(val_df, batch_size = batch_size, collate_fn=lambda data: collate(data, crop=crop))]
     test_loaders = [DataLoader(test_df, batch_size = batch_size, collate_fn=lambda data: collate(data, crop=crop))]
     
-    num_targets = next(iter(test_df[0])).labels.shape[1]
 
     return train_loaders, valid_loaders, test_loaders, num_targets
 
