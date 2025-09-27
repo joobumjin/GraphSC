@@ -202,6 +202,7 @@ def main(args):
 
     config={
         "epochs": 60,
+        "lr_decay": .9
     }
 
     config = {**opt_args, **config}
