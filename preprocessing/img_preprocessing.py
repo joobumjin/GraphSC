@@ -25,7 +25,7 @@ def get_image_loaders(data_dirs, target, batch_size):
         """
         #better to prealloc numpy?
         images = torch.Tensor(np.transpose(np.array([sample.x for sample in data]), axes=(0,3,1,2)))
-        labels = torch.Tensor(np.array([sample.y for sample in data]))
+        labels = torch.Tensor(np.array([sample.y for sample in data]))[:, None]
 
         return HealthyData(crop(images), labels)
 
