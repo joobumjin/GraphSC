@@ -42,7 +42,7 @@ def get_image_loaders(data_dirs, target, batch_size):
     val_df = pd.read_pickle(f"{valid_pkl}")
     test_df = pd.read_pickle(f"{test_pkl}")
     
-    num_targets = test_df[0].y.shape[0]
+    num_targets = len(test_df[0].y)
 
     print(f"Constructing Dataloaders")
     train_loaders = [DataLoader(df, batch_size = batch_size, collate_fn=lambda data: collate(data, crop=crop)) for df in train_dfs]
