@@ -122,7 +122,7 @@ def main(args):
     print(f"Pretraining {pretrain_target}")
 
     data_dirs = {}
-    for data_type in ['TER', 'VEGF', 'Both']: #, 'Donor']:
+    for data_type in ['TER', 'VEGF', 'Both']:
         data_dirs[f"Train_{data_type}"] = f"{args.data}/{data_type}/Train_{data_type}.pkl"
         data_dirs[f"Valid_{data_type}"] = f"{args.data}/{data_type}/Valid_{data_type}.pkl"
         data_dirs[f"Test_{data_type}"] = f"{args.data}/{data_type}/Test_{data_type}.pkl"

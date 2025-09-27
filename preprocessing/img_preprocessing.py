@@ -6,6 +6,18 @@ import numpy as np
 import glob
 import pandas as pd
 
+class HealthyData():
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.edge_index, self.batch = None, None #mimic geometric's Data class
+
+    def to(self, device):
+       self.x = self.x.to(device)
+       self.y = self.y.to(device)
+
+       return self
+    
 def get_image_loaders(base_dir, data_dirs, target, batch_size):
     def collate(data, crop):
         """
@@ -28,23 +40,15 @@ def get_image_loaders(base_dir, data_dirs, target, batch_size):
     val_df = pd.read_pickle(f"{base_dir}/{valid_pkl}")
     test_df = pd.read_pickle(f"{base_dir}/{test_pkl}")
 
+
     train_loaders = [DataLoader(df, batch_size = batch_size, collate_fn=lambda data: collate(data, crop=crop)) for df in train_dfs]
-    valid_loader = DataLoader(val_df, batch_size = batch_size, collate_fn=lambda data: collate(data, crop=crop))
-    test_loader = DataLoader(test_df, batch_size = batch_size, collate_fn=lambda data: collate(data, crop=crop))
+    valid_loaders = [DataLoader(val_df, batch_size = batch_size, collate_fn=lambda data: collate(data, crop=crop))]
+    test_loaders = [DataLoader(test_df, batch_size = batch_size, collate_fn=lambda data: collate(data, crop=crop))]
+    
+    num_targets = next(iter(test_df[0])).labels.shape[1]
 
-    return train_loaders, valid_loader, test_loader
+    return train_loaders, valid_loaders, test_loaders
 
-class HealthyData():
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.edge_index, self.batch = None, None #mimic geometric's Data class
-
-    def to(self, device):
-       self.x = self.x.to(device)
-       self.y = self.y.to(device)
-
-       return self
 
 
 # class Healthy2Dataset(Dataset):

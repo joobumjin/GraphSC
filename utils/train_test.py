@@ -2,6 +2,7 @@ import math
 import torch
 from tqdm import tqdm
 from abc import ABC, abstractmethod
+from datetime import time
 
 class Accuracy(torch.nn.Module):
     def __init__(self):
@@ -76,13 +77,51 @@ def train_multidata(model, train_loaders, optimizer, criterion):
             optimizer.step()
 
             total_loss += loss.detach().item()
-            total_samples += torch.numel(data.y)
+            if not hasattr(criterion, "ratio") or not criterion.ratio:
+                total_samples += torch.numel(data.y)
+            else:
+                total_samples += (data.y.shape[0] * (data.y.shape[1] - 1))
 
     metric = total_loss / total_samples
 
     if hasattr(criterion, "root") and criterion.root: metric = math.sqrt(metric)
 
     return metric
+
+def train_multidata_timed(model, train_loaders, optimizer, criterion):
+    model.train()
+    total_loss = 0.0
+    total_samples = 0
+    total_batches = 0.0
+    total_batch_time = 0.0
+    total_process_time = 0.0
+    for train_loader in train_loaders:
+        data_start_time = time.time()
+        for data in train_loader:
+            total_batch_time += time.time() - data_start_time
+            
+            optimizer.zero_grad()
+            data = data.to(model.device)  # Move data to the same device as the model
+            process_start_time = time.time()
+            out = model(data)
+            loss = criterion(out, data.y)
+            total_process_time += time.time() - process_start_time
+            loss.backward()
+            optimizer.step()
+
+            total_loss += loss.detach().item()
+            if not hasattr(criterion, "ratio") or not criterion.ratio:
+                total_samples += torch.numel(data.y)
+            else:
+                total_samples += (data.y.shape[0] * (data.y.shape[1] - 1))
+            data_start_time = time.time()
+            total_batches += 1
+
+    metric = total_loss / total_samples
+
+    if hasattr(criterion, "root") and criterion.root: metric = math.sqrt(metric)
+
+    return metric, total_batch_time / total_batches, total_process_time / total_batches
 
 def test(model, loader, criterion, metric_printer=None, log_train = False):
     model.eval()

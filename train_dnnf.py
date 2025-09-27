@@ -1,23 +1,15 @@
 import argparse
-import math
-import os
-from pathlib import Path
-import datetime
+from datetime import time
 
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-import pandas as pd
 import numpy as np
-import pickle
 import torch
-from torch.nn import MSELoss
-import optuna
+import wandb
 
 from preprocessing.img_preprocessing import get_image_loaders, HealthyData
-from utils.train_test import train_multidata, test, MetricPrinter
+from utils.train_test import train, train_multidata, train_multidata_timed, test, test_multidata, SSLELoss, RMSELoss
 from GNN.src.dnn_f import DNN_F
-from GNN.src import test_acc
-
 
 def parse_args(args=None):
     """ 
@@ -27,12 +19,11 @@ def parse_args(args=None):
     For example: 
         parse_args('--type', 'rnn', ...)
     """
-    parser = argparse.ArgumentParser(description="Specify Hyperparameters to Optimize for the GNN", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(description="Specify Hyperparameters to Optimize for the CNN", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--data',           required=True,                                          help='File path to the assignment data file.')
     parser.add_argument('--pred',           required=True,  choices=['TER', 'VEGF', 'Both'],        help='Type of Value being Predicted from QBAMs')
-    parser.add_argument('--graph_path',     required=False,                                         help='Where to store the training graphs')
     parser.add_argument('--batch_size',     type=int,       default=20,                             help='Model\'s batch size.')
-    parser.add_argument('--lr',             type=float,     default=1e-3,                             help='Model\'s learning rate.')
+    parser.add_argument('--multi_opt',      action="store_true",                                            help='Whether or not to optimize against mutliple objectives')
     parser.add_argument('--normed',         required=False, action='store_true',                    help='Whether or not to use normalized label values')
     parser.add_argument('--extra_data',     required=False, default=None,                           help='File path to the assignment data file.')
 
@@ -40,64 +31,148 @@ def parse_args(args=None):
         return parser.parse_args()      ## For calling through command line
     return parser.parse_args(args)      ## For calling through notebook.
 
-def train_model(train_loaders, val_loader, test_loader, model, learning_rate, num_epochs, output_filepath = None, img_path = None, convergence_epsilon = 0.5, gamma=0.95):
+
+def get_test_criteria(task = None):
+    test_crits = {
+        "RMSE": RMSELoss(reduction='sum'),
+    }
+    
+    if task and task == 'VEGF': test_crits["VEGF_RMSERatio"] = RMSELoss(reduction='sum', ratio=True)
+    elif task and task == 'Both': 
+        test_crits["TER_RMSE"] = RMSELoss(reduction='sum', start_ind=2, end_ind=3)
+        test_crits["VEGF_RMSE"] = RMSELoss(reduction='sum', start_ind=0, end_ind=2)
+        test_crits["VEGF_RMSERatio"] = RMSELoss(reduction='sum', ratio=True, start_ind=0, end_ind=2)
+
+    return test_crits
+
+##############################################################################
+
+def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, output_filepath = None, gamma=0.95, wandb_run = None, trial = None, pruning = False, task = None):
+    #setup
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    timed = True
     print("Using", device)
+
     model = model.to(device)
     model.device = device
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+
+    optimizer = torch.optim.Adam(model.parameters(), **opt_args)
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma)
-    criterion = MSELoss()
-
+    crit_string = "RMSE"
+    train_criterion = RMSELoss(reduction='sum')
+    train_crits = {}
+    test_crits = get_test_criteria(task)
+    
     train_losses = []
-    val_losses = []
-    # test_losses = []
+    train_metrics = {crit: [] for crit in train_crits}
+    val_metrics = {crit: [] for crit in test_crits}
 
-    for epoch in tqdm(range(1, num_epochs + 1), desc="Training Epochs"):
-        train_rmse = train_multidata(model, train_loaders, optimizer, criterion)
+    #data
+    if len(train_loaders) > 1: train_fn = train_multidata_timed if timed else train_multidata
+    else: 
+        train_fn = train
+        train_loaders = train_loaders[0]
+
+    if len(val_loaders) > 1: test_fn = test_multidata
+    else: 
+        test_fn = test
+        val_loaders = val_loaders[0]
+
+    #run
+    epoch_tqdm = tqdm(range(1, num_epochs + 1), desc="Training Epochs", postfix={f"Train {crit_string}": 0.0, f"Valid {crit_string}": 0.0})
+
+    start = time.time()
+    
+    for epoch in epoch_tqdm:
+        #train
+        train_loss, avg_data_time, avg_pred_time = train_fn(model, train_loaders, optimizer, train_criterion)
         scheduler.step()
 
-        val_rmse = test(model, val_loader, criterion)
-        # test_rmse = test(model, test_loader, criterion)
+        train_losses.append(train_loss)
+        postfix = {f"Train {crit_string}": train_loss}
 
-        train_losses.append(train_rmse)
-        val_losses.append(val_rmse)
-        # test_losses.append(test_rmse)
+        #eval
+        for crit_dict, metric_dict, loader, split in zip([train_crits, test_crits], [train_metrics, val_metrics], [train_loaders, val_loaders], ["Train", "Valid"]):
+            for crit, crit_obj in crit_dict.items():
+                metric = test_fn(model, loader, crit_obj)
+                metric_dict[crit].append(metric)
+                postfix[f"{split} {crit}"] = metric
 
-        if len(train_losses) > 4:
-            last_3 = np.array(train_losses)[:-4:-1]
-            prev = np.array(train_losses)[-2:-5:-1]
-            avg_loss_diff = np.mean(np.abs(last_3 - prev))
-            if avg_loss_diff < convergence_epsilon:
-                print(f"Stopping early on epoch {epoch} with average changes in loss {avg_loss_diff}")
-                break
+        postfix[f"Epoch Time"] = time.time() - start
+        postfix[f"Batching Time"] = avg_data_time
+        postfix[f"Prediction Time"] = avg_pred_time
 
-        if epoch % 20 == 0:
-            # print(f'\rEpoch: {epoch:03d}, Train RMSE: {train_rmse:.4f}', end='')
-            print(f'Epoch: {epoch:03d}, Train RMSE: {train_rmse:.4f}', end='\n')
+        if wandb_run: wandb_run.log(postfix)
+        epoch_tqdm.set_postfix(postfix)
 
+        if epoch % 15 == 0 and trial and pruning: 
+            trial.report(postfix["Valid RMSE"], epoch)
+            if trial.should_prune(): return postfix["Train RMSE"], postfix["Valid RMSE"], True
+
+    epoch_tqdm.close()
+
+    #output formating
     train_losses = np.array(train_losses)
-    val_losses = np.array(val_losses)
-    # test_losses = np.array(test_losses)
+    train_metrics = {crit: np.array(history) for crit, history in train_metrics.items()}
+    val_metrics = {crit: np.array(history) for crit, history in val_metrics.items()}
 
+    #model saving
     if output_filepath:
         torch.save(model.state_dict(), output_filepath)
         print("Saved the model to:", output_filepath)
 
-    if img_path:
-        plt.figure(figsize=(10, 6))
-        plt.plot(train_losses, label='Training RMSE')
-        plt.plot(val_losses, label='Validation RMSE')
-        # plt.plot(test_losses, label='Test RMSE')
-        plt.xlabel('Epoch')
-        plt.ylabel('RMSE')
-        plt.title('Training and Validation RMSE')
-        plt.legend()
-        plt.savefig(img_path)
-        plt.close()
-        print(f"Saved graph to {img_path}")
+    #plotting
+    # losses
+    fig, ax1 = plt.subplots(figsize=(10, 6))
+    ax1.set_xlabel('Epoch')
+    ax1.set_ylabel('RMSE')
+    p1 = ax1.plot(train_losses, label='Training RMSE', color='tab:blue')
+    p2 = ax1.plot(val_metrics["RMSE"], label='Validation RMSE', color="tab:orange")
+    ax1.tick_params(axis='y')
 
-    return train_losses[-1]
+    ax1.legend(handles=p1+p2, loc='best')
+
+    #outoutting
+    fig.tight_layout()  
+    plt.title('Training and Validation RMSE')
+    plt.legend()
+
+    if wandb_run: wandb_run.log({"chart": plt})
+
+    plt.close()
+
+    return train_losses[-1], val_metrics["RMSE"][-1], False
+
+def eval(test_loaders, model, wandb_run = None, task = None, multi = False):
+    #setup
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print("Using", device)
+
+    model = model.to(device)
+    model.device = device
+
+    test_crits = get_test_criteria(task)
+
+    #data
+    if len(test_loaders) > 1: test_fn = test_multidata
+    else: 
+        test_fn = test
+        test_loaders = test_loaders[0]
+
+    metrics = {}
+
+    #evaluate
+    for crit_dict, loader, split in zip([test_crits], [test_loaders], ["Test"]):
+        for crit, crit_obj in crit_dict.items():
+            metric_calc = test_fn(model, loader, crit_obj)
+            metrics[f"{split} {crit}"] = metric_calc
+            if wandb_run: wandb_run.summary[f"{split} {crit}"] = metric_calc
+
+    if multi: return tuple([metrics[name] for name in metrics.keys()])
+    
+    return metrics["Test RMSE"]
+
+##############################################################################
 
 def main(args):
     target = args.pred
@@ -111,16 +186,55 @@ def main(args):
                  "valid": "valid_TER_imgs_0.pkl", 
                  "test":  "test_TER_imgs_0.pkl"}
  
-    train_loaders, valid_loader, test_loader = get_image_loaders(data_base_dir, data_dirs, target, args.batch_size)
+    train_loaders, val_loaders, test_loaders = get_image_loaders(data_base_dir, data_dirs, target, args.batch_size)
 
     out_dim = 2 if target=="Both" else 1
 
+    opt_args = {
+        "lr": 1e-3,# trial.suggest_float("learning_rate", 0.0001, 0.005, step=0.0001),
+        "weight_decay": 1e-3 # trial.suggest_float("l2_penalty", 0, 1e-2, step=5e-5),
+    }
+
+    config={
+        "epochs": 60,
+    }
+
+    config = {**opt_args, **config}
+    print(f"###############################################################################\n"
+            f"Learning Rate: {config["lr"]} with Decay {config["lr_decay"]} and Weight Decay: {config["weight_decay"]}\n"
+            f"###############################################################################")
+
+
     model = DNN_F(out_dim)
 
-    train_loss = train_model(train_loaders, valid_loader, test_loader, model, learning_rate=args.lr, num_epochs=200, img_path = args.graph_path)
-    test_loss = test_acc.test_model(test_loader, model, task=target)
+    run = wandb.init(
+        entity="bumjin_joo-brown-university", 
+        project=f"qbam-{args.pred}-DNN-F", 
+        name=f"DNN F Test, LR{config["lr"]:.5f}", 
+        config=config
+    )
 
-    print(f"Final Test Loss: {test_loss}")
+    _, _, _ = train_model(train_loaders, 
+                    val_loaders, 
+                    model, 
+                    opt_args = opt_args,
+                    num_epochs=config["epochs"], 
+                    gamma=config["lr_decay"], 
+                    wandb_run = run,
+                    trial = None,
+                    pruning = True if not args.multi_opt else False,
+                    task = args.pred)
+    
+    # if should_prune:
+    #     run.summary["state"] = "pruned"
+    #     wandb.finish(quiet=True)
+    #     raise optuna.TrialPruned()
+
+    test_values = eval(test_loaders, model, wandb_run = run, task=args.pred, multi=args.multi_opt)
+
+    run.summary["state"] = "completed"
+    wandb.finish(quiet=True)
+    print(f"Final Test Loss: {test_values}")
 
 
 ## END UTILITY METHODS
