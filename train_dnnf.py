@@ -186,10 +186,10 @@ def main(args):
                  "valid": "valid_TER_imgs_0.pkl", 
                  "test":  "test_TER_imgs_0.pkl"}
  
-    train_loaders, val_loaders, test_loaders = get_image_loaders(data_base_dir, data_dirs, target, args.batch_size)
+    print(f"Loading Data")
+    train_loaders, val_loaders, test_loaders, out_dim = get_image_loaders(data_base_dir, data_dirs, target, args.batch_size)
 
-    out_dim = 2 if target=="Both" else 1
-
+    print(f"Building Model")
     opt_args = {
         "lr": 1e-3,# trial.suggest_float("learning_rate", 0.0001, 0.005, step=0.0001),
         "weight_decay": 1e-3 # trial.suggest_float("l2_penalty", 0, 1e-2, step=5e-5),

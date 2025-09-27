@@ -47,7 +47,7 @@ def get_image_loaders(base_dir, data_dirs, target, batch_size):
     
     num_targets = next(iter(test_df[0])).labels.shape[1]
 
-    return train_loaders, valid_loaders, test_loaders
+    return train_loaders, valid_loaders, test_loaders, num_targets
 
 
 
