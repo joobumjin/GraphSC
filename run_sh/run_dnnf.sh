@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --partition=gpu --gres=gpu:1
+#SBATCH --partition=gpu --gres=gpu:1 --output=dnn-f_ter.out
 #SBATCH -N 1
 #SBATCH -n 1
 #SBATCH -t 60:00:00
