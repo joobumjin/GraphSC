@@ -192,7 +192,7 @@ def main(args):
                  "test":  f"{data_base_dir}/test_TER_imgs_0.pkl"}
  
     print(f"Loading Data")
-    train_loaders, val_loaders, test_loaders, out_dim = get_image_loaders(data_base_dir, data_dirs, target, args.batch_size)
+    train_loaders, val_loaders, test_loaders, out_dim = get_image_loaders(data_dirs, target, args.batch_size)
 
     print(f"Building Model")
     opt_args = {
