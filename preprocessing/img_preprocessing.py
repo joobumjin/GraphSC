@@ -18,7 +18,7 @@ class HealthyData():
 
        return self
     
-def get_image_loaders(base_dir, data_dirs, batch_size):
+def get_image_loaders(data_dirs, target, batch_size):
     def collate(data, crop):
         """
         In our cases, we want to collate a list of Data instances
@@ -38,9 +38,9 @@ def get_image_loaders(base_dir, data_dirs, batch_size):
     # valid_dataset = Healthy2Dataset(base_dir, valid_csv, target)
     # test_dataset = Healthy2Dataset(base_dir, test_csv, target)
     print(f"Constructing Datasets")
-    train_dfs = [pd.read_pickle(f"{base_dir}/{train_pkl}") for train_pkl in train_pkls]
-    val_df = pd.read_pickle(f"{base_dir}/{valid_pkl}")
-    test_df = pd.read_pickle(f"{base_dir}/{test_pkl}")
+    train_dfs = [pd.read_pickle(f"{train_pkl}") for train_pkl in train_pkls]
+    val_df = pd.read_pickle(f"{valid_pkl}")
+    test_df = pd.read_pickle(f"{test_pkl}")
     
     num_targets = test_df[0].y.shape[1]
 
