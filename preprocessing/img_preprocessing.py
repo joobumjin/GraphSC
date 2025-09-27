@@ -41,6 +41,7 @@ def get_image_loaders(data_dirs, target, batch_size):
     train_dfs = [pd.read_pickle(f"{train_pkl}") for train_pkl in train_pkls]
     val_df = pd.read_pickle(f"{valid_pkl}")
     test_df = pd.read_pickle(f"{test_pkl}")
+    print(test_df[0].y)
     
     num_targets = len(test_df[0].y)
 
