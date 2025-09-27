@@ -1,5 +1,5 @@
 import argparse
-from datetime import time
+import time
 
 from tqdm import tqdm
 import matplotlib.pyplot as plt

@@ -2,7 +2,7 @@ import math
 import torch
 from tqdm import tqdm
 from abc import ABC, abstractmethod
-from datetime import time
+import time
 
 class Accuracy(torch.nn.Module):
     def __init__(self):
