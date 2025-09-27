@@ -210,7 +210,7 @@ def main(args):
     run = wandb.init(
         entity="bumjin_joo-brown-university", 
         project=f"qbam-{args.pred}-DNN-F", 
-        name=f"DNN F Test, LR{config["lr"]:.5f}", 
+        name=f"DNN F Test, LR{config['lr']:.5f}", 
         config=config
     )
 
