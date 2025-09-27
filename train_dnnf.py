@@ -201,7 +201,7 @@ def main(args):
 
     config = {**opt_args, **config}
     print(f"###############################################################################\n"
-            f"Learning Rate: {config["lr"]} with Decay {config["lr_decay"]} and Weight Decay: {config["weight_decay"]}\n"
+            f"Learning Rate: {config['lr']} with Decay {config['lr_decay']} and Weight Decay: {config['weight_decay']}\n"
             f"###############################################################################")
 
 
