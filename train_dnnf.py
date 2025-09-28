@@ -69,6 +69,8 @@ def graph_train_stats(train_losses, train_metrics, val_metrics, wandb_run):
     if wandb_run: wandb_run.log({"chart": plt})
 
     plt.close()
+    
+    return
 
 ##############################################################################
 
@@ -125,7 +127,7 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, arg
 
     test_values = eval_model(test_loaders, 
                              model, 
-                             get_test_criteria(args.pred)
+                             get_test_criteria(args.pred),
                              wandb_run = run, 
                              multi=args.multi_opt)
 
