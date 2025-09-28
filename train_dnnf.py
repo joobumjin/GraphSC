@@ -48,6 +48,28 @@ def get_test_criteria(task = None):
 
     return test_crits
 
+def graph_train_stats(train_losses, train_metrics, val_metrics, wandb_run):
+     #plotting
+    # losses
+    fig, ax1 = plt.subplots(figsize=(10, 6))
+    ax1.set_xlabel('Epoch')
+    ax1.set_ylabel('RMSE')
+    p1 = ax1.plot(train_losses, label='Training RMSE', color='tab:blue')
+    p2 = ax1.plot(val_metrics["RMSE"], label='Validation RMSE', color="tab:orange")
+    ax1.tick_params(axis='y')
+
+    ax1.legend(handles=p1+p2, loc='best')
+
+    #outoutting
+    fig.tight_layout()  
+    plt.title('Training and Validation RMSE')
+    plt.legend()
+
+    if wandb_run: wandb_run.log({"chart": plt})
+
+    plt.close()
+
+
 ##############################################################################
 
 def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, output_filepath = None, gamma=0.95, wandb_run = None, trial = None, pruning = False, task = None):
@@ -124,25 +146,7 @@ def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, output_
         torch.save(model.state_dict(), output_filepath)
         print("Saved the model to:", output_filepath)
 
-    #plotting
-    # losses
-    fig, ax1 = plt.subplots(figsize=(10, 6))
-    ax1.set_xlabel('Epoch')
-    ax1.set_ylabel('RMSE')
-    p1 = ax1.plot(train_losses, label='Training RMSE', color='tab:blue')
-    p2 = ax1.plot(val_metrics["RMSE"], label='Validation RMSE', color="tab:orange")
-    ax1.tick_params(axis='y')
-
-    ax1.legend(handles=p1+p2, loc='best')
-
-    #outoutting
-    fig.tight_layout()  
-    plt.title('Training and Validation RMSE')
-    plt.legend()
-
-    if wandb_run: wandb_run.log({"chart": plt})
-
-    plt.close()
+    graph_train_stats(train_losses, train_metrics, val_metrics, wandb_run)
 
     return train_losses[-1], val_metrics["RMSE"][-1], False
 
@@ -170,10 +174,8 @@ def eval(test_loaders, model, wandb_run = None, task = None, multi = False):
             metric_calc = test_fn(model, loader, crit_obj)
             metrics[f"{split} {crit}"] = metric_calc
             if wandb_run: wandb_run.summary[f"{split} {crit}"] = metric_calc
-
-    if multi: return tuple([metrics[name] for name in metrics.keys()])
     
-    return metrics["Test RMSE"]
+    return metrics
 
 ##############################################################################
 
@@ -229,7 +231,7 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, arg
     run.summary["state"] = "completed"
     wandb.finish()
 
-    return test_values
+    return test_values["RMSE"]
 
 ##############################################################################
 
