@@ -1,5 +1,6 @@
 import argparse
 import time
+import datetime
 
 from tqdm import tqdm
 import matplotlib.pyplot as plt
@@ -7,6 +8,7 @@ import seaborn as sns
 import numpy as np
 import torch
 import wandb
+import optuna
 
 from preprocessing.img_preprocessing import get_image_loaders, HealthyData
 from utils.train_test import train, train_multidata, train_multidata_timed, test, test_multidata, SSLELoss, RMSELoss
@@ -175,6 +177,62 @@ def eval(test_loaders, model, wandb_run = None, task = None, multi = False):
 
 ##############################################################################
 
+def objective(trial, data_details, train_loaders, val_loaders, test_loaders, args):
+    #
+    #hyper params
+    opt_args = {
+        "lr": trial.suggest_float("learning_rate", 0.0001, 0.005, step=0.0001),
+        "weight_decay": trial.suggest_float("l2_penalty", 0, 1e-2, step=5e-5),
+    }
+
+    config={
+        "epochs": 60,
+        "lr_decay": trial.suggest_float("learning_rate_decay", 0.7, 1.0, step=.1),
+    }
+
+    config = {**opt_args, **config}
+    print(f"###############################################################################\n"
+            f"Learning Rate: {config['lr']} with Decay {config['lr_decay']} and Weight Decay: {config['weight_decay']}\n"
+            f"###############################################################################")
+
+    #
+    #build models
+    model = DNN_F(*data_details)
+
+    #
+    #run
+    run = wandb.init(
+        entity="bumjin_joo-brown-university", 
+        project=f"qbam-DNN-F-{args.pred}{"-Multi" if args.multi_opt else ""}", 
+        name=f"DNN-F, LR{config["lr"]:.5f}", 
+        config=config
+    )
+
+    _, _, should_prune = train_model(train_loaders, 
+                    val_loaders, 
+                    model, 
+                    opt_args = opt_args,
+                    num_epochs=config["epochs"], 
+                    gamma=config["lr_decay"], 
+                    wandb_run = run,
+                    trial = trial,
+                    pruning = True if not args.multi_opt else False,
+                    task = args.pred)
+    
+    if should_prune:
+        run.summary["state"] = "pruned"
+        wandb.finish()
+        raise optuna.TrialPruned()
+
+    test_values = eval(test_loaders, model, wandb_run = run, task=args.pred, multi=args.multi_opt)
+
+    run.summary["state"] = "completed"
+    wandb.finish()
+
+    return test_values
+
+##############################################################################
+
 def main(args):
     sns.set_theme()
 
@@ -184,7 +242,6 @@ def main(args):
     # norm_string = "_normalized" if args.normed else ""
 
     data_base_dir = f"{args.data}/full_imgs"
-    # data_dirs = {"train": "train_samples.csv", "valid":"valid_samples.csv", "test": "test_samples.csv"}
     data_dirs = {"train": [f"{data_base_dir}/train_TER_imgs_0.pkl", 
                            f"{data_base_dir}/train_TER_imgs_1.pkl", 
                            f"{data_base_dir}/train_TER_imgs_2.pkl"], 
@@ -194,53 +251,19 @@ def main(args):
     print(f"Loading Data")
     train_loaders, val_loaders, test_loaders, out_dim = get_image_loaders(data_dirs, target, args.batch_size)
 
-    print(f"Building Model")
-    opt_args = {
-        "lr": 1e-3,# trial.suggest_float("learning_rate", 0.0001, 0.005, step=0.0001),
-        "weight_decay": 1e-3 # trial.suggest_float("l2_penalty", 0, 1e-2, step=5e-5),
-    }
+    time_string = datetime.datetime.now().strftime('%d-%b-%Y-%H%M')
+    if args.multi_opt:
+        crits = get_test_criteria(target)
+        study = optuna.create_study(study_name=f"{time_string}_optimize_{target}", directions=["minimize" for _ in crits])
+        study.set_metric_names(list(crits.keys()))
+    else:
+        study = optuna.create_study(study_name=f"{time_string}_optimize_{target}", direction="minimize")
+        study.set_metric_names(["RMSE"])
 
-    config={
-        "epochs": 60,
-        "lr_decay": .9
-    }
+    study.optimize(lambda trial: objective(trial, [out_dim], train_loaders, val_loaders, test_loaders, args), n_trials=150)
 
-    config = {**opt_args, **config}
-    print(f"###############################################################################\n"
-            f"Learning Rate: {config['lr']} with Decay {config['lr_decay']} and Weight Decay: {config['weight_decay']}\n"
-            f"###############################################################################")
+    print(f"Best value: {study.best_value} (params: {study.best_params})")
 
-
-    model = DNN_F(out_dim)
-
-    run = wandb.init(
-        entity="bumjin_joo-brown-university", 
-        project=f"qbam-{args.pred}-DNN-F", 
-        name=f"DNN F Test, LR{config['lr']:.5f}", 
-        config=config
-    )
-
-    _, _, _ = train_model(train_loaders, 
-                    val_loaders, 
-                    model, 
-                    opt_args = opt_args,
-                    num_epochs=config["epochs"], 
-                    gamma=config["lr_decay"], 
-                    wandb_run = run,
-                    trial = None,
-                    pruning = True if not args.multi_opt else False,
-                    task = args.pred)
-    
-    # if should_prune:
-    #     run.summary["state"] = "pruned"
-    #     wandb.finish(quiet=True)
-    #     raise optuna.TrialPruned()
-
-    test_values = eval(test_loaders, model, wandb_run = run, task=args.pred, multi=args.multi_opt)
-
-    run.summary["state"] = "completed"
-    wandb.finish(quiet=True)
-    print(f"Final Test Loss: {test_values}")
 
 
 ## END UTILITY METHODS

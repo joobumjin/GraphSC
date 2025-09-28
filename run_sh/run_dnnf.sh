@@ -16,11 +16,6 @@ conda activate qbam
 # Run program
 cd /users/bjoo2/code/qbam/qbam_gnn
 
-# declare -a arr=("TER" "VEGF" "Both")
-declare -a arr=("TER")
-for i in "${arr[@]}"
-do
-    echo "Training DNN F on $i"
-    python3 train_dnnf.py --data /users/bjoo2/data/bjoo2/qbam/data --pred "$i" --batch_size 32 
-    # python3 train_dnnf.py --data /users/bjoo2/data/bjoo2/qbam/data --graph_path /users/bjoo2/data/bjoo2/qbam/dnn_f_results/train_graph --pred "$i" --batch_size 64 --extra_data /users/bjoo2/data/bjoo2/qbam/data/healthy
-done
+echo "Training DNN F on TER"
+python3 train_dnnf.py --data /users/bjoo2/data/bjoo2/qbam/data --pred TER --batch_size 32 
+# python3 train_dnnf.py --data /users/bjoo2/data/bjoo2/qbam/data --graph_path /users/bjoo2/data/bjoo2/qbam/dnn_f_results/train_graph --pred "$i" --batch_size 64 --extra_data /users/bjoo2/data/bjoo2/qbam/data/healthy

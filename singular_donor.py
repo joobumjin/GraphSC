@@ -228,14 +228,14 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
     
     if should_prune:
         run.summary["state"] = "pruned"
-        wandb.finish(quiet=True)
+        wandb.finish()
         raise optuna.TrialPruned()
 
     test_acc = eval(test_loaders, model, wandb_run = run)
 
     run.summary["final accuracy"] = test_acc
     run.summary["state"] = "completed"
-    wandb.finish(quiet=True)
+    wandb.finish()
 
     return test_acc
 
