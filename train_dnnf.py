@@ -12,6 +12,7 @@ import optuna
 
 from preprocessing.img_preprocessing import get_image_loaders, HealthyData
 from utils.train_test import train, train_multidata, train_multidata_timed, test, test_multidata, SSLELoss, RMSELoss
+from utils.run_model import train_model, eval_model
 from GNN.src.dnn_f import DNN_F
 
 def parse_args(args=None):
@@ -69,114 +70,6 @@ def graph_train_stats(train_losses, train_metrics, val_metrics, wandb_run):
 
     plt.close()
 
-
-##############################################################################
-
-def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, output_filepath = None, gamma=0.95, wandb_run = None, trial = None, pruning = False, task = None):
-    #setup
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    timed = True
-    print("Using", device)
-
-    model = model.to(device)
-    model.device = device
-
-    optimizer = torch.optim.Adam(model.parameters(), **opt_args)
-    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma)
-    crit_string = "RMSE"
-    train_criterion = RMSELoss(reduction='sum')
-    train_crits = {}
-    test_crits = get_test_criteria(task)
-    
-    train_losses = []
-    train_metrics = {crit: [] for crit in train_crits}
-    val_metrics = {crit: [] for crit in test_crits}
-
-    #data
-    if len(train_loaders) > 1: train_fn = train_multidata_timed if timed else train_multidata
-    else: 
-        train_fn = train
-        train_loaders = train_loaders[0]
-
-    if len(val_loaders) > 1: test_fn = test_multidata
-    else: 
-        test_fn = test
-        val_loaders = val_loaders[0]
-
-    #run
-    epoch_tqdm = tqdm(range(1, num_epochs + 1), desc="Training Epochs", postfix={f"Train {crit_string}": 0.0, f"Valid {crit_string}": 0.0})
-
-    start = time.time()
-    
-    for epoch in epoch_tqdm:
-        #train
-        train_loss, avg_data_time, avg_pred_time = train_fn(model, train_loaders, optimizer, train_criterion)
-        scheduler.step()
-
-        train_losses.append(train_loss)
-        postfix = {f"Train {crit_string}": train_loss}
-
-        #eval
-        for crit_dict, metric_dict, loader, split in zip([train_crits, test_crits], [train_metrics, val_metrics], [train_loaders, val_loaders], ["Train", "Valid"]):
-            for crit, crit_obj in crit_dict.items():
-                metric = test_fn(model, loader, crit_obj)
-                metric_dict[crit].append(metric)
-                postfix[f"{split} {crit}"] = metric
-
-        postfix[f"Epoch Time"] = time.time() - start
-        postfix[f"Batching Time"] = avg_data_time
-        postfix[f"Prediction Time"] = avg_pred_time
-
-        if wandb_run: wandb_run.log(postfix)
-        epoch_tqdm.set_postfix(postfix)
-
-        if epoch % 15 == 0 and trial and pruning: 
-            trial.report(postfix["Valid RMSE"], epoch)
-            if trial.should_prune(): return postfix["Train RMSE"], postfix["Valid RMSE"], True
-
-    epoch_tqdm.close()
-
-    #output formating
-    train_losses = np.array(train_losses)
-    train_metrics = {crit: np.array(history) for crit, history in train_metrics.items()}
-    val_metrics = {crit: np.array(history) for crit, history in val_metrics.items()}
-
-    #model saving
-    if output_filepath:
-        torch.save(model.state_dict(), output_filepath)
-        print("Saved the model to:", output_filepath)
-
-    graph_train_stats(train_losses, train_metrics, val_metrics, wandb_run)
-
-    return train_losses[-1], val_metrics["RMSE"][-1], False
-
-def eval(test_loaders, model, wandb_run = None, task = None, multi = False):
-    #setup
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print("Using", device)
-
-    model = model.to(device)
-    model.device = device
-
-    test_crits = get_test_criteria(task)
-
-    #data
-    if len(test_loaders) > 1: test_fn = test_multidata
-    else: 
-        test_fn = test
-        test_loaders = test_loaders[0]
-
-    metrics = {}
-
-    #evaluate
-    for crit_dict, loader, split in zip([test_crits], [test_loaders], ["Test"]):
-        for crit, crit_obj in crit_dict.items():
-            metric_calc = test_fn(model, loader, crit_obj)
-            metrics[f"{split} {crit}"] = metric_calc
-            if wandb_run: wandb_run.summary[f"{split} {crit}"] = metric_calc
-    
-    return metrics
-
 ##############################################################################
 
 def objective(trial, data_details, train_loaders, val_loaders, test_loaders, args):
@@ -209,24 +102,32 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, arg
         name=f"DNN-F, LR{config["lr"]:.5f}", 
         config=config
     )
-
+    
     _, _, should_prune = train_model(train_loaders, 
-                    val_loaders, 
-                    model, 
-                    opt_args = opt_args,
-                    num_epochs=config["epochs"], 
-                    gamma=config["lr_decay"], 
-                    wandb_run = run,
-                    trial = trial,
-                    pruning = True if not args.multi_opt else False,
-                    task = args.pred)
+                                     val_loaders, 
+                                     model, 
+                                     opt_args = opt_args,
+                                     num_epochs=config["epochs"], 
+                                     crit_string = "RMSE", 
+                                     train_criterion = RMSELoss(reduction="sum"), 
+                                     train_crits = {}, 
+                                     test_crits = get_test_criteria(args.pred),  
+                                     gamma=config["lr_decay"], 
+                                     wandb_run = run, 
+                                     trial = trial, 
+                                     pruning = True if not args.multi_opt else False,
+                                     graph_fn = graph_train_stats)
     
     if should_prune:
         run.summary["state"] = "pruned"
         wandb.finish()
         raise optuna.TrialPruned()
 
-    test_values = eval(test_loaders, model, wandb_run = run, task=args.pred, multi=args.multi_opt)
+    test_values = eval_model(test_loaders, 
+                             model, 
+                             get_test_criteria(args.pred)
+                             wandb_run = run, 
+                             multi=args.multi_opt)
 
     run.summary["state"] = "completed"
     wandb.finish()
@@ -262,7 +163,7 @@ def main(args):
         study = optuna.create_study(study_name=f"{time_string}_optimize_{target}", direction="minimize")
         study.set_metric_names(["RMSE"])
 
-    study.optimize(lambda trial: objective(trial, [out_dim], train_loaders, val_loaders, test_loaders, args), n_trials=150)
+    study.optimize(lambda trial: objective(trial, [out_dim], train_loaders, val_loaders, test_loaders, args), n_trials=30)
 
     print(f"Best value: {study.best_value} (params: {study.best_params})")
 
