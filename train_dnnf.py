@@ -11,7 +11,7 @@ import wandb
 import optuna
 
 from preprocessing.img_preprocessing import get_image_loaders, HealthyData
-from utils.train_test import train, train_multidata, train_multidata_timed, test, test_multidata, SSLELoss, RMSELoss
+from utils.train_test import SSLELoss, RMSELoss
 from utils.run_model import train_model, eval_model
 from GNN.src.dnn_f import DNN_F
 
