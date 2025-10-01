@@ -49,7 +49,7 @@ def main():
     model.eval()
 
     with torch.no_grad():
-        encoding = model.encode_image(preprocess(Image(torch.zeros((1, 256, 256, 1)))))
+        encoding = model.encode_image(preprocess(Image.Image(torch.zeros((1, 256, 256, 1)))))
 
     print(encoding.shape)
     
