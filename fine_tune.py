@@ -10,7 +10,7 @@ from torch.nn import MSELoss
 import seaborn as sns
 
 from preprocessing import get_loaders
-from utils import train, train_multidata, test, test_multidata, SSLELoss
+from utils import SSLELoss, RMSELoss, train_model, eval_model
 from models import Modular_GNN
 
 
@@ -33,89 +33,71 @@ def parse_args(args=None):
         return parser.parse_args()      ## For calling through command line
     return parser.parse_args(args)      ## For calling through notebook.
 
-def train_model(train_loaders, val_loaders, model, optimizer, scheduler, num_epochs, output_filepath = None, img_path = None, convergence_epsilon = None):
-    sns.set_theme()
-
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print("Using", device)
-
-    model = model.to(device)
-    model.device = device
-    log_train = False
-    train_criterion = SSLELoss() if log_train else MSELoss(reduction='sum')
-    test_criterion = MSELoss(reduction='sum')
-    if len(train_loaders) > 1: train_fn = train_multidata
-    else: 
-        train_fn = train
-        train_loaders = train_loaders[0]
-
-    if len(val_loaders) > 1: test_fn = test_multidata
-    else: 
-        test_fn = test
-        val_loaders = val_loaders[0]
-
-    train_losses = []
-    val_losses = []
-
-    epoch_tqdm = tqdm(range(1, num_epochs + 1), desc="Training Epochs", postfix={"Train RMSE": 0.0, "Valid RMSE": 0.0})
+def get_test_criteria(task = None):
+    test_crits = {
+        "RMSE": RMSELoss(reduction='sum'),
+    }
     
-    for epoch in epoch_tqdm:
-        # printer = StandardInlinePrint() if epoch == num_epochs - 1 else None
-        train_rmse = train_fn(model, train_loaders, optimizer, train_criterion)
-        scheduler.step()
+    if task and task == 'VEGF': test_crits["VEGF_RMSERatio"] = RMSELoss(reduction='sum', ratio=True)
+    elif task and task == 'Both': 
+        test_crits["TER_RMSE"] = RMSELoss(reduction='sum', start_ind=2, end_ind=3)
+        test_crits["VEGF_RMSE"] = RMSELoss(reduction='sum', start_ind=0, end_ind=2)
+        test_crits["VEGF_RMSERatio"] = RMSELoss(reduction='sum', ratio=True, start_ind=0, end_ind=2)
 
-        val_rmse = test_fn(model, val_loaders, test_criterion)
+    return test_crits
 
-        train_losses.append(train_rmse)
-        val_losses.append(val_rmse)
+def graph_train_stats(train_losses, train_metrics, val_metrics, wandb_run):
+    fig, ax1 = plt.subplots(figsize=(10, 6))
+    ax1.set_xlabel('Epoch')
+    ax1.set_ylabel('RMSE')
+    p1 = ax1.plot(train_losses, label='Training RMSE', color='tab:blue')
+    p2 = ax1.plot(val_metrics["RMSE"], label='Validation RMSE', color="tab:orange")
+    ax1.tick_params(axis='y')
 
-        epoch_tqdm.set_postfix({"Train RMSE": train_rmse, "Valid RMSE": val_rmse})
+    ax1.legend(handles=p1+p2, loc='best')
 
-        # if convergence_epsilon is not None:
-        #     if len(train_losses) > 4:
-        #         last_3 = np.array(train_losses)[:-4:-1]
-        #         prev = np.array(train_losses)[-2:-5:-1]
-        #         avg_loss_diff = np.mean(np.abs(last_3 - prev))
-        #         if avg_loss_diff < convergence_epsilon:
-        #             print(f"Stopping early on epoch {epoch} with average changes in loss {avg_loss_diff}")
-        #             break
+    #outoutting
+    fig.tight_layout()  
+    plt.title('Training and Validation RMSE')
+    plt.legend()
 
-    epoch_tqdm.close()
+    if wandb_run: wandb_run.log({"chart": plt})
 
-    train_losses = np.array(train_losses)
-    val_losses = np.array(val_losses)
+    plt.close()
 
-    if output_filepath:
-        torch.save(model.state_dict(), output_filepath)
-        print("Saved the model to:", output_filepath)
+##############################################################################
 
-    if img_path:
-        plt.figure(figsize=(10, 6))
-        plt.plot(train_losses, label='Training RMSE')
-        plt.plot(val_losses, label='Validation RMSE')
-        plt.xlabel('Epoch')
-        plt.ylabel('RMSE')
-        plt.title('Training and Validation RMSE')
-        plt.legend()
-        plt.savefig(img_path)
-        plt.close()
-        print(f"Saved graph to {img_path}")
+def optimize(target, model, opt_args, config, train_loaders, val_loaders, test_loaders, args):
+    #
+    #run
+    _, _, _, _ = train_model(train_loaders, 
+                             val_loaders, 
+                             model, 
+                             opt_args = opt_args,
+                             num_epochs=config["epochs"], 
+                             crit_string = "RMSE", 
+                             train_criterion = RMSELoss(reduction="sum"), 
+                             train_crits = {}, 
+                             test_crits = get_test_criteria(target),  
+                             gamma=config["lr_decay"], 
+                             wandb_run = None, 
+                             trial = None, 
+                             pruning = False,
+                             graph_fn = graph_train_stats)
 
-    return train_losses[-1], val_losses[-1]
+    test_values = eval_model(test_loaders, 
+                             model,
+                             test_crits = get_test_criteria(target),  
+                             wandb_run = None, 
+                             multi=args.multi_opt)
 
-def optimize(target, model, optimizer, scheduler, train_loaders, val_loaders, test_loaders, num_epochs = 200, img_path=None):
-    #reinitialize optimizers to reset scheduler state and learning rate
-    _, _ = train_model(train_loaders, val_loaders, model, optimizer, scheduler, num_epochs, img_path=img_path)
+    return test_values["Test RMSE"]
 
-    print(f"Validation Stats")
-    _ = test_acc.test_model(val_loaders, model, task=target, test_multiple=False)
-    print(f"Test Stats")
-    test_loss = test_acc.test_model(test_loaders, model, task=target, test_multiple=False)
-
-    return test_loss
-
+##############################################################################
 
 def main(args):
+    sns.set_theme()
+    
     ## build data
     pretrain_target = args.pre_pred
     print(f"Pretraining {pretrain_target}")
@@ -146,7 +128,8 @@ def main(args):
     
     config={
         "graph layer": "GATv2",
-        "lr_decay": 0.8
+        "lr_decay": 0.8,
+        "epochs": 200
     }
     model = Modular_GNN(**model_args)
 
@@ -164,14 +147,12 @@ def main(args):
         "weight_decay": 0.005
     }
 
-
-    optimizer = torch.optim.Adam(model.parameters(), **opt_args)
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, config["lr_decay"])
 
     #pretraining
     loss_graph_path = f"{args.data}/pretrain_{pretrain_target}/Train_graphs/transfer.jpeg"
     time_string = datetime.datetime.now().strftime('%d-%b-%Y-%H%M')
-    test_pretrain_loss = optimize(pretrain_target, model, optimizer, scheduler, train_loaders, val_loaders, test_loaders, num_epochs=200, img_path = loss_graph_path)
+    test_pretrain_loss = optimize(pretrain_target, model, opt_args, config, train_loaders, val_loaders, test_loaders, args)
 
     #next step
     transfer_target = args.trans_pred
