@@ -17,4 +17,4 @@ conda activate qbam
 cd /users/bjoo2/code/qbam/qbam_gnn
 
 echo "Optuna Searching on Both"
-python3 grid_search_optuna.py --data /users/bjoo2/data/bjoo2/qbam/data --pred Both --multi_opt
+python3 grid_search_optuna.py --data /users/bjoo2/data/bjoo2/qbam/data --pred Both --dataset AMD --multi_opt

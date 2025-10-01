@@ -26,6 +26,7 @@ def parse_args(args=None):
     parser = argparse.ArgumentParser(description="Specify Hyperparameters to Optimize for the GNN", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--data',           required=True,                                                  help='File path to the assignment data file.')
     parser.add_argument('--pred',           required=True,          choices=['TER', 'VEGF', 'Both'],        help='Type of Value being Predicted from QBAMs')
+    parser.add_argument('--dataset',                                                                        help='Name of Dataset.')
     parser.add_argument('--batch_size',     type=int,               default=20,                             help='Model\'s batch size.')
     parser.add_argument('--multi_opt',      action="store_true",                                            help='Whether or not to optimize against mutliple objectives')
 
@@ -110,7 +111,7 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
     #run
     run = wandb.init(
         entity="bumjin_joo-brown-university", 
-        project=f"qbam-Graph-{args.pred}{"-Multi" if args.multi_opt else ""}", 
+        project=f"qbam-Graph-{args.pred}-{args.dataset}{"-Multi" if args.multi_opt else ""}", 
         name=f"{layer}, LR{config["lr"]:.5f}", 
         config=config
     )
