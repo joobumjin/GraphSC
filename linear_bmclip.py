@@ -10,6 +10,16 @@ from utils import train, train_multidata, test, test_multidata, SSLELoss, RMSELo
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+class LinearProbe(torch.nn.Module):
+    def __init__(self, out_dim):
+        super().__init__()
+        self.linear = torch.nn.Linear(512, 1)
+        self.output_dim = out_dim
+
+    def forward(self, data):
+        x = self.linear(data.x)
+
+        return x
 
 class Data():
     def __init__(self, x, y):
@@ -81,7 +91,8 @@ def main():
     train_loaders, val_loaders, test_loaders = loaders
     print(f"Data loaded")
 
-    print(next(iter(test_loaders[0])))
+    batch = next(iter(test_loaders[0]))
+    print(batch.x.shape, batch.y.shape)
 
     opt_args = {
         "lr":1e-3,
@@ -94,7 +105,7 @@ def main():
     }
         
 
-    model = torch.nn.Linear(512, 1)
+    model = LinearProbe(1)
     # print(linear_probe(encoding).shape)
     _, _, _, _ = train_model(train_loaders, 
                             val_loaders, 
