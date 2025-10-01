@@ -6,7 +6,7 @@ import glob
 import pandas as pd
 
 
-class HealthyData():
+class ImageData():
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -18,8 +18,8 @@ class HealthyData():
 
        return self
     
-def get_image_loaders(data_dirs, target, batch_size):
-    def collate(data, crop):
+def get_image_loaders(data_dirs, target, batch_size, crop=True, size=1024):
+    def collate(data, crop_fn):
         """
         In our cases, we want to collate a list of Data instances
         """
@@ -27,13 +27,13 @@ def get_image_loaders(data_dirs, target, batch_size):
         images = torch.Tensor(np.transpose(np.array([sample.x for sample in data]), axes=(0,3,1,2)))
         labels = torch.Tensor(np.array([sample.y for sample in data]))[:, None]
 
-        return HealthyData(crop(images), labels)
+        return ImageData(crop_fn(images), labels)
 
     train_pkls = data_dirs["train"]
     valid_pkl = data_dirs["valid"]
     test_pkl = data_dirs["test"]
 
-    crop = torchvision.transforms.CenterCrop((1024, 1024))
+    if crop: crop_fn = torchvision.transforms.RandomCrop(size)
     # train_datasets = [Healthy2Dataset(base_dir, train_csv, target) for train_csv in train_csvs]
     # valid_dataset = Healthy2Dataset(base_dir, valid_csv, target)
     # test_dataset = Healthy2Dataset(base_dir, test_csv, target)
@@ -45,9 +45,9 @@ def get_image_loaders(data_dirs, target, batch_size):
     num_targets = 2 if target == "Both" else 1
 
     print(f"Constructing Dataloaders")
-    train_loaders = [DataLoader(df, batch_size = batch_size, collate_fn=lambda data: collate(data, crop=crop)) for df in train_dfs]
-    valid_loaders = [DataLoader(val_df, batch_size = batch_size, collate_fn=lambda data: collate(data, crop=crop))]
-    test_loaders = [DataLoader(test_df, batch_size = batch_size, collate_fn=lambda data: collate(data, crop=crop))]
+    train_loaders = [DataLoader(df, batch_size = batch_size, collate_fn=lambda data: collate(data, crop_fn=crop_fn)) for df in train_dfs]
+    valid_loaders = [DataLoader(val_df, batch_size = batch_size, collate_fn=lambda data: collate(data, crop_fn=crop_fn))]
+    test_loaders = [DataLoader(test_df, batch_size = batch_size, collate_fn=lambda data: collate(data, crop_fn=crop_fn))]
     
 
     return train_loaders, valid_loaders, test_loaders, num_targets

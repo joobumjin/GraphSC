@@ -6,7 +6,7 @@ from torchvision.transforms.functional import to_pil_image
 from huggingface_hub import hf_hub_download
 from open_clip import create_model_and_transforms, get_tokenizer
 from open_clip.factory import HF_HUB_PREFIX, _MODEL_CONFIGS
-from preprocessing.img_preprocessing import get_image_loaders, HealthyData
+from preprocessing.img_preprocessing import get_image_loaders, ImageData
 import pickle
 
 class Data():
