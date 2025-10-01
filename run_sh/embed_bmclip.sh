@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --partition=cs-all-gcondo --gres=gpu:1  --output=bmclip.out
+#SBATCH --partition=gpu --gres=gpu:1  --output=bmclip.out
 #SBATCH -N 1
 #SBATCH -n 1
 #SBATCH -t 10:00:00
