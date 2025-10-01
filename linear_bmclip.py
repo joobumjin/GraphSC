@@ -74,7 +74,7 @@ def graph_train_stats(train_losses, train_metrics, val_metrics, wandb_run):
     plt.title('Training and Validation RMSE')
     plt.legend()
 
-    plt.savefig(f"/users/bjoo2/data/bjoo2/qbam/data/biomedclip_probe")
+    plt.savefig(f"/users/bjoo2/data/bjoo2/qbam/data/biomedclip_probe/train_graph.png")
 
     plt.close()
 
@@ -90,7 +90,7 @@ def main():
             embeds = pickle.load(f)
 
             print(f"Constructing Dataloaders")
-            loaders.append([DataLoader(embeds, batch_size = batch_size, collate_fn=lambda data: collate(data))])
+            loaders.append([DataLoader(embeds, batch_size = batch_size, shuffle = True, collate_fn=lambda data: collate(data))])
         
     train_loaders, val_loaders, test_loaders = loaders
     print(f"Data loaded")
@@ -101,7 +101,7 @@ def main():
     }
 
     config={
-        "epochs": 100,
+        "epochs": 300,
         "lr_decay": .95,
     }
         
