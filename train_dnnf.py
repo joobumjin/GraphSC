@@ -105,7 +105,7 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, arg
         config=config
     )
     
-    _, _, should_prune = train_model(train_loaders, 
+    _, _, _, should_prune = train_model(train_loaders, 
                                      val_loaders, 
                                      model, 
                                      opt_args = opt_args,
