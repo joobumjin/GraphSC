@@ -8,7 +8,7 @@ import optuna
 
 from preprocessing.img_preprocessing import get_image_loaders, ImageData
 from utils import SSLELoss, RMSELoss, train_model, eval_model
-from GNN.src.dnn_f import DNN_F
+from models import DNN_F
 
 def parse_args(args=None):
     """ 

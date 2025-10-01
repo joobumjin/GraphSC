@@ -11,7 +11,7 @@ import wandb
 from preprocessing.preprocessing import get_loaders
 from utils import SSLELoss, RMSELoss, train_model, eval_model
 from torch_geometric.nn import GraphConv, GCNConv, GATConv, GATv2Conv
-from GNN.src.gnn_modular import Modular_GNN
+from models import Modular_GNN
 
 
 def parse_args(args=None):

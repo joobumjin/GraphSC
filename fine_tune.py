@@ -10,9 +10,8 @@ from torch.nn import MSELoss
 import seaborn as sns
 
 from preprocessing import get_loaders
-from utils.train_test import train, train_multidata, test, test_multidata, SSLELoss, StandardInlinePrint
-from GNN.src.gnn_modular import Modular_GNN
-from GNN.src import test_acc
+from utils import train, train_multidata, test, test_multidata, SSLELoss
+from models import Modular_GNN
 
 
 def parse_args(args=None):
