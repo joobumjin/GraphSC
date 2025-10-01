@@ -2,6 +2,7 @@ import json
 
 from PIL import Image
 import torch
+from torchvision.transforms.functional import to_pil_image
 from huggingface_hub import hf_hub_download
 from open_clip import create_model_and_transforms, get_tokenizer
 from open_clip.factory import HF_HUB_PREFIX, _MODEL_CONFIGS
@@ -49,7 +50,7 @@ def main():
     model.eval()
 
     with torch.no_grad():
-        encoding = model.encode_image(preprocess(Image.Image(torch.zeros((1, 256, 256, 1)))))
+        encoding = model.encode_image(preprocess(to_pil_image(torch.zeros((1, 256, 256, 1)))))
 
     print(encoding.shape)
     
