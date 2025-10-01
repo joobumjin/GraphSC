@@ -4,6 +4,7 @@ import torchvision
 import numpy as np
 import glob
 import pandas as pd
+import itertools
 
 
 class ImageData():
@@ -38,14 +39,14 @@ def get_image_loaders(data_dirs, target, batch_size, crop=True, size=1024):
     # valid_dataset = Healthy2Dataset(base_dir, valid_csv, target)
     # test_dataset = Healthy2Dataset(base_dir, test_csv, target)
     print(f"Constructing Datasets")
-    train_dfs = [pd.read_pickle(f"{train_pkl}") for train_pkl in train_pkls]
+    train_df = itertools.chain(*[pd.read_pickle(f"{train_pkl}") for train_pkl in train_pkls])
     val_df = pd.read_pickle(f"{valid_pkl}")
     test_df = pd.read_pickle(f"{test_pkl}")
     
     num_targets = 2 if target == "Both" else 1
 
     print(f"Constructing Dataloaders")
-    train_loaders = [DataLoader(df, batch_size = batch_size, collate_fn=lambda data: collate(data, crop_fn=crop_fn)) for df in train_dfs]
+    train_loaders = [DataLoader(train_df, batch_size = batch_size, collate_fn=lambda data: collate(data, crop_fn=crop_fn))]
     valid_loaders = [DataLoader(val_df, batch_size = batch_size, collate_fn=lambda data: collate(data, crop_fn=crop_fn))]
     test_loaders = [DataLoader(test_df, batch_size = batch_size, collate_fn=lambda data: collate(data, crop_fn=crop_fn))]
     
