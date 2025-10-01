@@ -54,7 +54,7 @@ def main():
 
 
     with torch.no_grad():
-        encoding = model.encode_image(preprocess(images))
+        encoding = model.encode_image(images)
 
     print(encoding.shape)
     
