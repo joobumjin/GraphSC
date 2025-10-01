@@ -70,12 +70,13 @@ def main():
     encoding_out = f"/users/bjoo2/data/bjoo2/qbam/data/biomedclip_embeds"
     loaders = []
 
+    batch_size=32
     for split in ["Train", "Val", "Test"]:
-        embeds = pickle.load(f"{encoding_out}/{split}.pkl")
-        batch_size=32
+        with open(f"{encoding_out}/{split}.pkl", 'rb') as f:
+            embeds = pickle.load(f)
 
-        print(f"Constructing Dataloaders")
-        loaders.append([DataLoader(embeds, batch_size = batch_size, collate_fn=lambda data: collate(data))])
+            print(f"Constructing Dataloaders")
+            loaders.append([DataLoader(embeds, batch_size = batch_size, collate_fn=lambda data: collate(data))])
         
     train_loaders, val_loaders, test_loaders = loaders
     print(f"Data loaded")
