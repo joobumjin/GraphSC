@@ -102,19 +102,19 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, arg
     )
     
     _, _, _, should_prune = train_model(train_loaders, 
-                                     val_loaders, 
-                                     model, 
-                                     opt_args = opt_args,
-                                     num_epochs=config["epochs"], 
-                                     crit_string = "RMSE", 
-                                     train_criterion = RMSELoss(reduction="sum"), 
-                                     train_crits = {}, 
-                                     test_crits = get_test_criteria(args.pred),  
-                                     gamma=config["lr_decay"], 
-                                     wandb_run = run, 
-                                     trial = trial, 
-                                     pruning = True if not args.multi_opt else False,
-                                     graph_fn = graph_train_stats)
+                                        val_loaders, 
+                                        model, 
+                                        opt_args = opt_args,
+                                        num_epochs=config["epochs"], 
+                                        crit_string = "RMSE", 
+                                        train_criterion = RMSELoss(reduction="sum"), 
+                                        train_crits = {}, 
+                                        test_crits = get_test_criteria(args.pred),  
+                                        gamma=config["lr_decay"], 
+                                        wandb_run = run, 
+                                        trial = trial, 
+                                        pruning = True if not args.multi_opt else False,
+                                        graph_fn = graph_train_stats)
     
     if should_prune:
         run.summary["state"] = "pruned"
