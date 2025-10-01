@@ -49,10 +49,12 @@ def main():
     model.to(device)
     model.eval()
 
+    # Image.open(dataset_url + img)
+    images = torch.stack([preprocess(to_pil_image(torch.zeros((3, 1024, 1024)))) for _ in range(3)]).to(device)
+
+
     with torch.no_grad():
-        encoding = model.encode_image(preprocess([to_pil_image(torch.zeros((3, 1024, 1024))), 
-                                                  to_pil_image(torch.zeros((3, 1024, 1024))), 
-                                                  to_pil_image(torch.zeros((3, 1024, 1024)))]))
+        encoding = model.encode_image(preprocess(images)
 
     print(encoding.shape)
     
