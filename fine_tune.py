@@ -146,11 +146,7 @@ def main(args):
         "weight_decay": 0.005
     }
 
-    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, config["lr_decay"])
-
     #pretraining
-    loss_graph_path = f"{args.data}/pretrain_{pretrain_target}/Train_graphs/transfer.jpeg"
-    time_string = datetime.datetime.now().strftime('%d-%b-%Y-%H%M')
     test_pretrain_loss = optimize(pretrain_target, model, opt_args, config, train_loaders, val_loaders, test_loaders, args)
 
     #next step
