@@ -13,9 +13,11 @@ import seaborn as sns
 class LinearProbe(torch.nn.Module):
     def __init__(self, out_dim):
         super().__init__()
-        self.linear = Sequential(Linear(512, 64),
+        self.linear = Sequential(Linear(512, 256),
                                  LeakyReLU(),
-                                 Linear(64, 1))
+                                 Linear(256, 32),
+                                 LeakyReLU(),
+                                 Linear(32, 1))
         self.output_dim = out_dim
 
     def forward(self, data):
@@ -92,9 +94,6 @@ def main():
         
     train_loaders, val_loaders, test_loaders = loaders
     print(f"Data loaded")
-
-    batch = next(iter(test_loaders[0]))
-    print(batch.x.shape, batch.y.shape)
 
     opt_args = {
         "lr":1e-3,
