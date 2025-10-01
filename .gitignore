@@ -8,7 +8,7 @@ __pycache__
 .DS_Store
 */.DS_Store
 
-Notebook/*.ipynb
+Notebook/
 
 checkpoints
 graphs
