@@ -84,7 +84,6 @@ def main():
     for split in ["Train", "Val", "Test"]:
         with open(f"{encoding_out}/{split}.pkl", 'rb') as f:
             embeds = pickle.load(f)
-            print(embeds[0].x.shape, embeds[0].y.shape)
 
             print(f"Constructing Dataloaders")
             loaders.append([DataLoader(embeds, batch_size = batch_size, collate_fn=lambda data: collate(data))])
@@ -101,7 +100,7 @@ def main():
     }
 
     config={
-        "epochs": 30,
+        "epochs": 100,
         "lr_decay": .95,
     }
         
