@@ -80,6 +80,8 @@ def main():
     train_loaders, val_loaders, test_loaders = loaders
     print(f"Data loaded")
 
+    print(next(iter(test_loaders)))
+
     opt_args = {
         "lr":1e-3,
         "weight_decay": 1e-1,
