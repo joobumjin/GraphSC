@@ -1,5 +1,4 @@
 from torch.utils.data import Dataset, DataLoader
-import tifffile
 import torch
 import torchvision
 import numpy as np

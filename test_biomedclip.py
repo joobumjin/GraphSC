@@ -68,6 +68,7 @@ def main():
 
     with torch.no_grad():
         encoding = model.encode_image(images)
+        #should just cache these embeddings into a pickle
 
     linear_probe = torch.nn.Linear(512, out_dim)
     print(linear_probe(encoding).shape)
