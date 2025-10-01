@@ -6,6 +6,8 @@ from torchvision.transforms.functional import to_pil_image
 from huggingface_hub import hf_hub_download
 from open_clip import create_model_and_transforms, get_tokenizer
 from open_clip.factory import HF_HUB_PREFIX, _MODEL_CONFIGS
+from preprocessing.img_preprocessing import get_image_loaders, HealthyData
+
 
 def main():
     # Download the model and config files
@@ -49,14 +51,26 @@ def main():
     model.to(device)
     model.eval()
 
-    # Image.open(dataset_url + img)
-    images = torch.stack([preprocess(to_pil_image(torch.zeros((3, 1024, 1024)))) for _ in range(3)]).to(device)
+    data_base_dir = f"/users/bjoo2/data/bjoo2/qbam/data/full_imgs"
+    data_dirs = {"train": [f"{data_base_dir}/train_TER_imgs_0.pkl", 
+                           f"{data_base_dir}/train_TER_imgs_1.pkl", 
+                           f"{data_base_dir}/train_TER_imgs_2.pkl"], 
+                 "valid": f"{data_base_dir}/valid_TER_imgs_0.pkl", 
+                 "test":  f"{data_base_dir}/test_TER_imgs_0.pkl"}
+ 
+    print(f"Loading Data")
 
+    train_loaders, val_loaders, test_loaders, out_dim = get_image_loaders(data_dirs, "TER", 8)
+
+    batch = next(iter(test_loaders))
+
+    images = torch.stack([preprocess(to_pil_image(batch.x[ind])) for ind in range(len(batch.x))]).to(device)
 
     with torch.no_grad():
         encoding = model.encode_image(images)
 
-    print(encoding.shape)
+    linear_probe = torch.nn.Linear(512, out_dim)
+    print(linear_probe(encoding).shape)
     
 ##############################################################################
 

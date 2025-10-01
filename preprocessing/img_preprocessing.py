@@ -5,6 +5,8 @@ import torchvision
 import numpy as np
 import glob
 import pandas as pd
+from preprocessing.img_preprocessing import get_image_loaders, HealthyData
+
 
 class HealthyData():
     def __init__(self, x, y):
