@@ -78,15 +78,16 @@ def main():
     encoding_out = f"/users/bjoo2/data/bjoo2/qbam/data/biomedclip_embeds"
     print(f"Data loaded")
 
-    for loader, split in zip([train_loaders, val_loaders, test_loaders], ["Train", "Val", "Test"]):
+    for loaders, split in zip([train_loaders, val_loaders[0], test_loaders[0]], ["Train", "Val", "Test"]):
         data = []
-        for batch in loader:
-            images = torch.stack([preprocess(to_pil_image(batch.x[ind])) for ind in range(batch_size)]).to(device)
-    
-            with torch.no_grad():
-                encoding = model.encode_image(images)
+        for loader in loaders:
+            for batch in loader:
+                images = torch.stack([preprocess(to_pil_image(batch.x[ind])) for ind in range(batch_size)]).to(device)
+        
+                with torch.no_grad():
+                    encoding = model.encode_image(images)
 
-            data.append(Data(encoding, batch.y))
+                data.append(Data(encoding, batch.y))
 
         with open(f"{encoding_out}/{split}.pkl", 'wb') as f:
             pickle.dump(data, f)
