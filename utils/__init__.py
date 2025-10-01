@@ -2,4 +2,5 @@
 __all__ = ["run_model", "train_test"]
 
 # Import the submodules
-from . import *
+from run_model import *
+from train_test import *
