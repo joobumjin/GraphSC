@@ -7,7 +7,7 @@ import torch
 from utils.train_test import train, train_multidata, train_multidata_timed, test, test_multidata
 
 
-def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, crit_string, train_criterion, train_crits, test_crits, output_filepath = None, gamma=0.95, wandb_run = None, trial = None, pruning = False, graph_fn = None, timed=False):
+def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, crit_string, train_criterion, train_crits, test_crits, output_filepath = None, gamma=0.95, wandb_run = None, trial = None, pruning = False, graph_fn = None, timed=False, model_params = None):
     #setup
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Using", device)
@@ -15,7 +15,8 @@ def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, crit_st
     model = model.to(device)
     model.device = device
 
-    optimizer = torch.optim.Adam(model.parameters(), **opt_args)
+    params = model_params if model_params is not None else model.parameters()
+    optimizer = torch.optim.Adam(params, **opt_args)
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma)
     
     train_losses = []

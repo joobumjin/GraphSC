@@ -18,8 +18,8 @@ class GNN_Merge(torch.nn.Module):
             for param in gnn2.parameters():
                 param.requires_grad = False
 
-        self.gnn1.out_linear = Identity()
-        self.gnn2.out_linear = Identity()
+        self.gnn1.guillotine_last()
+        self.gnn2.guillotine_last()
 
         self.dropout = Dropout(p=0.5)
 

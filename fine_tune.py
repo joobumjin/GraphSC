@@ -2,11 +2,9 @@ import argparse
 from pathlib import Path
 import datetime
 
-from tqdm import tqdm
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from torch.nn import MSELoss
 import seaborn as sns
 
 from preprocessing import get_loaders
@@ -67,7 +65,7 @@ def graph_train_stats(train_losses, train_metrics, val_metrics, wandb_run):
 
 ##############################################################################
 
-def optimize(target, model, opt_args, config, train_loaders, val_loaders, test_loaders, args):
+def optimize(target, model, opt_args, config, train_loaders, val_loaders, test_loaders, args, model_params = None):
     #
     #run
     _, _, _, _ = train_model(train_loaders, 
@@ -83,7 +81,8 @@ def optimize(target, model, opt_args, config, train_loaders, val_loaders, test_l
                              wandb_run = None, 
                              trial = None, 
                              pruning = False,
-                             graph_fn = graph_train_stats)
+                             graph_fn = graph_train_stats,
+                             model_params = model_params)
 
     test_values = eval_model(test_loaders, 
                              model,
@@ -166,21 +165,19 @@ def main(args):
     val_loaders = [val_loader]
     test_loaders = [test_loader]
 
-    #freeze entire model
-    for param in model.parameters():
-        param.requires_grad = False
+    #freeze entire model and remove last dense layer
+    for param in model.parameters(): param.requires_grad = False
+    model.guillotine_last()
 
     #perform swap on last layer to new linear probe
     model.output_dim = data_details[1]
-    model.out_linear = torch.nn.Linear(model_args["dense_hidden"], data_details[1])
-    for param in model.out_linear.parameters():
-        param.requires_grad = True
-    optimizer = torch.optim.Adam(model.out_linear.parameters(), **opt_args)
-    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, config["lr_decay"])
+    new_dense = torch.nn.Linear(model_args["dense_hidden"], data_details[1])
+    for param in new_dense.parameters(): param.requires_grad = True
+    model.extend_dense([new_dense])
 
     #finetuning
-    loss_graph_path = f"{args.data}/transfer_{transfer_target}/Train_graphs/transfer.jpeg"
-    test_transfer_loss = optimize(transfer_target, model, optimizer, scheduler, train_loaders, val_loaders, test_loaders, num_epochs=100, img_path = loss_graph_path)
+    config["epochs"] = 20
+    test_transfer_loss = optimize(transfer_target, model, opt_args, config, train_loaders, val_loaders, test_loaders, args, new_dense.parameters())
 
     with open(f'{pretrain_target}to{transfer_target}.log', 'a') as out_log:
         out_log.write(f"Pretraining {pretrain_target}: Final Test Loss {test_pretrain_loss}")
