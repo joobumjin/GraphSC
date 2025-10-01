@@ -4,7 +4,7 @@ from tqdm import tqdm
 import numpy as np
 import torch
 
-# from train_test import train, train_multidata, train_multidata_timed, test, test_multidata
+from utils.train_test import train, train_multidata, train_multidata_timed, test, test_multidata
 
 
 def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, crit_string, train_criterion, train_crits, test_crits, output_filepath = None, gamma=0.95, wandb_run = None, trial = None, pruning = False, graph_fn = None):
