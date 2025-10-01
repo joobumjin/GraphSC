@@ -7,8 +7,19 @@ from huggingface_hub import hf_hub_download
 from open_clip import create_model_and_transforms, get_tokenizer
 from open_clip.factory import HF_HUB_PREFIX, _MODEL_CONFIGS
 from preprocessing.img_preprocessing import get_image_loaders, HealthyData
+import pickle
 
+class Data():
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
 
+    def to(self, device):
+       self.x = self.x.to(device)
+       self.y = self.y.to(device)
+
+       return self
+    
 def main():
     # Download the model and config files
 
@@ -60,18 +71,29 @@ def main():
  
     print(f"Loading Data")
 
-    train_loaders, val_loaders, test_loaders, out_dim = get_image_loaders(data_dirs, "TER", 8)
+    batch_size = 1
 
-    batch = next(iter(test_loaders))
+    train_loaders, val_loaders, test_loaders, out_dim = get_image_loaders(data_dirs, "TER", batch_size)
 
-    images = torch.stack([preprocess(to_pil_image(batch.x[ind])) for ind in range(len(batch.x))]).to(device)
+    encoding_out = f"/users/bjoo2/data/bjoo2/qbam/data/biomedclip_embeds"
+    print(f"Data loaded")
 
-    with torch.no_grad():
-        encoding = model.encode_image(images)
-        #should just cache these embeddings into a pickle
+    for loader, split in zip([train_loaders, val_loaders, test_loaders], ["Train", "Val", "Test"]):
+        data = []
+        for batch in loader:
+            images = torch.stack([preprocess(to_pil_image(batch.x[ind])) for ind in range(batch_size)]).to(device)
+    
+            with torch.no_grad():
+                encoding = model.encode_image(images)
 
-    linear_probe = torch.nn.Linear(512, out_dim)
-    print(linear_probe(encoding).shape)
+            data.append(Data(encoding, batch.y))
+
+        with open(f"{encoding_out}/{split}.pkl", 'wb') as f:
+            pickle.dump(data, f)
+        
+
+    # linear_probe = torch.nn.Linear(512, out_dim)
+    # print(linear_probe(encoding).shape)
     
 ##############################################################################
 
