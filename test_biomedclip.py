@@ -78,7 +78,7 @@ def main():
     encoding_out = f"/users/bjoo2/data/bjoo2/qbam/data/biomedclip_embeds"
     print(f"Data loaded")
 
-    for loaders, split in zip([train_loaders, val_loaders[0], test_loaders[0]], ["Train", "Val", "Test"]):
+    for loaders, split in zip([train_loaders, val_loaders, test_loaders], ["Train", "Val", "Test"]):
         data = []
         for loader in loaders:
             for batch in loader:
