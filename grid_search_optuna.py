@@ -3,14 +3,13 @@ import datetime
 
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-import numpy as np
 import seaborn as sns
 import torch
 import optuna
 import wandb
 
 from preprocessing.preprocessing import get_loaders
-from utils import train, train_multidata, test, test_multidata, SSLELoss, RMSELoss, train_model, eval_model
+from utils import SSLELoss, RMSELoss, train_model, eval_model
 from torch_geometric.nn import GraphConv, GCNConv, GATConv, GATv2Conv
 from GNN.src.gnn_modular import Modular_GNN
 

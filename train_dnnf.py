@@ -1,18 +1,13 @@
 import argparse
-import time
 import datetime
 
-from tqdm import tqdm
 import matplotlib.pyplot as plt
 import seaborn as sns
-import numpy as np
-import torch
 import wandb
 import optuna
 
 from preprocessing.img_preprocessing import get_image_loaders, ImageData
-from utils.train_test import SSLELoss, RMSELoss
-from utils.run_model import train_model, eval_model
+from utils import SSLELoss, RMSELoss, train_model, eval_model
 from GNN.src.dnn_f import DNN_F
 
 def parse_args(args=None):

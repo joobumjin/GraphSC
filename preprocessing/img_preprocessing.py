@@ -40,8 +40,8 @@ def get_image_loaders(data_dirs, target, batch_size, crop=True, size=1024):
     # test_dataset = Healthy2Dataset(base_dir, test_csv, target)
     print(f"Constructing Datasets")
     train_df = itertools.chain(*[pd.read_pickle(f"{train_pkl}") for train_pkl in train_pkls])
-    val_df = pd.read_pickle(f"{valid_pkl}")
-    test_df = pd.read_pickle(f"{test_pkl}")
+    val_df = itertools.chain(*[pd.read_pickle(f"{valid_pkl}")])
+    test_df = itertools.chain(*[pd.read_pickle(f"{test_pkl}")])
     
     num_targets = 2 if target == "Both" else 1
 
