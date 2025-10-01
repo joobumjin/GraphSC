@@ -151,8 +151,8 @@ def main(args):
     data_dirs = {"train": [f"{data_base_dir}/train_TER_imgs_0.pkl", 
                            f"{data_base_dir}/train_TER_imgs_1.pkl", 
                            f"{data_base_dir}/train_TER_imgs_2.pkl"], 
-                 "valid": f"{data_base_dir}/valid_TER_imgs_0.pkl", 
-                 "test":  f"{data_base_dir}/test_TER_imgs_0.pkl"}
+                 "valid": [f"{data_base_dir}/valid_TER_imgs_0.pkl"], 
+                 "test":  [f"{data_base_dir}/test_TER_imgs_0.pkl"]}
  
     print(f"Loading Data")
     train_loaders, val_loaders, test_loaders, out_dim = get_image_loaders(data_dirs, target, args.batch_size)
