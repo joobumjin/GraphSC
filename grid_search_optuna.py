@@ -54,7 +54,7 @@ def graph_train_stats(train_losses, train_metrics, val_metrics, wandb_run):
     p2 = ax1.plot(val_metrics["RMSE"], label='Validation RMSE', color="tab:orange")
     ax1.tick_params(axis='y')
 
-    ax1.legend(handles=[p1, p2]) #, loc='best')
+    ax1.legend(handles=p1+p2, loc='best')
 
     #outoutting
     fig.tight_layout()  
