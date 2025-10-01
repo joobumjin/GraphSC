@@ -50,8 +50,8 @@ def collate(data):
     In our cases, we want to collate a list of Data instances
     """
     #better to prealloc numpy?
-    images = torch.stack([sample.x for sample in data])
-    labels = torch.stack([sample.y for sample in data])
+    images = torch.stack([sample.x[0] for sample in data])
+    labels = torch.stack([sample.y[0] for sample in data])
 
     return Data(images, labels)
 
