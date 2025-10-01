@@ -144,7 +144,7 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
     run.summary["state"] = "completed"
     wandb.finish()
 
-    return test_values
+    return test_values["RMSE"]
 
 ##############################################################################
 
