@@ -5,7 +5,7 @@ import torch
 import pickle
 import numpy as np
 from torch.utils.data import DataLoader
-from torch.nn import Linear
+from torch.nn import Linear, Sequential, LeakyReLU
 from utils import train, train_multidata, test, test_multidata, SSLELoss, RMSELoss, train_model, eval_model
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -13,7 +13,9 @@ import seaborn as sns
 class LinearProbe(torch.nn.Module):
     def __init__(self, out_dim):
         super().__init__()
-        self.linear = torch.nn.Linear(512, 1)
+        self.linear = Sequential(Linear(512, 64),
+                                 LeakyReLU(),
+                                 Linear(64, 1))
         self.output_dim = out_dim
 
     def forward(self, data):
