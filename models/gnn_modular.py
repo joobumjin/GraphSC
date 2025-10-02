@@ -77,8 +77,11 @@ class Modular_GNN(torch.nn.Module):
 
       self.dense_head = nn.Sequential(*dense_layers)
 
-    def forward(self, data):
-      x, edge_index, batch = data.x, data.edge_index, data.batch
+    def forward(self, data, *args):
+      if args:
+         x = data
+         edge_index, batch = args
+      else: x, edge_index, batch = data.x, data.edge_index, data.batch
 
       x = self.gat_net(x, edge_index)
 

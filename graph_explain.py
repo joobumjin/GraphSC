@@ -164,7 +164,7 @@ def main(args):
     data = next(iter(test_loader))
 
     # Generate explanation for the node at index `10`:
-    explanation = explainer(data.x, data.edge_index)
+    explanation = explainer(data.x, data.edge_index, data.batch)
     print(explanation.edge_mask)
     print(explanation.node_mask)
 
