@@ -17,4 +17,4 @@ conda activate qbam
 cd /users/bjoo2/code/qbam/qbam_gnn
 
 echo "Optuna Searching on TER"
-python3 grid_search_optuna.py --data /users/bjoo2/data/bjoo2/qbam/data/combined_data/graphs --dataset Combined --pred TER
+python3 optuna_search.py --data /users/bjoo2/data/bjoo2/qbam/data/combined_data/graphs --dataset Combined --pred TER
