@@ -9,10 +9,11 @@ import optuna
 import wandb
 
 from preprocessing.preprocessing import get_loaders
-from utils import SSLELoss, RMSELoss, train_model, eval_model
+from utils import SSLELoss, RMSELoss, train_model, eval_model, save_model
 from torch_geometric.nn import GraphConv, GCNConv, GATConv, GATv2Conv
 from models import Modular_GNN
 
+best_rmse = None
 
 def parse_args(args=None):
     """ 
@@ -28,6 +29,7 @@ def parse_args(args=None):
     parser.add_argument('--dataset',                                                                        help='Name of Dataset.')
     parser.add_argument('--batch_size',     type=int,               default=20,                             help='Model\'s batch size.')
     parser.add_argument('--multi_opt',      action="store_true",                                            help='Whether or not to optimize against mutliple objectives')
+    parser.add_argument('--save_path',      type=str,                                                       help='Optional path to save model weights to')
 
     if args is None: 
         return parser.parse_args()      ## For calling through command line
@@ -92,6 +94,7 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
         "graph layer": f"{layer}",
         "epochs": 75,
         "lr_decay": trial.suggest_float("learning_rate_decay", 0.7, 1.0, step=.1),
+        "target": args.pred
     }
 
     config = {**model_args, **opt_args, **config}
@@ -143,6 +146,10 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
 
     run.summary["state"] = "completed"
     wandb.finish()
+
+    if args.save_path and (best_rmse is None or test_values["Test RMSE"] < best_rmse):
+        save_model(model, model_args, config, f"{args.save_path}/{layer}_{args.pred}_RMSE{test_values["Test RMSE"]}")
+        best_rmse = test_values["Test RMSE"]
 
     if args.multi_opt:
         return [test_values[key] for key in test_values]

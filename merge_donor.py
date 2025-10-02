@@ -161,9 +161,9 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
 
 def objective_pretrain(trial, train_loaders, val_loaders, test_loaders, args):
     #build models
-    gnn1, model_args = load_model(Modular_GNN(**model_args), args.model_path)
-    gnn2, _          = load_model(Modular_GNN(**model_args), args.model_path)
-    model            = GNN_Merge(gnn1, gnn2, freeze_gnns=True)
+    gnn1, model_args, config = load_model(Modular_GNN(**model_args), args.model_path)
+    gnn2, _. _               = load_model(Modular_GNN(**model_args), args.model_path)
+    model                    = GNN_Merge(gnn1, gnn2, freeze_gnns=True)
     
     #hyper params
     opt_args = {
