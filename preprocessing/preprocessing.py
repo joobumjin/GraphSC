@@ -78,3 +78,36 @@ def get_loaders(data_dirs, target, batch_size, print_data_stats = True, print_de
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     return train_loader, val_loader, test_loader, detail_list
+
+def get_feature_labels():
+    return ['Area', 'Aspect_Ratio_BB', 'BB_Xmin', 'BB_Ymin', 'BB_Width', 'BB_Height', 
+            'Center_BB_X', 'Center_BB_Y', 'Centroid_X', 'Centroid_Y', 'Circularity', 
+            'Distance_From_Border', 'Eccentricity', 'Entropy', 'ExtendBB', 'Mean', 
+            'Median', 'Mode', 'Orientation', 'Perimeter', 'StandardDeviation', 
+            'Skewness', 'Kurtosis', 'Hyperskewness', 'Hyperflatness', 'TContrast_Average', 
+            'TContrast_Ortho_principal_component_value', 'TContrast_Principal_component_angle', 
+            'TContrast_Principal_component_value', 'TCorrelation_Average', 
+            'TCorrelation_Ortho_principal_component_value', 'TCorrelation_Principal_component_angle', 
+            'TCorrelation_Principal_component_value', 'THomogeneity_Average', 
+            'THomogeneity_Ortho_principal_component_value', 'THomogeneity_Principal_component_angle', 
+            'THomogeneity_Principal_component_value', 'TEnergy_Average', 
+            'TEnergy_Ortho_principal_component_value', 'TEnergy_Principal_component_angle', 
+            'TEnergy_Principal_component_value', 'TVariance_Average', 
+            'TVariance_Ortho_principal_component_value', 'TVariance_Principal_component_angle', 
+            'TVariance_Principal_component_value', 'TEntropy_Average', 
+            'TEntropy_Ortho_principal_component_value', 'TEntropy_Principal_component_angle', 
+            'TEntropy_Principal_component_value', 'TInvDiffMoment_Average', 
+            'TInvDiffMoment_Ortho_principal_component_value', 'TInvDiffMoment_Principal_component_angle', 
+            'TInvDiffMoment_Principal_component_value', 'TSumAverage_Average', 
+            'TSumAverage_Ortho_principal_component_value', 'TSumAverage_Principal_component_angle', 
+            'TSumAverage_Principal_component_value', 'TSumVariance_Average', 
+            'TSumVariance_Ortho_principal_component_value', 'TSumVariance_Principal_component_angle', 
+            'TSumVariance_Principal_component_value', 'TSumEntropy_Average', 
+            'TSumEntropy_Ortho_principal_component_value', 'TSumEntropy_Principal_component_angle', 
+            'TSumEntropy_Principal_component_value', 'TDiffAverage_Average', 
+            'TDiffAverage_Ortho_principal_component_value', 'TDiffAverage_Principal_component_angle', 
+            'TDiffAverage_Principal_component_value', 'TDiffVariance_Average', 
+            'TDiffVariance_Ortho_principal_component_value', 'TDiffVariance_Principal_component_angle', 
+            'TDiffVariance_Principal_component_value', 'TDiffEntropy_Average', 
+            'TDiffEntropy_Ortho_principal_component_value', 'TDiffEntropy_Principal_component_angle', 
+            'TDiffEntropy_Principal_component_value']
