@@ -7,7 +7,7 @@ import seaborn as sns
 import torch
 
 from preprocessing.preprocessing import get_loaders, get_feature_labels
-from utils import SSLELoss, RMSELoss, train_model, eval_model
+from utils import SSLELoss, RMSELoss, train_model, eval_model, visualize_feature_importance
 from torch_geometric.nn import GraphConv, GCNConv, GATConv, GATv2Conv
 from torch_geometric.explain import Explainer, GNNExplainer, AttentionExplainer
 from models import Modular_GNN
@@ -168,7 +168,7 @@ def main(args):
     print(explanation.edge_mask)
     print(explanation.node_mask)
 
-    explanation.visualize_feature_importance(f"{args.data}/explanations/feature_importance.png", feat_labels = get_feature_labels())
+    visualize_feature_importance(explanation, f"{args.data}/explanations/feature_importance.png", feat_labels = get_feature_labels())
 
 ## END UTILITY METHODS
 ##############################################################################

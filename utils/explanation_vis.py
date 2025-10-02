@@ -15,7 +15,7 @@ from torch_geometric.typing import EdgeType, NodeType
 from torch_geometric.visualization import visualize_graph
 
 def visualize_feature_importance(
-    self,
+    explanation,
     path: Optional[str] = None,
     feat_labels: Optional[List[str]] = None,
     top_k: Optional[int] = None,
@@ -32,11 +32,11 @@ def visualize_feature_importance(
         top_k (int, optional): Top k features to plot. If :obj:`None`
             plots all features. (default: :obj:`None`)
     """
-    node_mask = self.get('node_mask')
+    node_mask = explanation.get('node_mask')
     if node_mask is None:
         raise ValueError(f"The attribute 'node_mask' is not available "
-                            f"in '{self.__class__.__name__}' "
-                            f"(got {self.available_explanations})")
+                            f"in '{explanation.__class__.__name__}' "
+                            f"(got {explanation.available_explanations})")
     if node_mask.dim() != 2 or node_mask.size(1) <= 1:
         raise ValueError(f"Cannot compute feature importance for "
                             f"object-level 'node_mask' "
