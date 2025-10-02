@@ -162,6 +162,7 @@ def main(args):
     )
 
     data = next(iter(test_loader))
+    data = data.to(model.device)
 
     # Generate explanation for the node at index `10`:
     explanation = explainer(data.x, data.edge_index, batch_index = data.batch)
