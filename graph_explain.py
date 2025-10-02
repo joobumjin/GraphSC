@@ -167,7 +167,7 @@ def main(args):
     # Generate explanation for the node at index `10`:
     explanation = explainer(data.x, data.edge_index, batch_index = data.batch)
     print(explanation.edge_mask)
-    print(explanation.node_mask)
+    # print(explanation.node_mask)
 
     explanation.visualize_feature_importance(f"{args.data}/explanations/feature_importance.png", feat_labels = get_feature_labels())
 
