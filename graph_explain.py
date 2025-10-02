@@ -150,7 +150,7 @@ def main(args):
     #explain model
     explainer = Explainer(
         model=model,
-        algorithm=GNNExplainer(epochs=200), #AttentionExplainer(epochs=200)
+        algorithm= AttentionExplainer(epochs=200), #GNNExplainer(epochs=200)
         explanation_type='model',
         node_mask_type='attributes',
         edge_mask_type='object',
