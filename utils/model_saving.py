@@ -13,4 +13,4 @@ def load_model(model_class, save_dir):
 
     model.load_state_dict(checkpoint["model_state_dict"])
 
-    return model
+    return model, model_args

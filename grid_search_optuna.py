@@ -144,6 +144,9 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
     run.summary["state"] = "completed"
     wandb.finish()
 
+    if args.multi_opt:
+        return [test_values[key] for key in test_values]
+
     return test_values["Test RMSE"]
 
 ##############################################################################

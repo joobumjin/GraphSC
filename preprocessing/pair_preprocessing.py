@@ -40,7 +40,7 @@ def load_dataset_from_pickle(pickle_file):
     else:
         raise ValueError("The loaded dataset is not a list of Data objects).")
 
-def get_loaders(data_dirs, target, batch_size):
+def get_pair_loaders(data_dirs, target, batch_size):
     train_pickle_file = data_dirs[f"Train_{target}"]
     val_pickle_file = data_dirs[f"Valid_{target}"]
     test_pickle_file = data_dirs[f"Test_{target}"]
