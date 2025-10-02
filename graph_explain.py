@@ -153,7 +153,7 @@ def main(args):
         algorithm= AttentionExplainer(), #GNNExplainer(epochs=200)
         explanation_type='model',
         # node_mask_type='attributes',
-        # edge_mask_type='object',
+        edge_mask_type='object',
         model_config=dict(
             mode='regression',
             task_level='graph',
