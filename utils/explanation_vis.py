@@ -76,7 +76,7 @@ def _visualize_score(
 
     ax = df.plot(
         kind='barh',
-        figsize=(12, 10),
+        figsize=(14, 14),
         title=title,
         ylabel='Feature label',
         xlim=[0, float(df['score'].max()) + 0.3],
