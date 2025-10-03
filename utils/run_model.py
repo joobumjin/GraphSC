@@ -6,8 +6,39 @@ import torch
 
 from utils.train_test import train, train_multidata, train_multidata_timed, test, test_multidata
 
-
-def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, crit_string, train_criterion, train_crits, test_crits, output_filepath = None, gamma=0.95, wandb_run = None, trial = None, pruning = False, graph_fn = None, timed=False, model_params = None):
+"""
+Runs entire training regime for a model
+For each epoch, trains on train set and evaluates on train and validation set
+params:
+    train_loaders: Training data loaders in a list
+    val_loaders: Validation dataloaders in a list
+    model: Model to be trained
+    opt_args: Arguments to pass to optimizer in Dictionary:
+        keys:
+            "lr": learning rate of optimizer
+            "weight_decay": l2 penalty term
+    num_epochs: Number of epochs to be trained
+    crit_string: String describing the training loss function
+    train_criterion: nn.Module to calculate the training loss
+    train_crits: Other remaining evaluation criterion for the train set
+    test_crits: Criterion on which the model will be evaluated with the test set
+    gamma: Learning rate decay rate
+    wandb_run: Optional W&B run to record things to
+    trial: Optional Optuna trial for optimization
+    pruning: Whether or not to use Optuna Pruning
+    graph_fn: The function to be used to graph model performance over time
+    timed: Whether or not to use timed training functions
+    model_params: Optional specified parameters to be trained
+returns:
+    train_losses: np array of train loss per epoch
+    train_metrics: dictionary of all extra training metrics per epoch
+            {string of criterion name : np array of criterion per epoch} 
+    val_metrics: dictionary of all validation metrics per epoch
+            {string of criterion name : np array of criterion per epoch} 
+    pruned: whether or not optuna decided to prune 
+            (always false if pruning disabled)
+"""
+def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, crit_string, train_criterion, train_crits, test_crits, gamma=0.95, wandb_run = None, trial = None, pruning = False, graph_fn = None, timed=False, model_params = None):
     #setup
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Using", device)
@@ -79,16 +110,24 @@ def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, crit_st
     train_metrics = {crit: np.array(history) for crit, history in train_metrics.items()}
     val_metrics = {crit: np.array(history) for crit, history in val_metrics.items()}
 
-    #model saving
-    if output_filepath:
-        torch.save(model.state_dict(), output_filepath)
-        print("Saved the model to:", output_filepath)
-
     #plotting
     if graph_fn is not None: graph_fn(train_losses, train_metrics, val_metrics, wandb_run)
 
     return train_losses, train_metrics, val_metrics, False
 
+
+"""
+Runs evaluation step for a model
+For each epoch, evaluates on given loaders
+params:
+    test_loaders: Data loaders in a list upon which the model should be tested
+    model: Model to be tested
+    test_crits: Criterion on which the model will be evaluated with the test set
+    wandb_run: Optional W&B run to record things to
+returns:
+    metrics: dictionary of all metrics
+            {string of criterion name : float value of criterion per epoch} 
+"""
 def eval_model(test_loaders, model, test_crits, wandb_run = None, multi = False):
     #setup
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

@@ -74,8 +74,7 @@ def optimize(target, model, opt_args, config, train_loaders, val_loaders, test_l
     test_values = eval_model(test_loaders, 
                              model,
                              test_crits = get_test_criteria(target),  
-                             wandb_run = None, 
-                             multi=args.multi_opt)
+                             wandb_run = None)
 
     return test_values["Test RMSE"]
 

@@ -124,11 +124,13 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, arg
     test_values = eval_model(test_loaders, 
                              model, 
                              get_test_criteria(args.pred),
-                             wandb_run = run, 
-                             multi=args.multi_opt)
+                             wandb_run = run)
 
     run.summary["state"] = "completed"
     wandb.finish()
+
+    if args.multi_opt:
+        return [test_values[key] for key in test_values]
 
     return test_values["Test RMSE"]
 

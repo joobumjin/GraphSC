@@ -114,8 +114,7 @@ def main():
     test_values = eval_model(test_loaders, 
                             model,
                             test_crits = get_test_criteria(pred),  
-                            wandb_run = None, 
-                            multi=False)
+                            wandb_run = None)
     
     print(f"Test Performance: {test_values}")
 

@@ -3,14 +3,22 @@ import torch
 from abc import ABC, abstractmethod
 import time
 from torch.nn import BCEWithLogitsLoss
+from typing import Dict, Tuple
 
+"""
+Simple Accuracy Metric
+"""
 class Accuracy(torch.nn.Module):
     def __init__(self):
         super().__init__()
         
     def forward(self, pred, actual):
         return torch.sum(torch.gt(pred, 0.5)==(actual==1.0))
-    
+
+"""
+Sum Squared Log Error
+Looks to align pred with the log of the labels
+"""    
 class SSLELoss(torch.nn.Module):
     def __init__(self):
         super().__init__()
@@ -19,8 +27,19 @@ class SSLELoss(torch.nn.Module):
 
     def forward(self, pred, actual):
         return self.mse(pred, torch.log(actual + 1))
-    
+
+"""
+Root Mean Squared Error Loss
+"""    
 class RMSELoss(torch.nn.Module):
+    """
+    reduction: string passed to MSELoss initializer, 
+                reduction operation used on batch of losses
+    ratio: used to indicate that we should first calculate 
+                the loss of the ratio of _only_ the first two elements
+    start_ind: start of the tensors' second dimension from which to calculate loss
+    end_ind: end of the tensors' second dimension from which to calculate loss
+    """
     def __init__(self, reduction='sum', ratio=False, start_ind=None, end_ind=None):
         super().__init__()
         self.root = True
@@ -36,7 +55,11 @@ class RMSELoss(torch.nn.Module):
             actual = actual[:, 0:1] / actual[:, 1:2]
         return self.mse(pred, actual)
     
-def get_test_criteria(task = None):
+"""
+Returns a dictionary of testing time criterion
+Represented as name : loss object
+"""
+def get_test_criteria(task = None) -> Dict[str: torch.nn.Module]:
     if task == "Donor":
         return {"Acc": Accuracy(), "BCE": BCEWithLogitsLoss(reduction='sum')}
 
@@ -52,7 +75,10 @@ def get_test_criteria(task = None):
 
     return test_crits
 
-def train(model, train_loader, optimizer, criterion, metric_printer=None):
+"""
+Runs training for a single epoch
+"""
+def train(model, train_loader, optimizer, criterion) -> float:
     model.train()
     total_loss = 0.0
     total_samples = 0
@@ -70,16 +96,17 @@ def train(model, train_loader, optimizer, criterion, metric_printer=None):
         else:
             total_samples += (data.y.shape[0] * (data.y.shape[1] - 1))
 
-        if metric_printer is not None:
-                metric_printer(out,data.y.reshape(-1, model.output_dim), math.sqrt(loss.item() / len(data.y.reshape(-1, model.output_dim))))
-
     metric = total_loss / total_samples
 
     if hasattr(criterion, "root") and criterion.root: metric = math.sqrt(metric)
 
     return metric
 
-def train_multidata(model, train_loaders, optimizer, criterion):
+"""
+Runs training for a single epoch when given multiple
+training set dataloaders
+"""
+def train_multidata(model, train_loaders, optimizer, criterion) -> float:
     model.train()
     total_loss = 0.0
     total_samples = 0
@@ -104,7 +131,14 @@ def train_multidata(model, train_loaders, optimizer, criterion):
 
     return metric
 
-def train_multidata_timed(model, train_loaders, optimizer, criterion):
+"""
+Runs training for a single epoch when given multiple
+training set dataloaders
+
+Additionally reports the time taken to load the batch,
+and then perform and forward and backward step on the batch
+"""
+def train_multidata_timed(model, train_loaders, optimizer, criterion) -> Tuple[float, float, float]:
     model.train()
     total_loss = 0.0
     total_samples = 0
@@ -139,7 +173,10 @@ def train_multidata_timed(model, train_loaders, optimizer, criterion):
 
     return metric, total_batch_time / total_batches, total_process_time / total_batches
 
-def test(model, loader, criterion, metric_printer=None, log_train = False):
+"""
+Runs testing for a single criterion
+"""
+def test(model, loader, criterion, log_train = False):
     model.eval()
     total_loss = 0.0
     total_samples = 0
@@ -165,7 +202,11 @@ def test(model, loader, criterion, metric_printer=None, log_train = False):
 
     return metric
 
-def test_multidata(model, test_loaders, criterion, metric_printer=None, log_train = False):
+"""
+Runs testing on a single criterion
+when testing split data is contained in multiple dataloaders
+"""
+def test_multidata(model, test_loaders, criterion, log_train = False):
     model.eval()
     total_loss = 0.0
     total_samples = 0

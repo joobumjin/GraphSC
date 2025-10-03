@@ -128,8 +128,7 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
     test_values = eval_model(test_loaders, 
                              model,
                              test_crits = get_test_criteria(args.pred),  
-                             wandb_run = run, 
-                             multi=args.multi_opt)
+                             wandb_run = run)
 
     run.summary["state"] = "completed"
     wandb.finish()
