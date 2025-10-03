@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 import torch_geometric.nn as geom
-from torch_geometric.nn import GraphConv, GCNConv, GATConv, GATv2Conv, global_mean_pool, BatchNorm
+from torch_geometric.nn import GraphConv, GCNConv, GATConv, GATv2Conv, TransformerConv, global_mean_pool, BatchNorm
 import torch.nn as nn
 from torch.nn import Linear, Dropout, LeakyReLU, Identity
 import inspect
@@ -12,6 +12,9 @@ def get_remaining_params(args, cls):
     parameters = [param.name for param in signature.parameters.values() if param.name != 'self']
 
     return {key:args[key] for key in set(args.keys()).intersection(parameters)}
+
+def get_layer_dict():
+   return {"Graph": GraphConv, "GCN": GCNConv, "GAT": GATConv, "GATv2": GATv2Conv, "Transformer": TransformerConv}
 
 class Modular_GNN(torch.nn.Module):
     def __init__(self, num_node_features, output_dim,  num_dense = 2, num_gcn = 3, hidden_channels=128, dense_hidden=128, num_heads=8, dropout_p=0.5, gnn_layer = GATv2Conv):

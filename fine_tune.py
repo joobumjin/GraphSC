@@ -8,7 +8,7 @@ import torch
 import seaborn as sns
 
 from preprocessing import get_loaders
-from utils import SSLELoss, RMSELoss, train_model, eval_model
+from utils import SSLELoss, RMSELoss, train_model, eval_model, get_test_criteria
 from models import Modular_GNN
 
 
@@ -30,19 +30,6 @@ def parse_args(args=None):
     if args is None: 
         return parser.parse_args()      ## For calling through command line
     return parser.parse_args(args)      ## For calling through notebook.
-
-def get_test_criteria(task = None):
-    test_crits = {
-        "RMSE": RMSELoss(reduction='sum'),
-    }
-    
-    if task and task == 'VEGF': test_crits["VEGF_RMSERatio"] = RMSELoss(reduction='sum', ratio=True)
-    elif task and task == 'Both': 
-        test_crits["TER_RMSE"] = RMSELoss(reduction='sum', start_ind=2, end_ind=3)
-        test_crits["VEGF_RMSE"] = RMSELoss(reduction='sum', start_ind=0, end_ind=2)
-        test_crits["VEGF_RMSERatio"] = RMSELoss(reduction='sum', ratio=True, start_ind=0, end_ind=2)
-
-    return test_crits
 
 def graph_train_stats(train_losses, train_metrics, val_metrics, wandb_run):
     fig, ax1 = plt.subplots(figsize=(10, 6))

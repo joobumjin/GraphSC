@@ -1,8 +1,8 @@
 import math
 import torch
-from tqdm import tqdm
 from abc import ABC, abstractmethod
 import time
+from torch.nn import BCEWithLogitsLoss
 
 class Accuracy(torch.nn.Module):
     def __init__(self):
@@ -35,6 +35,22 @@ class RMSELoss(torch.nn.Module):
             pred = pred[:, 0:1] / pred[:, 1:2]
             actual = actual[:, 0:1] / actual[:, 1:2]
         return self.mse(pred, actual)
+    
+def get_test_criteria(task = None):
+    if task == "Donor":
+        return {"Acc": Accuracy(), "BCE": BCEWithLogitsLoss(reduction='sum')}
+
+    test_crits = {
+        "RMSE": RMSELoss(reduction='sum'),
+    }
+    
+    if task and task == 'VEGF': test_crits["VEGF_RMSERatio"] = RMSELoss(reduction='sum', ratio=True)
+    elif task and task == 'Both': 
+        test_crits["TER_RMSE"] = RMSELoss(reduction='sum', start_ind=2, end_ind=3)
+        test_crits["VEGF_RMSE"] = RMSELoss(reduction='sum', start_ind=0, end_ind=2)
+        test_crits["VEGF_RMSERatio"] = RMSELoss(reduction='sum', ratio=True, start_ind=0, end_ind=2)
+
+    return test_crits
 
 def train(model, train_loader, optimizer, criterion, metric_printer=None):
     model.train()

@@ -9,9 +9,9 @@ import optuna
 import wandb
 
 from preprocessing.preprocessing import get_loaders
-from utils import SSLELoss, RMSELoss, train_model, eval_model, save_model
-from torch_geometric.nn import GraphConv, GCNConv, GATConv, GATv2Conv
-from models import Modular_GNN
+from utils import SSLELoss, RMSELoss, train_model, eval_model, save_model, get_test_criteria
+from torch_geometric.nn import GraphConv, GCNConv, GATConv, GATv2Conv, TransformerConv
+from models import Modular_GNN, get_layer_dict
 
 best_rmse = None
 
@@ -34,19 +34,6 @@ def parse_args(args=None):
     if args is None: 
         return parser.parse_args()      ## For calling through command line
     return parser.parse_args(args)      ## For calling through notebook.
-
-def get_test_criteria(task = None):
-    test_crits = {
-        "RMSE": RMSELoss(reduction='sum'),
-    }
-    
-    if task and task == 'VEGF': test_crits["VEGF_RMSERatio"] = RMSELoss(reduction='sum', ratio=True)
-    elif task and task == 'Both': 
-        test_crits["TER_RMSE"] = RMSELoss(reduction='sum', start_ind=2, end_ind=3)
-        test_crits["VEGF_RMSE"] = RMSELoss(reduction='sum', start_ind=0, end_ind=2)
-        test_crits["VEGF_RMSERatio"] = RMSELoss(reduction='sum', ratio=True, start_ind=0, end_ind=2)
-
-    return test_crits
 
 def graph_train_stats(train_losses, train_metrics, val_metrics, wandb_run):
     fig, ax1 = plt.subplots(figsize=(10, 6))
@@ -172,7 +159,7 @@ def main(args):
         data_dirs[f"Valid_{data_type}"] = f"{args.data}/{data_type}/Valid_{data_type}.pkl"
         data_dirs[f"Test_{data_type}"] = f"{args.data}/{data_type}/Test_{data_type}.pkl"
 
-    layer_dict = {"Graph": GraphConv, "GCN": GCNConv, "GAT": GATConv, "GATv2": GATv2Conv}
+    layer_dict = get_layer_dict()
 
     train_loader, val_loader, test_loader, data_details = get_loaders(data_dirs, target, args.batch_size)
     train_loaders = [train_loader]

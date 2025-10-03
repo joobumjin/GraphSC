@@ -14,8 +14,8 @@ from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
 from torch_geometric.nn import GraphConv, GCNConv, GATConv, GATv2Conv
 from preprocessing.preprocessing import get_loaders
-from utils import Accuracy, train_model, eval_model, load_model
-from models import Modular_GNN, GNN_Merge
+from utils import Accuracy, train_model, eval_model, load_model, get_test_criteria
+from models import Modular_GNN, GNN_Merge, get_layer_dict
 
 def parse_args(args=None):
     """ 
@@ -35,14 +35,6 @@ def parse_args(args=None):
     if args is None: 
         return parser.parse_args()      ## For calling through command line
     return parser.parse_args(args)      ## For calling through notebook.
-
-def get_test_criteria(task = None):
-    test_crits = test_crits = {
-        "Acc": Accuracy(),
-        "BCE": BCEWithLogitsLoss(reduction='sum')
-    }
-
-    return test_crits
 
 def graph_train_stats(train_losses, train_metrics, val_metrics, wandb_run):
     fig, ax1 = plt.subplots(figsize=(10, 6))
@@ -132,7 +124,7 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
                                         crit_string = "BCE", 
                                         train_criterion = BCEWithLogitsLoss(reduction="sum"), 
                                         train_crits = {"Acc": Accuracy()}, 
-                                        test_crits = get_test_criteria(),   
+                                        test_crits = get_test_criteria(args.pred),   
                                         gamma=config["lr_decay"], 
                                         wandb_run = run, 
                                         trial = trial, 
@@ -201,7 +193,7 @@ def objective_pretrain(trial, train_loaders, val_loaders, test_loaders, args):
                                         crit_string = "BCE", 
                                         train_criterion = BCEWithLogitsLoss(reduction="sum"), 
                                         train_crits = {"Acc": Accuracy()}, 
-                                        test_crits = get_test_criteria(),   
+                                        test_crits = get_test_criteria(args.pred),   
                                         gamma=config["lr_decay"], 
                                         wandb_run = run, 
                                         trial = trial, 
@@ -244,7 +236,7 @@ def main(args):
         data_dirs[f"Valid_{data_type}"] = f"{args.data}/{data_type}/valid_singular_donors.pkl"
         data_dirs[f"Test_{data_type}"] = f"{args.data}/{data_type}/test_singular_donors.pkl"
 
-    layer_dict = {"Graph": GraphConv, "GCN": GCNConv, "GAT": GATConv, "GATv2": GATv2Conv}
+    layer_dict = get_layer_dict()
 
     train_loader, val_loader, test_loader, data_details = get_loaders(data_dirs, target, args.batch_size)
     train_loaders = [train_loader]
@@ -254,7 +246,7 @@ def main(args):
     time_string = datetime.datetime.now().strftime('%d-%b-%Y-%H%M')
 
     if args.multi_opt:
-        crits = get_test_criteria
+        crits = get_test_criteria(args.pred)
         study = optuna.create_study(study_name=f"{time_string}_optimize_{target}", directions=["maximize", "minimize"])
         study.set_metric_names(crits.keys())
     else:

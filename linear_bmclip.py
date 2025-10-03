@@ -6,7 +6,7 @@ import pickle
 import numpy as np
 from torch.utils.data import DataLoader
 from torch.nn import Linear, Sequential, LeakyReLU
-from utils import train, train_multidata, test, test_multidata, SSLELoss, RMSELoss, train_model, eval_model
+from utils import SSLELoss, RMSELoss, train_model, eval_model, get_test_criteria
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -35,19 +35,6 @@ class Data():
        self.y = self.y.to(device)
 
        return self
-    
-def get_test_criteria(task = None):
-    test_crits = {
-        "RMSE": RMSELoss(reduction='sum'),
-    }
-    
-    if task and task == 'VEGF': test_crits["VEGF_RMSERatio"] = RMSELoss(reduction='sum', ratio=True)
-    elif task and task == 'Both': 
-        test_crits["TER_RMSE"] = RMSELoss(reduction='sum', start_ind=2, end_ind=3)
-        test_crits["VEGF_RMSE"] = RMSELoss(reduction='sum', start_ind=0, end_ind=2)
-        test_crits["VEGF_RMSERatio"] = RMSELoss(reduction='sum', ratio=True, start_ind=0, end_ind=2)
-
-    return test_crits
     
 def collate(data):
     """
@@ -83,6 +70,7 @@ def main():
     # Download the model and config files
     encoding_out = f"/users/bjoo2/data/bjoo2/qbam/data/biomedclip_embeds"
     loaders = []
+    pred = "TER"
 
     batch_size=32
     for split in ["Train", "Val", "Test"]:
@@ -116,7 +104,7 @@ def main():
                             crit_string = "RMSE", 
                             train_criterion = RMSELoss(reduction="sum"), 
                             train_crits = {}, 
-                            test_crits = get_test_criteria(),  
+                            test_crits = get_test_criteria(pred),  
                             gamma=config["lr_decay"], 
                             wandb_run = None, 
                             trial = None, 
@@ -125,7 +113,7 @@ def main():
 
     test_values = eval_model(test_loaders, 
                             model,
-                            test_crits = get_test_criteria(),  
+                            test_crits = get_test_criteria(pred),  
                             wandb_run = None, 
                             multi=False)
     
