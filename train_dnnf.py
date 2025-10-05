@@ -8,7 +8,7 @@ import optuna
 
 from preprocessing.img_preprocessing import get_image_loaders, ImageData
 from utils import SSLELoss, RMSELoss, train_model, eval_model
-from models import DNN_F
+from models import DNN_F, DNN_F_AMD
 
 def parse_args(args=None):
     """ 
@@ -19,13 +19,13 @@ def parse_args(args=None):
         parse_args('--type', 'rnn', ...)
     """
     parser = argparse.ArgumentParser(description="Specify Hyperparameters to Optimize for the CNN", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--data',           required=True,                                          help='File path to the assignment data file.')
-    parser.add_argument('--pred',           required=True,  choices=['TER', 'VEGF', 'Both'],        help='Type of Value being Predicted from QBAMs')
-    parser.add_argument('--dataset',                                                                help='Name of Dataset.')
-    parser.add_argument('--batch_size',     type=int,       default=20,                             help='Model\'s batch size.')
-    parser.add_argument('--multi_opt',      action="store_true",                                            help='Whether or not to optimize against mutliple objectives')
-    parser.add_argument('--normed',         required=False, action='store_true',                    help='Whether or not to use normalized label values')
-    parser.add_argument('--extra_data',     required=False, default=None,                           help='File path to the assignment data file.')
+    parser.add_argument('--data',           required=True,                                              help='File path to the assignment data file.')
+    parser.add_argument('--pred',           required=True,      choices=['TER', 'VEGF', 'Both'],        help='Type of Value being Predicted from QBAMs')
+    parser.add_argument('--dataset',        default="Healthy",  choices=['Healthy', 'AMD'],             help='Name of Dataset.')
+    parser.add_argument('--batch_size',     type=int,           default=20,                             help='Model\'s batch size.')
+    parser.add_argument('--multi_opt',      action="store_true",                                        help='Whether or not to optimize against mutliple objectives')
+    parser.add_argument('--normed',         required=False,     action='store_true',                    help='Whether or not to use normalized label values')
+    parser.add_argument('--extra_data',     required=False,     default=None,                           help='File path to the assignment data file.')
 
     if args is None: 
         return parser.parse_args()      ## For calling through command line
@@ -90,7 +90,8 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, arg
 
     #
     #build models
-    model = DNN_F(*data_details)
+    model_dict = {"Healthy": DNN_F, "AMD": DNN_F_AMD}
+    model = model_dict[args.dataset](*data_details)
 
     #
     #run
@@ -145,11 +146,11 @@ def main(args):
     # norm_string = "_normalized" if args.normed else ""
 
     data_base_dir = f"{args.data}/full_imgs"
-    data_dirs = {"train": [f"{data_base_dir}/train_TER_imgs_0.pkl", 
-                           f"{data_base_dir}/train_TER_imgs_1.pkl", 
-                           f"{data_base_dir}/train_TER_imgs_2.pkl"], 
-                 "valid": [f"{data_base_dir}/valid_TER_imgs_0.pkl"], 
-                 "test":  [f"{data_base_dir}/test_TER_imgs_0.pkl"]}
+    data_dirs = {"train": [f"{data_base_dir}/{args.dataset}/train_TER_imgs_0.pkl", 
+                           f"{data_base_dir}/{args.dataset}/train_TER_imgs_1.pkl", 
+                           f"{data_base_dir}/{args.dataset}/train_TER_imgs_2.pkl"], 
+                 "valid": [f"{data_base_dir}/{args.dataset}/valid_TER_imgs_0.pkl"], 
+                 "test":  [f"{data_base_dir}/{args.dataset}/test_TER_imgs_0.pkl"]}
  
     print(f"Loading Data")
     train_loaders, val_loaders, test_loaders, out_dim = get_image_loaders(data_dirs, target, args.batch_size)

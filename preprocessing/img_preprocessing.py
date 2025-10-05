@@ -19,36 +19,43 @@ class ImageData():
 
        return self
     
-def get_image_loaders(data_dirs, target, batch_size, crop=True, size=1024):
+def get_image_loaders(data_dirs, target, batch_size, dataset="Healthy", crop=True):
+    image_shape = [1024, 1024, 3] if dataset == "Healthy" else [256, 256, 1]
     def collate(data, crop_fn):
         """
         In our cases, we want to collate a list of Data instances
         """
-        #better to prealloc numpy?
-        images = torch.Tensor(np.transpose(np.array([sample.x for sample in data]), axes=(0,3,1,2)))
+        #is it better to prealloc numpy?
+        # images = torch.Tensor(np.transpose(np.array([sample.x for sample in data]), axes=(0,3,1,2)))
+        images = np.zeros((batch_size, *image_shape)) #prealloc
+        for ind, sample in enumerate(data): images[ind] = sample.x #gather
+        images = torch.Tensor(images).permute(0,3,1,2) #transpose
+        if crop_fn is not None: images = crop_fn(images)
+
         labels = torch.Tensor(np.array([sample.y for sample in data]))[:, None]
 
-        return ImageData(crop_fn(images), labels)
+        return ImageData(images, labels)
 
     train_pkls = data_dirs["train"]
-    valid_pkl = data_dirs["valid"]
-    test_pkl = data_dirs["test"]
+    valid_pkls = data_dirs["valid"]
+    test_pkls = data_dirs["test"]
 
-    if crop: crop_fn = torchvision.transforms.RandomCrop(size)
+    crop_fn = torchvision.transforms.RandomCrop(image_shape[0]) if crop else None
     # train_datasets = [Healthy2Dataset(base_dir, train_csv, target) for train_csv in train_csvs]
     # valid_dataset = Healthy2Dataset(base_dir, valid_csv, target)
     # test_dataset = Healthy2Dataset(base_dir, test_csv, target)
     print(f"Constructing Datasets")
-    train_df = itertools.chain(*[pd.read_pickle(f"{train_pkl}") for train_pkl in train_pkls])
-    val_df = itertools.chain(*[pd.read_pickle(f"{valid_pkl}")])
-    test_df = itertools.chain(*[pd.read_pickle(f"{test_pkl}")])
+    train_dset = itertools.chain(*[pd.read_pickle(f"{train_pkl}") for train_pkl in train_pkls])
+    val_dset = itertools.chain(*[pd.read_pickle(f"{valid_pkl}")for valid_pkl in valid_pkls])
+    test_dset = itertools.chain(*[pd.read_pickle(f"{test_pkl}") for test_pkl in test_pkls])
     
-    num_targets = 2 if target == "Both" else 1
+    # num_targets = 2 if target == "Both" else 1
+    num_targets = train_dset[0].y.shape[1] if len(np.array(train_dset[0].y).shape) == 2 else len(train_dset[0].y)
 
     print(f"Constructing Dataloaders")
-    train_loaders = [DataLoader(train_df, batch_size = batch_size, collate_fn=lambda data: collate(data, crop_fn=crop_fn))]
-    valid_loaders = [DataLoader(val_df, batch_size = batch_size, collate_fn=lambda data: collate(data, crop_fn=crop_fn))]
-    test_loaders = [DataLoader(test_df, batch_size = batch_size, collate_fn=lambda data: collate(data, crop_fn=crop_fn))]
+    train_loaders = [DataLoader(train_dset, batch_size = batch_size, collate_fn=lambda data: collate(data, crop_fn=crop_fn))]
+    valid_loaders = [DataLoader(val_dset, batch_size = batch_size, collate_fn=lambda data: collate(data, crop_fn=crop_fn))]
+    test_loaders = [DataLoader(test_dset, batch_size = batch_size, collate_fn=lambda data: collate(data, crop_fn=crop_fn))]
     
 
     return train_loaders, valid_loaders, test_loaders, num_targets
