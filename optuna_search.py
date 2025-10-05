@@ -56,10 +56,16 @@ def graph_train_stats(train_losses, train_metrics, val_metrics, wandb_run):
 
 ##############################################################################
 
-def objective(trial, data_details, train_loaders, val_loaders, test_loaders, layer_dict, args):
+def objective(trial, data_dirs, layer_dict, args):
     #
     #hyper params
     layer = trial.suggest_categorical("layer type", layer_dict.keys())
+    feat_norm = trial.suggest_categorical("feature normalization", ['', '_01', '_z'])
+
+    train_loader, val_loader, test_loader, data_details = get_loaders(data_dirs, f"{args.pred}{feat_norm}", args.batch_size)
+    train_loaders = [train_loader]
+    val_loaders = [val_loader]
+    test_loaders = [test_loader]
 
     model_args = {
         "num_node_features": data_details[0], 
@@ -100,7 +106,7 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
     #run
     run = wandb.init(
         entity="bumjin_joo-brown-university", 
-        project=f"qbam-new-Graph-{args.pred}-{args.dataset}{"-Multi" if args.multi_opt else ""}", 
+        project=f"qbam-DATA-Graph-{args.pred}-{args.dataset}{"-Multi" if args.multi_opt else ""}", 
         name=f"{layer}, LR{config["lr"]:.5f}", 
         config=config
     )
@@ -158,12 +164,15 @@ def main(args):
         data_dirs[f"Valid_{data_type}"] = f"{args.data}/{data_type}/Valid_{data_type}.pkl"
         data_dirs[f"Test_{data_type}"] = f"{args.data}/{data_type}/Test_{data_type}.pkl"
 
-    layer_dict = get_layer_dict()
+        data_dirs[f"Train_{data_type}_01"] = f"{args.data}/{data_type}_featnorm/Train_{data_type}_01.pkl"
+        data_dirs[f"Valid_{data_type}_01"] = f"{args.data}/{data_type}_featnorm/Valid_{data_type}_01.pkl"
+        data_dirs[f"Test_{data_type}_01"] = f"{args.data}/{data_type}_featnorm/Test_{data_type}_01.pkl"
 
-    train_loader, val_loader, test_loader, data_details = get_loaders(data_dirs, target, args.batch_size)
-    train_loaders = [train_loader]
-    val_loaders = [val_loader]
-    test_loaders = [test_loader]
+        data_dirs[f"Train_{data_type}_z"] = f"{args.data}/{data_type}_featnorm/Train_{data_type}_z.pkl"
+        data_dirs[f"Valid_{data_type}_z"] = f"{args.data}/{data_type}_featnorm/Valid_{data_type}_z.pkl"
+        data_dirs[f"Test_{data_type}_z"] = f"{args.data}/{data_type}_featnorm/Test_{data_type}_z.pkl"
+
+    layer_dict = get_layer_dict()
 
     #
     # optuna optimization
@@ -176,7 +185,7 @@ def main(args):
         study = optuna.create_study(study_name=f"{time_string}_optimize_{target}", direction="minimize")
         study.set_metric_names(["RMSE"])
 
-    study.optimize(lambda trial: objective(trial, data_details, train_loaders, val_loaders, test_loaders, layer_dict, args), n_trials=150)
+    study.optimize(lambda trial: objective(trial, data_dirs, layer_dict, args), n_trials=200)
 
     print(f"Best value: {study.best_value} (params: {study.best_params})")
 
