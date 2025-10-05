@@ -14,7 +14,9 @@ def get_remaining_params(args, cls):
     return {key:args[key] for key in set(args.keys()).intersection(parameters)}
 
 def get_layer_dict():
-   return {"Graph": GraphConv, "GCN": GCNConv, "GAT": GATConv, "GATv2": GATv2Conv, "Transformer": TransformerConv}
+  #  return {"Graph": GraphConv, "GCN": GCNConv, "GAT": GATConv, "GATv2": GATv2Conv, "Transformer": TransformerConv}
+   return {"Transformer": TransformerConv}
+
 
 class Modular_GNN(torch.nn.Module):
     def __init__(self, num_node_features, output_dim,  num_dense = 2, num_gcn = 3, hidden_channels=128, dense_hidden=128, num_heads=8, dropout_p=0.5, gnn_layer = GATv2Conv):
