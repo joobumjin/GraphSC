@@ -104,7 +104,7 @@ def main(args):
     model_args = {
         "num_node_features": data_details[0], 
         "output_dim": data_details[1],  
-        "num_gcn": 4,
+        "num_gnn": 4,
         "num_dense": 4,
         "hidden_channels": 128, 
         "dense_hidden": 128, 
@@ -119,7 +119,7 @@ def main(args):
     model = Modular_GNN(**model_args)
 
     print(f"###############################################################################\n"
-            f"{model_args["num_gcn"]} GATv2 Layers\t| {model_args["hidden_channels"]} units\n"
+            f"{model_args["num_gnn"]} GATv2 Layers\t| {model_args["hidden_channels"]} units\n"
             f"{model_args["num_dense"]} Dense Layers\t| {model_args["dense_hidden"]} units\n"
             f"Dropout Rate: {model_args["dropout_p"]}\n"
             f"Learning Rate: {config["lr"]} with Decay {config["lr_decay"]} and Weight Decay: {config["weight_decay"]}\n"

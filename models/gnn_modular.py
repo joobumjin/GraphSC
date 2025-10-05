@@ -18,10 +18,10 @@ def get_layer_dict():
 
 
 class Modular_GNN(torch.nn.Module):
-    def __init__(self, num_node_features, output_dim,  num_dense = 2, num_gcn = 3, hidden_channels=128, dense_hidden=128, num_heads=8, dropout_p=0.5, gnn_layer = GATv2Conv):
+    def __init__(self, num_node_features, output_dim,  num_dense = 2, num_gnn = 3, hidden_channels=128, dense_hidden=128, num_heads=8, dropout_p=0.5, gnn_layer = GATv2Conv):
       super().__init__()
 
-      assert num_dense >= 2 and num_gcn >= 2
+      assert num_dense >= 2 and num_gnn >= 2
 
       self.num_node_features = num_node_features
       self.output_dim = output_dim
@@ -48,7 +48,7 @@ class Modular_GNN(torch.nn.Module):
       ] #input layer
 
       args["in_channels"] = self.hidden_channels * self.num_heads 
-      for _ in range(num_gcn - 2):
+      for _ in range(num_gnn - 2):
           gat_layers += [
             (gnn_layer(**args), 'x, edge_index -> x'),
             (BatchNorm(self.hidden_channels * self.num_heads), 'x -> x'),

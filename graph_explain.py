@@ -8,7 +8,7 @@ import torch
 
 from preprocessing.preprocessing import get_loaders, get_feature_labels
 from utils import SSLELoss, RMSELoss, train_model, eval_model, visualize_feature_importance, get_test_criteria
-from torch_geometric.nn import GraphConv, GCNConv, GATConv, GATv2Conv
+from torch_geometric.nn import GraphConv, GCNConv, GATConv, GATv2Conv, TransformerConv
 from torch_geometric.explain import Explainer, GNNExplainer, AttentionExplainer
 from models import Modular_GNN
 
@@ -61,7 +61,7 @@ def optimize(data_details, train_loaders, val_loaders, test_loaders, args):
     model_args = {
         "num_node_features": data_details[0], 
         "output_dim": data_details[1],  
-        "num_gcn": 3,
+        "num_gnn": 3,
         "num_dense": 4, 
         "hidden_channels": 256, 
         "dense_hidden": 256, 
@@ -81,7 +81,7 @@ def optimize(data_details, train_loaders, val_loaders, test_loaders, args):
 
     config = {**model_args, **opt_args, **config}
     print(f"###############################################################################\n"
-            f"{model_args["num_gcn"]} {layer} Layers\t| {model_args["hidden_channels"]} units\n"
+            f"{model_args["num_gnn"]} {layer} Layers\t| {model_args["hidden_channels"]} units\n"
             f"{model_args["num_dense"]} Dense Layers\t| {model_args["dense_hidden"]} units\n"
             f"Dropout Rate: {model_args["dropout_p"]}\n"
             f"Learning Rate: {config["lr"]} with Decay {config["lr_decay"]} and Weight Decay: {config["weight_decay"]}\n"

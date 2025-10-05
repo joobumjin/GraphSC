@@ -68,7 +68,7 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
     model_args = {
         "num_node_features": data_details[0], 
         "output_dim": data_details[1],  
-        "num_gcn": trial.suggest_int("num_gcn", 2, 3),
+        "num_gnn": trial.suggest_int("num_gnn", 2, 3),
         "num_dense": trial.suggest_int("num_dense", 3, 5), 
         "hidden_channels": trial.suggest_int("hidden_size", 64, 256, step=64), 
         "dense_hidden": trial.suggest_int("hidden_size", 64, 256, step=64), 
@@ -89,7 +89,7 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
 
     config = {**model_args, **opt_args, **config}
     print(f"###############################################################################\n"
-            f"{model_args["num_gcn"]} {layer} Layers\t| {model_args["hidden_channels"]} units\n"
+            f"{model_args["num_gnn"]} {layer} Layers\t| {model_args["hidden_channels"]} units\n"
             f"{model_args["num_dense"]} Dense Layers\t| {model_args["dense_hidden"]} units\n"
             f"Dropout Rate: {model_args["dropout_p"]}\n"
             f"Learning Rate: {config["lr"]} with Decay {config["lr_decay"]} and Weight Decay: {config["weight_decay"]}\n"
