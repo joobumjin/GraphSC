@@ -2,7 +2,7 @@
 
 #SBATCH --partition=gpu --gres=gpu:1  --output=optuna_ter_healthy.out
 #SBATCH -N 1
-#SBATCH -n 4
+#SBATCH -n 1
 #SBATCH -t 02:00:00
 #SBATCH --mem=16g
 

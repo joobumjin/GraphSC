@@ -37,6 +37,7 @@ class Modular_GNN(torch.nn.Module):
       
       args = get_remaining_params(args, gnn_layer)
       if "heads" not in args.keys(): self.num_heads = 1
+      if gnn_layer == TransformerConv: del args["edge_dim"]
 
       #build GAT Network
       gat_layers = [

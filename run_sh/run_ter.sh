@@ -2,7 +2,7 @@
 
 #SBATCH --partition=gpu --gres=gpu:1  --output=optuna_ter.out
 #SBATCH -N 1
-#SBATCH -n 4
+#SBATCH -n 
 #SBATCH -t 02:00:00
 #SBATCH --mem=16g
 
@@ -20,7 +20,7 @@ declare -a arr=("TER")
 for i in "${arr[@]}"
 do
     echo "Optuna Searching on $i"
-    python3 optuna_search.py --data /users/bjoo2/data/bjoo2/qbam/data ---dataset AMD -pred "$i"
+    python3 optuna_search.py --data /users/bjoo2/data/bjoo2/qbam/data --dataset AMD --pred "$i"
     # python3 optuna_search.py --data /users/bjoo2/data/bjoo2/qbam/data/combined_data/graphs --pred "$i" --log_path /users/bjoo2/code/qbam/qbam_gnn/optuna_logs
 done
 
