@@ -14,8 +14,7 @@ def get_remaining_params(args, cls):
     return {key:args[key] for key in set(args.keys()).intersection(parameters)}
 
 def get_layer_dict():
-  #  return {"Graph": GraphConv, "GCN": GCNConv, "GAT": GATConv, "GATv2": GATv2Conv, "Transformer": TransformerConv}
-   return {"Transformer": TransformerConv}
+   return {"Graph": GraphConv, "GCN": GCNConv, "GAT": GATConv, "GATv2": GATv2Conv, "Transformer": TransformerConv}
 
 
 class Modular_GNN(torch.nn.Module):
