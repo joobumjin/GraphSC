@@ -100,7 +100,7 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
     #run
     run = wandb.init(
         entity="bumjin_joo-brown-university", 
-        project=f"qbam-Graph-{args.pred}-{args.dataset}{"-Multi" if args.multi_opt else ""}", 
+        project=f"qbam-new-Graph-{args.pred}-{args.dataset}{"-Multi" if args.multi_opt else ""}", 
         name=f"{layer}, LR{config["lr"]:.5f}", 
         config=config
     )

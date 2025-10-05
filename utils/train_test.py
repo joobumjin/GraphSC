@@ -59,7 +59,7 @@ class RMSELoss(torch.nn.Module):
 Returns a dictionary of testing time criterion
 Represented as name : loss object
 """
-def get_test_criteria(task = None) -> Dict[str: torch.nn.Module]:
+def get_test_criteria(task = None) -> Dict[str, torch.nn.Module]:
     if task == "Donor":
         return {"Acc": Accuracy(), "BCE": BCEWithLogitsLoss(reduction='sum')}
 
