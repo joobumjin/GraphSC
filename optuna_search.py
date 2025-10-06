@@ -85,7 +85,7 @@ def objective(trial, data_dirs, layer_dict, args):
 
     config={
         "graph layer": f"{layer.__name__}",
-        "epochs": 75,
+        "epochs": 50,
         "lr_decay": trial.suggest_float("learning_rate_decay", 0.7, 1.0, step=.1),
         "target": args.pred
     }
