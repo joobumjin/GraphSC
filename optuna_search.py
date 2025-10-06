@@ -139,6 +139,7 @@ def objective(trial, data_dirs, layer_dict, args):
     run.summary["state"] = "completed"
     wandb.finish()
 
+    global best_rmse
     if args.save_path and (best_rmse is None or test_values["Test RMSE"] < best_rmse):
         save_model(model, model_args, config, f"{args.save_path}/{layer}_{args.pred}_RMSE{test_values["Test RMSE"]}")
         best_rmse = test_values["Test RMSE"]
