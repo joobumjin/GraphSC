@@ -28,6 +28,7 @@ def get_image_loaders(data_dirs, target, batch_size, dataset="Healthy", crop=Tru
         """
         #is it better to prealloc numpy?
         images = torch.zeros((batch_size, *image_shape)) #prealloc
+        print(data[0].x.shape)
         for ind, sample in enumerate(data): images[ind] = crop_fn(torch.Tensor(sample.x)) if crop_fn is not None else torch.Tensor(sample.x) #gather
         # images = torch.Tensor(np.transpose(np.array([sample.x for sample in data]), axes=(0,3,1,2)))
         print(images.shape)
