@@ -1,5 +1,6 @@
 import json
 import os
+from tqdm import tqdm
 
 from PIL import Image
 import torch
@@ -33,11 +34,11 @@ def main():
     model.eval()
 
     data_base_dir = f"{data_dir}/full_imgs"
-    data_dirs = {"train": [f"{data_base_dir}/train_TER_imgs_0.pkl", 
-                           f"{data_base_dir}/train_TER_imgs_1.pkl", 
-                           f"{data_base_dir}/train_TER_imgs_2.pkl"], 
-                 "valid": f"{data_base_dir}/valid_TER_imgs_0.pkl", 
-                 "test":  f"{data_base_dir}/test_TER_imgs_0.pkl"}
+    data_dirs = {"train": [f"{data_base_dir}/Healthy/train_TER_imgs_0.pkl", 
+                           f"{data_base_dir}/Healthy/train_TER_imgs_1.pkl", 
+                           f"{data_base_dir}/Healthy/train_TER_imgs_2.pkl"], 
+                 "valid": f"{data_base_dir}/Healthy/valid_TER_imgs_0.pkl", 
+                 "test":  f"{data_base_dir}/Healthy/test_TER_imgs_0.pkl"}
  
     print(f"Loading Data")
 
@@ -51,8 +52,9 @@ def main():
 
     for loaders, split in zip([train_loaders, val_loaders, test_loaders], ["Train", "Val", "Test"]):
         data = []
-        for loader in loaders:
-            for batch in loader:
+        print(f"Embedding {split}")
+        for ind, loader in enumerate(loaders):
+            for batch in tqdm(loader, desc=f"Processing Loader {ind}/{len(loaders)}"):
                 images = torch.stack([preprocess(to_pil_image(batch.x[ind])) for ind in range(batch_size)]).to(device)
         
                 with torch.inference_mode():
