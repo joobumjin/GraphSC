@@ -28,10 +28,9 @@ def get_image_loaders(data_dirs, target, batch_size, dataset="Healthy", crop=Tru
         """
         #is it better to prealloc numpy?
         images = torch.zeros((batch_size, *image_shape)) #prealloc
-        print(data[0].x.shape)
+        #painful but needs to be done this way because each image has diff shape
         for ind, sample in enumerate(data): images[ind] = crop_fn(torch.Tensor(sample.x).permute(2, 0, 1)) if crop_fn is not None else torch.Tensor(sample.x).permute(2, 0, 1) #gather
         # images = torch.Tensor(np.transpose(np.array([sample.x for sample in data]), axes=(0,3,1,2)))
-        print(images.shape)
         if crop_fn is not None: images = crop_fn(images)
 
         labels = torch.Tensor(np.array([sample.y for sample in data]))[:, None]
@@ -42,7 +41,7 @@ def get_image_loaders(data_dirs, target, batch_size, dataset="Healthy", crop=Tru
     valid_pkls = data_dirs["valid"]
     test_pkls = data_dirs["test"]
 
-    crop_fn = torchvision.transforms.RandomCrop(image_shape[0]) if crop else None
+    crop_fn = torchvision.transforms.RandomCrop(image_shape[1]) if crop else None
     # train_datasets = [Healthy2Dataset(base_dir, train_csv, target) for train_csv in train_csvs]
     # valid_dataset = Healthy2Dataset(base_dir, valid_csv, target)
     # test_dataset = Healthy2Dataset(base_dir, test_csv, target)
