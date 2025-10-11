@@ -5,6 +5,7 @@ import numpy as np
 import glob
 import pandas as pd
 import itertools
+from PIL import Image
 
 
 class ImageData():
@@ -28,7 +29,7 @@ def get_image_loaders(data_dirs, target, batch_size, dataset="Healthy", crop=Tru
         #is it better to prealloc numpy?
         # images = torch.Tensor(np.transpose(np.array([sample.x for sample in data]), axes=(0,3,1,2)))
         images = np.zeros((batch_size, *image_shape)) #prealloc
-        for ind, sample in enumerate(data): images[ind] = crop_fn(sample.x) if crop_fn is not None else sample.x #gather
+        for ind, sample in enumerate(data): images[ind] = crop_fn(Image.fromarray(sample.x)) if crop_fn is not None else sample.x #gather
         images = torch.Tensor(images).permute(0,3,1,2) #transpose
         # if crop_fn is not None: images = crop_fn(images)
 
