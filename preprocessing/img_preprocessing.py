@@ -51,7 +51,7 @@ def get_image_loaders(data_dirs, target, batch_size, dataset="Healthy", crop=Tru
     
     # num_targets = 2 if target == "Both" else 1
     sample = next(test_dset)
-    num_targets = sample.y.shape[1] if len(np.array(sample.y).shape) == 2 else len(np.array(sample.y))
+    num_targets = sample.y.shape[1] if len(np.array(sample.y).shape) == 2 else np.array(sample.y).size
 
     print(f"Constructing Dataloaders")
     train_loaders = [DataLoader(train_dset, batch_size = batch_size, collate_fn=lambda data: collate(data, crop_fn=crop_fn))]
