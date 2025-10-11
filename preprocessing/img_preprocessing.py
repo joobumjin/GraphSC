@@ -45,12 +45,12 @@ def get_image_loaders(data_dirs, target, batch_size, dataset="Healthy", crop=Tru
     # valid_dataset = Healthy2Dataset(base_dir, valid_csv, target)
     # test_dataset = Healthy2Dataset(base_dir, test_csv, target)
     print(f"Constructing Datasets")
-    train_dset = itertools.chain(*[pd.read_pickle(f"{train_pkl}") for train_pkl in train_pkls])
-    val_dset = itertools.chain(*[pd.read_pickle(f"{valid_pkl}")for valid_pkl in valid_pkls])
-    test_dset = itertools.chain(*[pd.read_pickle(f"{test_pkl}") for test_pkl in test_pkls])
+    train_dset = list(itertools.chain(*[pd.read_pickle(f"{train_pkl}") for train_pkl in train_pkls]))
+    val_dset = list(itertools.chain(*[pd.read_pickle(f"{valid_pkl}")for valid_pkl in valid_pkls]))
+    test_dset = list(itertools.chain(*[pd.read_pickle(f"{test_pkl}") for test_pkl in test_pkls]))
     
     # num_targets = 2 if target == "Both" else 1
-    sample = next(test_dset)
+    sample = test_dset[0]
     num_targets = sample.y.shape[1] if len(np.array(sample.y).shape) == 2 else np.array(sample.y).size
 
     print(f"Constructing Dataloaders")
