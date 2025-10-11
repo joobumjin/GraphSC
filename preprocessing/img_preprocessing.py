@@ -21,15 +21,15 @@ class ImageData():
        return self
     
 def get_image_loaders(data_dirs, target, batch_size, dataset="Healthy", crop=True):
-    image_shape = [1024, 1024, 3] if dataset == "Healthy" else [256, 256, 1]
+    image_shape = [3, 1024, 1024] if dataset == "Healthy" else [1, 256, 256]
     def collate(data, crop_fn):
         """
         In our cases, we want to collate a list of Data instances
         """
         #is it better to prealloc numpy?
-        # images = torch.zeros((batch_size, *image_shape)) #prealloc
-        # for ind, sample in enumerate(data): images[ind] = crop_fn(torch.Tensor(sample.x).permute(2, 0, 1)) if crop_fn is not None else torch.Tensor(sample.x).permute(2, 0, 1) #gather
-        images = torch.Tensor(np.transpose(np.array([sample.x for sample in data]), axes=(0,3,1,2)))
+        images = torch.zeros((batch_size, *image_shape)) #prealloc
+        for ind, sample in enumerate(data): images[ind] = crop_fn(torch.Tensor(sample.x)) if crop_fn is not None else torch.Tensor(sample.x) #gather
+        # images = torch.Tensor(np.transpose(np.array([sample.x for sample in data]), axes=(0,3,1,2)))
         print(images.shape)
         if crop_fn is not None: images = crop_fn(images)
 
