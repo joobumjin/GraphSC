@@ -27,6 +27,7 @@ def main():
     data_dir = "/users/bjoo2/data/bjoo2/qbam/data"
 
     # Load the model and config files
+    print(f"Loading Model")
     model, preprocess = create_model_from_pretrained('conch_ViT-B-16', "hf_hub:MahmoodLab/conch")
 
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
