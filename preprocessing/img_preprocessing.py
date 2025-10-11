@@ -50,7 +50,8 @@ def get_image_loaders(data_dirs, target, batch_size, dataset="Healthy", crop=Tru
     test_dset = itertools.chain(*[pd.read_pickle(f"{test_pkl}") for test_pkl in test_pkls])
     
     # num_targets = 2 if target == "Both" else 1
-    num_targets = train_dset[0].y.shape[1] if len(np.array(train_dset[0].y).shape) == 2 else len(train_dset[0].y)
+    sample = next(test_dset)
+    num_targets = sample.y.shape[1] if len(np.array(sample.y).shape) == 2 else len(sample.y)
 
     print(f"Constructing Dataloaders")
     train_loaders = [DataLoader(train_dset, batch_size = batch_size, collate_fn=lambda data: collate(data, crop_fn=crop_fn))]
