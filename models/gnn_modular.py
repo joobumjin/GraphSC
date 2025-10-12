@@ -3,7 +3,7 @@ import torch.nn.functional as F
 import torch_geometric.nn as geom
 from torch_geometric.nn import GraphConv, GCNConv, GATConv, GATv2Conv, TransformerConv, global_mean_pool, BatchNorm
 import torch.nn as nn
-from torch.nn import Linear, Dropout, LeakyReLU, Identity
+from torch.nn import Linear, Dropout, LeakyReLU, Identity, BatchNorm1d
 import inspect
 
 def get_remaining_params(args, cls):
@@ -18,7 +18,7 @@ def get_layer_dict():
 
 
 class Modular_GNN(torch.nn.Module):
-    def __init__(self, num_node_features, output_dim,  num_dense = 2, num_gnn = 3, hidden_channels=128, dense_hidden=128, num_heads=8, dropout_p=0.5, gnn_layer = GATv2Conv):
+    def __init__(self, num_node_features, output_dim,  num_dense = 2, num_gnn = 3, hidden_channels=128, dense_hidden=128, num_heads=8, dropout_p=0.5, gnn_layer = GATv2Conv, batch_norm1d = False):
       super().__init__()
 
       assert num_dense >= 2 and num_gnn >= 2
@@ -79,6 +79,8 @@ class Modular_GNN(torch.nn.Module):
           Dropout(p=dropout_p)
         ]
       dense_layers.append(Linear(self.dense_hidden, self.output_dim))
+
+      if batch_norm1d : dense_layers = [BatchNorm1d(self.output_dim)] + dense_layers
 
       self.dense_head = nn.Sequential(*dense_layers)
 

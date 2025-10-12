@@ -98,8 +98,9 @@ def objective(trial, data_dirs, layer_dict, args):
         "num_dense": trial.suggest_int("num_dense", 3, 5), 
         "hidden_channels": trial.suggest_int("hidden_size", 64, 256, step=64), 
         "dense_hidden": trial.suggest_int("hidden_size", 64, 256, step=64), 
-        "dropout_p": trial.suggest_float("dropout", 0.1, 0.7, step=0.1),
-        "gnn_layer": layer_dict[layer]
+        "dropout_p": trial.suggest_float("dropout", 0.1, 0.7),
+        "gnn_layer": layer_dict[layer],
+        "batch_norm1d": trial.suggest_categorical("Batch Norm 1D in dense", [True, False])
     }
 
     opt_args = {
@@ -109,7 +110,8 @@ def objective(trial, data_dirs, layer_dict, args):
     }
 
     sched_args = {
-        "warmup_epochs": 10
+        "warmup_epochs": trial.suggest_int("warmup epochs", 0, 40),
+        "min_lr": trial.suggest_float("minimum lr", 0.0, 1e-4)
     }
 
     config={
