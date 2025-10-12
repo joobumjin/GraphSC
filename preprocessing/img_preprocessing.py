@@ -21,7 +21,7 @@ class ImageData():
        return self
     
 def get_image_loaders(data_dirs, target, batch_size, dataset="Healthy", crop=True):
-    image_shape = [3, 1024, 1024] if dataset == "Healthy" else [1, 256, 256]
+    image_shape = [3, 1024, 1024] if dataset == "Healthy" else [3, 256, 256]
     def collate(data, crop_fn):
         """
         In our cases, we want to collate a list of Data instances

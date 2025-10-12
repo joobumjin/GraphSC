@@ -106,7 +106,7 @@ class DNN_F_AMD(torch.nn.Module):
         self.output_dim = output_dim
 
         self.layers = Sequential(
-            Conv2d(1, 64, 3, padding="same"),
+            Conv2d(3, 64, 3, padding="same"),
             SameMaxPool2d(3, 2),
             InceptionLayer(channel_dict={"in": 64, "oneConv": 32, "threeConv_1": 48, "threeConv_2": 64, "fiveConv_1": 8, "fiveConv_2": 16, "poolConv_2": 16, "out":128}),
             SameMaxPool2d(3, 2),
