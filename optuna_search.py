@@ -111,7 +111,7 @@ def objective(trial, data_dirs, layer_dict, args):
     #run
     run = wandb.init(
         entity="bumjin_joo-brown-university", 
-        project=f"qbam-DATA-Graph-{args.pred}-{args.dataset}{"-Multi" if args.multi_opt else ""}", 
+        project=f"qbam-DATA-Graph-{args.pred}-{args.dataset}{feat_norm}{"-Multi" if args.multi_opt else ""}", 
         name=f"{layer}, LR{config["lr"]:.5f}", 
         config=config
     )
