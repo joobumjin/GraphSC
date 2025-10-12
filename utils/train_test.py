@@ -88,7 +88,6 @@ def train(model, train_loader, optimizer, criterion, scheduler, epoch = 0) -> fl
         
         optimizer.zero_grad()
         data = data.to(model.device)  # Move data to the same device as the model
-        print(f"Data: {data.x.shape}, {data.y.shape}")
         out = model(data)
         loss = criterion(out, data.y)
         loss.backward()
