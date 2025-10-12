@@ -162,7 +162,11 @@ def main(args):
                     "test":  [f"{data_base_dir}/{args.dataset}/Test_TER.pkl"]}
     
     print(f"Loading Data")
-    train_loaders, val_loaders, test_loaders, out_dim = get_image_loaders(data_dirs, target, args.batch_size)
+    train_loaders, val_loaders, test_loaders, out_dim = get_image_loaders(data_dirs, 
+                                                                          target, 
+                                                                          args.batch_size, 
+                                                                          dataset=args.dataset, 
+                                                                          crop=args.dataset=="Healthy")
 
     time_string = datetime.datetime.now().strftime('%d-%b-%Y-%H%M')
     if args.multi_opt:
