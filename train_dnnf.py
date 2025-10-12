@@ -98,7 +98,7 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, arg
     model = model_dict[args.dataset](*data_details)
 
     dummy_batch = next(iter(test_loaders[0]))
-    dummy_batch.to(model.device)
+    dummy_batch.to(model.device())
     preds = model(dummy_batch)
     print(f"Preds: {preds.shape}, Labels: {dummy_batch.y.shape}")
     import torch
