@@ -112,9 +112,6 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, arg
         name=f"DNN-F, LR{config["lr"]:.5f}", 
         config=config
     )
-
-
-
     
     _, _, _, should_prune = train_model(train_loaders, 
                                         val_loaders, 

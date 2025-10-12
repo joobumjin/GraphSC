@@ -49,6 +49,7 @@ class RMSELoss(torch.nn.Module):
         self.mse = torch.nn.MSELoss(reduction=reduction)
 
     def forward(self, pred, actual):
+        print(f"Inside RMSE: {pred.shape}, {actual.shape}")
         #assume that the ratio elements are the first two values
         if self.ratio:
             pred = pred[:, 0:1] / pred[:, 1:2]
