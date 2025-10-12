@@ -8,10 +8,13 @@ import torch
 import optuna
 import wandb
 
-from preprocessing.preprocessing import get_loaders
-from utils import SSLELoss, RMSELoss, train_model, eval_model, save_model, get_test_criteria
+from preprocessing.preprocessing import get_loaders, get_feature_labels
+from utils import SSLELoss, RMSELoss, train_model, eval_model, save_model, visualize_feature_importance, get_test_criteria
 from torch_geometric.nn import GraphConv, GCNConv, GATConv, GATv2Conv, TransformerConv
 from models import Modular_GNN, get_layer_dict
+
+from torch_geometric.explain import Explainer, GNNExplainer
+
 
 best_rmse = None
 
@@ -54,6 +57,24 @@ def graph_train_stats(train_losses, train_metrics, val_metrics, wandb_run):
 
     plt.close()
 
+def get_explanation(model, data, run):
+    explainer = Explainer(
+        model=model,
+        algorithm= GNNExplainer(epochs=200), #AttentionExplainer()
+        explanation_type='model',
+        node_mask_type='attributes',
+        edge_mask_type='object',
+        model_config=dict(
+            mode='regression',
+            task_level='graph',
+            return_type='raw'
+        ),
+    )
+
+    explanation = explainer(data.x, data.edge_index, batch_index = data.batch)
+
+    visualize_feature_importance(explanation, feat_labels = get_feature_labels(), run=run)
+
 ##############################################################################
 
 def objective(trial, data_dirs, layer_dict, args):
@@ -62,10 +83,10 @@ def objective(trial, data_dirs, layer_dict, args):
     layer = trial.suggest_categorical("layer type", layer_dict.keys())
     feat_norm = trial.suggest_categorical("feature normalization", ['', '_01', '_z'])
 
-    train_loader, val_loader, test_loader, data_details = get_loaders(data_dirs, f"{args.pred}{feat_norm}", args.batch_size)
-    train_loaders = [train_loader]
-    val_loaders = [val_loader]
-    test_loaders = [test_loader]
+    train_loaders, val_loaders, test_loaders, data_details = get_loaders(data_dirs, f"{args.pred}{feat_norm}", args.batch_size)
+    train_loaders = [train_loaders]
+    val_loaders = [val_loaders]
+    test_loaders = [test_loaders]
 
     model_args = {
         "num_node_features": data_details[0], 
@@ -92,7 +113,8 @@ def objective(trial, data_dirs, layer_dict, args):
         "graph layer": f"{layer}",
         "epochs": 50,
         # "lr_decay": trial.suggest_float("learning_rate_decay", 0.7, 1.0, step=.1),
-        "target": args.pred
+        "target": args.pred,
+        "feature_normalization": feat_norm
     }
 
     config = {**model_args, **opt_args, **sched_args, **config}
@@ -141,13 +163,16 @@ def objective(trial, data_dirs, layer_dict, args):
                              test_crits = get_test_criteria(args.pred),  
                              wandb_run = run)
 
-    run.summary["state"] = "completed"
-    wandb.finish()
-
     global best_rmse
     if args.save_path and (best_rmse is None or test_values["Test RMSE"] < best_rmse):
         save_model(model, model_args, config, f"{args.save_path}/{layer}_{args.pred}_RMSE{test_values["Test RMSE"]}")
         best_rmse = test_values["Test RMSE"]
+
+        sample_batch = next(iter(test_loaders[0]))
+        get_explanation(model, sample_batch, run)        
+
+    run.summary["state"] = "completed"
+    wandb.finish()
 
     if args.multi_opt:
         return [test_values[key] for key in test_values]

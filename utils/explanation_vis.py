@@ -5,6 +5,8 @@
 import copy
 from typing import Dict, List, Optional, Union
 
+import wandb
+
 import torch
 from torch import Tensor
 
@@ -19,6 +21,7 @@ def visualize_feature_importance(
     path: Optional[str] = None,
     feat_labels: Optional[List[str]] = None,
     top_k: Optional[int] = None,
+    run = None
 ):
     r"""Creates a bar plot of the node feature importances by summing up
     the node mask across all nodes.
@@ -47,13 +50,14 @@ def visualize_feature_importance(
 
     score = node_mask.sum(dim=0)
 
-    return _visualize_score(score, feat_labels, path, top_k)
+    return _visualize_score(score, feat_labels, path, top_k, run)
 
 def _visualize_score(
     score: torch.Tensor,
     labels: List[str],
     path: Optional[str] = None,
     top_k: Optional[int] = None,
+    run = None
 ):
     import matplotlib.pyplot as plt
     import pandas as pd
@@ -87,9 +91,13 @@ def _visualize_score(
 
     plt.tight_layout()
 
+    if run is not None:
+        run.log({"feature importance": plt})
     if path is not None:
         plt.savefig(path)
     else:
         plt.show()
 
     plt.close()
+
+    return df
