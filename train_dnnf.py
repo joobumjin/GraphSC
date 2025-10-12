@@ -97,6 +97,10 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, arg
     model_dict = {"Healthy": DNN_F, "AMD": DNN_F_AMD}
     model = model_dict[args.dataset](*data_details)
 
+    dummy_batch = next(test_loaders[0])
+    dummy_batch.to(model.device)
+    preds = model(dummy_batch)
+    print(f"Preds: {preds.shape}, Labels: {dummy_batch.y.shape}")
     #
     #run
     run = wandb.init(
@@ -105,6 +109,9 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, arg
         name=f"DNN-F, LR{config["lr"]:.5f}", 
         config=config
     )
+
+
+
     
     _, _, _, should_prune = train_model(train_loaders, 
                                         val_loaders, 
