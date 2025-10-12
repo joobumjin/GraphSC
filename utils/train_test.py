@@ -49,7 +49,6 @@ class RMSELoss(torch.nn.Module):
         self.mse = torch.nn.MSELoss(reduction=reduction)
 
     def forward(self, pred, actual):
-        print(f"Inside RMSE: {pred.shape}, {actual.shape}")
         #assume that the ratio elements are the first two values
         if self.ratio:
             pred = pred[:, 0:1] / pred[:, 1:2]
@@ -89,6 +88,7 @@ def train(model, train_loader, optimizer, criterion, scheduler, epoch = 0) -> fl
         
         optimizer.zero_grad()
         data = data.to(model.device)  # Move data to the same device as the model
+        print(f"Data: {data.x.shape}, {data.y.shape}")
         out = model(data)
         loss = criterion(out, data.y)
         loss.backward()
