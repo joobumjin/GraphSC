@@ -137,7 +137,7 @@ def main(args):
     }
 
     sched_args = {
-        "warmup_epochs": 10
+        "warmup_epochs": 50
     }
 
     model = LinearProbe(**model_args)

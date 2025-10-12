@@ -3,8 +3,8 @@
 #SBATCH --partition=gpu --gres=gpu:1  --output=probe_conch.out
 #SBATCH -N 1
 #SBATCH -n 1
-#SBATCH -t 10:00:00
-#SBATCH --mem=100g
+#SBATCH -t 00:20:00
+#SBATCH --mem=16g
 
 # Load a CUDA module
 module load cuda
