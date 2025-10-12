@@ -4,7 +4,8 @@ from tqdm import tqdm
 import numpy as np
 import torch
 
-from utils.train_test import train, train_multidata, train_multidata_timed, test, test_multidata, HalfCosDecay
+from utils.train_test import train, train_multidata, train_multidata_timed, test, test_multidata
+from utils.lr_sched import HalfCosDecay
 
 """
 Runs entire training regime for a model
