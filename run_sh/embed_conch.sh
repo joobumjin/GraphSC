@@ -17,4 +17,4 @@ conda activate qbam
 cd /users/bjoo2/code/qbam/qbam_gnn
 
 echo "Embedding Images with CONCH"
-python3 test_conch.py
+python3 embed_conch.py

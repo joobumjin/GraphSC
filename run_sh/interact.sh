@@ -1,0 +1,1 @@
+interact -n 1 -q gpu -g 1 -t 00:30:00 -m 8g

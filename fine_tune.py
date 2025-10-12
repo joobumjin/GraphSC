@@ -52,7 +52,7 @@ def graph_train_stats(train_losses, train_metrics, val_metrics, wandb_run):
 
 ##############################################################################
 
-def optimize(target, model, opt_args, config, train_loaders, val_loaders, test_loaders, args, model_params = None):
+def optimize(target, model, opt_args, config, train_loaders, val_loaders, test_loaders, args, scheduler_args = {}, model_params = None):
     #
     #run
     _, _, _, _ = train_model(train_loaders, 
@@ -64,7 +64,7 @@ def optimize(target, model, opt_args, config, train_loaders, val_loaders, test_l
                              train_criterion = RMSELoss(reduction="sum"), 
                              train_crits = {}, 
                              test_crits = get_test_criteria(target),  
-                             gamma=config["lr_decay"], 
+                             scheduler_args = scheduler_args,#  gamma=config["lr_decay"], 
                              wandb_run = None, 
                              trial = None, 
                              pruning = False,
@@ -113,7 +113,7 @@ def main(args):
     
     config={
         "graph layer": "GATv2",
-        "lr_decay": 0.8,
+        # "lr_decay": 0.8,
         "epochs": 200
     }
     model = Modular_GNN(**model_args)
@@ -122,7 +122,7 @@ def main(args):
             f"{model_args["num_gnn"]} GATv2 Layers\t| {model_args["hidden_channels"]} units\n"
             f"{model_args["num_dense"]} Dense Layers\t| {model_args["dense_hidden"]} units\n"
             f"Dropout Rate: {model_args["dropout_p"]}\n"
-            f"Learning Rate: {config["lr"]} with Decay {config["lr_decay"]} and Weight Decay: {config["weight_decay"]}\n"
+            f"Learning Rate: {config["lr"]} with Half Cosine Decay and Weight Decay: {config["weight_decay"]}\n"
             f"###############################################################################")
 
     #
@@ -132,8 +132,12 @@ def main(args):
         "weight_decay": 0.005
     }
 
+    sched_args = {
+        "warmup_epochs": 40
+    }
+
     #pretraining
-    test_pretrain_loss = optimize(pretrain_target, model, opt_args, config, train_loaders, val_loaders, test_loaders, args)
+    test_pretrain_loss = optimize(pretrain_target, model, opt_args, config, train_loaders, val_loaders, test_loaders, args, scheduler_args=sched_args)
 
     #next step
     transfer_target = args.trans_pred

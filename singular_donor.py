@@ -81,18 +81,22 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
         "weight_decay": trial.suggest_float("l2_penalty", 0, 1e-2, step=5e-5),
     }
 
+    sched_args = {
+        "warmup_epochs": 10
+    }
+
     config={
         "network": "singular",
         "epochs": 75,
-        "lr_decay": trial.suggest_float("learning_rate_decay", 0.7, 1.0, step=.1),
+        # "lr_decay": trial.suggest_float("learning_rate_decay", 0.7, 1.0, step=.1),
     }
 
-    config = {**model_args, **opt_args, **config}
+    config = {**model_args, **opt_args, **sched_args, **config}
     print(f"###############################################################################\n"
             f"{model_args["num_gnn"]} {layer} Layers\t| {model_args["hidden_channels"]} units\n"
             f"{model_args["num_dense"]} Dense Layers\t| {model_args["dense_hidden"]} units\n"
             f"Dropout Rate: {model_args["dropout_p"]}\n"
-            f"Learning Rate: {config["lr"]} with Decay {config["lr_decay"]} and Weight Decay: {config["weight_decay"]}\n"
+            f"Learning Rate: {config["lr"]} with Half Cosine Decay and Weight Decay: {config["weight_decay"]}\n"
             f"###############################################################################")
 
     #
@@ -121,7 +125,7 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, lay
                                         train_criterion = BCEWithLogitsLoss(reduction="sum"), 
                                         train_crits = {"Acc": Accuracy()}, 
                                         test_crits = get_test_criteria(args.pred),   
-                                        gamma=config["lr_decay"], 
+                                        scheduler_args = sched_args, # gamma=config["lr_decay"], 
                                         wandb_run = run, 
                                         trial = trial, 
                                         pruning = True if not args.multi_opt else False,

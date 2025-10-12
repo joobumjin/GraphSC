@@ -4,7 +4,7 @@ from tqdm import tqdm
 import numpy as np
 import torch
 
-from utils.train_test import train, train_multidata, train_multidata_timed, test, test_multidata
+from utils import train, train_multidata, train_multidata_timed, test, test_multidata, HalfCosDecay
 
 """
 Runs entire training regime for a model
@@ -22,7 +22,11 @@ params:
     train_criterion: nn.Module to calculate the training loss
     train_crits: Other remaining evaluation criterion for the train set
     test_crits: Criterion on which the model will be evaluated with the test set
-    gamma: Learning rate decay rate
+    scheduler_args: Arguments to pass to the half cosine decay learning rate scheduler
+        warmup_epochs: number of epochs to warm up to full start learning rate, default 10
+        max_epochs: number of training epochs, default 100
+        min_lr: minimum lr to decay to, default 0
+        start_lr: lr to start at after full warmup, default 1e-3
     wandb_run: Optional W&B run to record things to
     trial: Optional Optuna trial for optimization
     pruning: Whether or not to use Optuna Pruning
@@ -38,7 +42,7 @@ returns:
     pruned: whether or not optuna decided to prune 
             (always false if pruning disabled)
 """
-def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, crit_string, train_criterion, train_crits, test_crits, gamma=0.95, wandb_run = None, trial = None, pruning = False, graph_fn = None, timed=False, model_params = None):
+def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, crit_string, train_criterion, train_crits, test_crits, scheduler_args = {}, wandb_run = None, trial = None, pruning = False, graph_fn = None, timed=False, model_params = None):
     #setup
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Using", device)
@@ -47,8 +51,11 @@ def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, crit_st
     model.device = device
 
     params = model_params if model_params is not None else model.parameters()
-    optimizer = torch.optim.Adam(params, **opt_args)
-    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma)
+    optimizer = torch.optim.AdamW(params, **opt_args)
+    # scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma)
+    scheduler_args["max_epochs"] = num_epochs
+    scheduler_args["start_lr"] = opt_args["lr"]
+    scheduler = HalfCosDecay(**scheduler_args)
     
     train_losses = []
     train_metrics = {crit: [] for crit in train_crits}
@@ -72,9 +79,9 @@ def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, crit_st
     
     for epoch in epoch_tqdm:
         #train
-        train_loss = train_fn(model, train_loaders, optimizer, train_criterion)
+        train_loss = train_fn(model, train_loaders, optimizer, train_criterion, scheduler, epoch=epoch)
         if timed: (train_loss, avg_data_time, avg_pred_time) = train_loss
-        scheduler.step()
+        # scheduler.step()
 
         train_losses.append(train_loss)
         postfix = {f"Train {crit_string}": train_loss}
@@ -90,6 +97,8 @@ def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, crit_st
             postfix[f"Epoch Time"] = time.time() - start
             postfix[f"Batching Time"] = avg_data_time
             postfix[f"Prediction Time"] = avg_pred_time
+
+        postfix["lr"] = optimizer.param_groups[0]["lr"]
 
         if wandb_run: wandb_run.log(postfix)
         epoch_tqdm.set_postfix(postfix)

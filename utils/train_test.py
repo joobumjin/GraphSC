@@ -78,12 +78,14 @@ def get_test_criteria(task = None) -> Dict[str, torch.nn.Module]:
 """
 Runs training for a single epoch
 """
-def train(model, train_loader, optimizer, criterion) -> float:
+def train(model, train_loader, optimizer, criterion, scheduler, epoch = 0) -> float:
     model.train()
     total_loss = 0.0
     total_samples = 0
 
-    for data in train_loader:
+    for ind, data in enumerate(train_loader):
+        scheduler.adjust_learning_rate(optimizer, ind / len(train_loader) + epoch)
+        
         optimizer.zero_grad()
         data = data.to(model.device)  # Move data to the same device as the model
         out = model(data)
@@ -106,12 +108,18 @@ def train(model, train_loader, optimizer, criterion) -> float:
 Runs training for a single epoch when given multiple
 training set dataloaders
 """
-def train_multidata(model, train_loaders, optimizer, criterion) -> float:
+def train_multidata(model, train_loaders, optimizer, criterion, scheduler, epoch = 0) -> float:
     model.train()
     total_loss = 0.0
     total_samples = 0
+    processed_batches = 0.0
+    total_batches = 0.0
+    for loader in train_loaders: total_batches += len(loader) 
+
     for train_loader in train_loaders:
         for data in train_loader:
+            scheduler.adjust_learning_rate(optimizer, processed_batches / total_batches + epoch)
+            
             optimizer.zero_grad()
             data = data.to(model.device)  # Move data to the same device as the model
             out = model(data)
@@ -120,6 +128,7 @@ def train_multidata(model, train_loaders, optimizer, criterion) -> float:
             optimizer.step()
 
             total_loss += loss.detach().item()
+            processed_batches += 1
             if not hasattr(criterion, "ratio") or not criterion.ratio:
                 total_samples += torch.numel(data.y)
             else:
@@ -138,16 +147,20 @@ training set dataloaders
 Additionally reports the time taken to load the batch,
 and then perform and forward and backward step on the batch
 """
-def train_multidata_timed(model, train_loaders, optimizer, criterion) -> Tuple[float, float, float]:
+def train_multidata_timed(model, train_loaders, optimizer, criterion, scheduler, epoch = 0) -> Tuple[float, float, float]:
     model.train()
     total_loss = 0.0
     total_samples = 0
+    processed_batches = 0.0
     total_batches = 0.0
+    for loader in train_loaders: total_batches += len(loader) 
+
     total_batch_time = 0.0
     total_process_time = 0.0
     for train_loader in train_loaders:
         data_start_time = time.time()
         for data in train_loader:
+            scheduler.adjust_learning_rate(optimizer, processed_batches / total_batches + epoch)
             total_batch_time += time.time() - data_start_time
             
             optimizer.zero_grad()
@@ -160,12 +173,12 @@ def train_multidata_timed(model, train_loaders, optimizer, criterion) -> Tuple[f
             optimizer.step()
 
             total_loss += loss.detach().item()
+            processed_batches += 1
             if not hasattr(criterion, "ratio") or not criterion.ratio:
                 total_samples += torch.numel(data.y)
             else:
                 total_samples += (data.y.shape[0] * (data.y.shape[1] - 1))
             data_start_time = time.time()
-            total_batches += 1
 
     metric = total_loss / total_samples
 

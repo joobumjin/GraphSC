@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --partition=gpu --gres=gpu:1  --output=bmclip.out
+#SBATCH --partition=gpu --gres=gpu:1  --output=probe_bmclip.out
 #SBATCH -N 1
 #SBATCH -n 1
 #SBATCH -t 10:00:00
@@ -16,5 +16,5 @@ conda activate biomedclip
 # Run program
 cd /users/bjoo2/code/qbam/qbam_gnn
 
-echo "Embedding Images with BiomedCLIP"
-python3 embed_biomedclip.py
+echo "Linear Probing BiomedCLIP"
+python3 linear_probe.py --data /users/bjoo2/data/bjoo2/qbam/data

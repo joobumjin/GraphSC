@@ -81,21 +81,26 @@ def objective(trial, data_dirs, layer_dict, args):
     opt_args = {
         "lr": trial.suggest_float("learning_rate", 0.0001, 0.005, step=0.0001),
         "weight_decay": trial.suggest_float("l2_penalty", 0, 1e-2, step=5e-5),
+        # "betas": (0.9, 0.95)
+    }
+
+    sched_args = {
+        "warmup_epochs": 10
     }
 
     config={
         "graph layer": f"{layer}",
         "epochs": 50,
-        "lr_decay": trial.suggest_float("learning_rate_decay", 0.7, 1.0, step=.1),
+        # "lr_decay": trial.suggest_float("learning_rate_decay", 0.7, 1.0, step=.1),
         "target": args.pred
     }
 
-    config = {**model_args, **opt_args, **config}
+    config = {**model_args, **opt_args, **sched_args, **config}
     print(f"###############################################################################\n"
             f"{model_args["num_gnn"]} {layer} Layers\t| {model_args["hidden_channels"]} units\n"
             f"{model_args["num_dense"]} Dense Layers\t| {model_args["dense_hidden"]} units\n"
             f"Dropout Rate: {model_args["dropout_p"]}\n"
-            f"Learning Rate: {config["lr"]} with Decay {config["lr_decay"]} and Weight Decay: {config["weight_decay"]}\n"
+            f"Learning Rate: {config["lr"]} with Half Cosine Decay and Weight Decay: {config["weight_decay"]}\n"
             f"###############################################################################")
 
     #
@@ -120,7 +125,7 @@ def objective(trial, data_dirs, layer_dict, args):
                                      train_criterion = RMSELoss(reduction="sum"), 
                                      train_crits = {}, 
                                      test_crits = get_test_criteria(args.pred),  
-                                     gamma=config["lr_decay"], 
+                                     scheduler_args = sched_args, #  gamma=config["lr_decay"], 
                                      wandb_run = run, 
                                      trial = trial, 
                                      pruning = True if not args.multi_opt else False,

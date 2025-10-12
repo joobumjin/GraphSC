@@ -1,3 +1,4 @@
+import argparse
 import json
 import os
 from tqdm import tqdm
@@ -9,6 +10,25 @@ from huggingface_hub import hf_hub_download
 from conch.open_clip_custom import create_model_from_pretrained
 from preprocessing.img_preprocessing import get_image_loaders, ImageData
 import pickle
+
+def parse_args(args=None):
+    """ 
+    Perform command-line argument parsing (other otherwise parse arguments with defaults). 
+    To parse in an interative context (i.e. in notebook), add required arguments.
+    These will go into args and will generate a list that can be passed in.
+    For example: 
+        parse_args('--type', 'rnn', ...)
+    """
+    parser = argparse.ArgumentParser(description="Specify Hyperparameters to Optimize for the GNN", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--data',           required=True,                                          help='File path to the assignment data file.')
+    parser.add_argument('--pred',           required=True,  choices=['Donor'],                      help='Type of Value being Predicted from QBAMs')
+    parser.add_argument('--batch_size',     type=int,       default=20,                             help='Model\'s batch size.')
+    parser.add_argument('--multi_opt',      action="store_true",                                    help='Whether or not to optimize against mutliple objectives')
+    parser.add_argument('--model_path',     type=str,                                               help='Optional path to saved model weights')
+
+    if args is None: 
+        return parser.parse_args()      ## For calling through command line
+    return parser.parse_args(args)      ## For calling through notebook.
 
 class Data():
     def __init__(self, x, y):
@@ -55,7 +75,7 @@ def main():
         data = []
         print(f"Embedding {split}")
         for ind, loader in enumerate(loaders):
-            for batch in tqdm(loader, desc=f"Processing Loader {ind}/{len(loaders)}"):
+            for batch in tqdm(loader, desc=f"   Processing Loader {ind + 1}/{len(loaders)}"):
                 images = torch.stack([preprocess(to_pil_image(batch.x[ind])) for ind in range(batch_size)]).to(device)
         
                 with torch.inference_mode():
