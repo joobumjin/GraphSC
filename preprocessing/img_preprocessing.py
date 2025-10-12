@@ -62,7 +62,7 @@ def get_image_loaders(data_dirs, target, batch_size, dataset="Healthy", crop=Tru
     valid_loaders = [DataLoader(val_dset, batch_size = batch_size, collate_fn=lambda data: collate(data, crop_fn=crop_fn))]
     test_loaders = [DataLoader(test_dset, batch_size = batch_size, collate_fn=lambda data: collate(data, crop_fn=crop_fn))]
     
-    batch = next(iter(test_loaders))
+    batch = next(iter(test_loaders[0]))
     print(batch.x.shape, batch.y.shape)
 
     return train_loaders, valid_loaders, test_loaders, num_targets
