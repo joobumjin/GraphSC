@@ -34,7 +34,7 @@ def get_image_loaders(data_dirs, target, batch_size, dataset="Healthy", crop=Tru
         if crop_fn is not None: images = crop_fn(images)
 
         if isinstance(data[0].y, np.ndarray):
-            labels = torch.Tensor(np.stack([sample.y for sample in data], axis=0))
+            labels = torch.Tensor(np.vstack([sample.y for sample in data]))
         else: #where sample.y is a float
             labels = torch.Tensor(np.array([sample.y for sample in data]))[:, None]
 
@@ -55,6 +55,7 @@ def get_image_loaders(data_dirs, target, batch_size, dataset="Healthy", crop=Tru
     
     # num_targets = 2 if target == "Both" else 1
     sample = test_dset[0]
+    print(f"Sample: {sample.x.shape}, {sample.y.shape}")
     num_targets = sample.y.shape[1] if len(np.array(sample.y).shape) == 2 else np.array(sample.y).size
 
     print(f"Constructing Dataloaders")
