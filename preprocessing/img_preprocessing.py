@@ -27,7 +27,7 @@ def get_image_loaders(data_dirs, target, batch_size, dataset="Healthy", crop=Tru
         In our cases, we want to collate a list of Data instances
         """
         #is it better to prealloc numpy?
-        images = torch.zeros((batch_size, *image_shape)) #prealloc
+        images = torch.zeros((len(data), *image_shape)) #prealloc
         #painful but needs to be done this way because each image has diff shape
         for ind, sample in enumerate(data): images[ind] = crop_fn(torch.Tensor(sample.x).permute(2, 0, 1)) if crop_fn is not None else torch.Tensor(sample.x).permute(2, 0, 1) #gather
         # images = torch.Tensor(np.transpose(np.array([sample.x for sample in data]), axes=(0,3,1,2)))
