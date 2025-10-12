@@ -4,6 +4,7 @@ import datetime
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import seaborn as sns
+import plotly.express as px
 import torch
 import optuna
 import wandb
@@ -177,7 +178,7 @@ def objective(trial, data_dirs, layer_dict, args):
     wandb.finish()
 
     if args.multi_opt:
-        return [test_values[key] for key in test_values]
+        return [test_values[key] for key in test_values if key != "VEGF_RMSE"] #paretto front only supports 3 objectives
 
     return test_values["Test RMSE"]
 
@@ -193,17 +194,10 @@ def main(args):
 
     data_dirs = {}
     for data_type in ['TER', 'VEGF', 'Both']:
-        data_dirs[f"Train_{data_type}"] = f"{args.data}/{data_type}/Train_{data_type}.pkl"
-        data_dirs[f"Valid_{data_type}"] = f"{args.data}/{data_type}/Valid_{data_type}.pkl"
-        data_dirs[f"Test_{data_type}"] = f"{args.data}/{data_type}/Test_{data_type}.pkl"
-
-        data_dirs[f"Train_{data_type}_01"] = f"{args.data}/{data_type}_featnorm/Train_{data_type}_01.pkl"
-        data_dirs[f"Valid_{data_type}_01"] = f"{args.data}/{data_type}_featnorm/Valid_{data_type}_01.pkl"
-        data_dirs[f"Test_{data_type}_01"] = f"{args.data}/{data_type}_featnorm/Test_{data_type}_01.pkl"
-
-        data_dirs[f"Train_{data_type}_z"] = f"{args.data}/{data_type}_featnorm/Train_{data_type}_z.pkl"
-        data_dirs[f"Valid_{data_type}_z"] = f"{args.data}/{data_type}_featnorm/Valid_{data_type}_z.pkl"
-        data_dirs[f"Test_{data_type}_z"] = f"{args.data}/{data_type}_featnorm/Test_{data_type}_z.pkl"
+        for extension, norm in zip(["", "_featnorm", "_featnorm"], ["", "_01", "_z"]):
+            data_dirs[f"Train_{data_type}{norm}"] = f"{args.data}/{data_type}{extension}/Train_{data_type}{norm}.pkl"
+            data_dirs[f"Valid_{data_type}{norm}"] = f"{args.data}/{data_type}{extension}/Valid_{data_type}{norm}.pkl"
+            data_dirs[f"Test_{data_type}{norm}"] = f"{args.data}/{data_type}{extension}/Test_{data_type}{norm}.pkl"
 
     layer_dict = get_layer_dict()
 
@@ -213,14 +207,21 @@ def main(args):
     if args.multi_opt:
         crits = get_test_criteria(target)
         study = optuna.create_study(study_name=f"{time_string}_optimize_{target}", directions=["minimize" for _ in crits])
-        study.set_metric_names(list(crits.keys()))
+        metric_names = study.set_metric_names([key for key in crits if key != "VEGF_RMSE"])
     else:
         study = optuna.create_study(study_name=f"{time_string}_optimize_{target}", direction="minimize")
         study.set_metric_names(["RMSE"])
 
     study.optimize(lambda trial: objective(trial, data_dirs, layer_dict, args), n_trials=200)
 
-    print(f"Best value: {study.best_value} (params: {study.best_params})")
+    if args.multi_opt:
+        for ind, trial in enumerate(study.best_trials):
+            print(f"Best Trial #{ind + 1}: {trial.values}\n\t params: {trial.params}")
+        paretto_plot = optuna.visualization.plot_pareto_front(study, target_names = metric_names)
+        paretto_plot.write_html(f"{args.data}/{args.pred}_paretto_front.html")
+
+    else:
+        print(f"Best value: {study.best_value} (params: {study.best_params})")
 
 
 ## END UTILITY METHODS
