@@ -19,7 +19,7 @@ from torch_geometric.visualization import visualize_graph
 def visualize_feature_importance(
     explanation,
     path: Optional[str] = None,
-    feat_labels: Optional[List[str]] = None,
+    feat_labels: List[str] = None,
     top_k: Optional[int] = None,
     run = None
 ):
@@ -44,9 +44,8 @@ def visualize_feature_importance(
         raise ValueError(f"Cannot compute feature importance for "
                             f"object-level 'node_mask' "
                             f"(got shape {node_mask.size()})")
-
-    if feat_labels is None:
-        feat_labels = range(node_mask.size(1))
+    
+    assert feat_labels is not None
 
     score = node_mask.sum(dim=0)
 
