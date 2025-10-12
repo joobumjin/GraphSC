@@ -58,6 +58,8 @@ def graph_train_stats(train_losses, train_metrics, val_metrics, wandb_run):
     plt.close()
 
 def get_explanation(model, data, run):
+    data = data.to(model.device)
+    
     explainer = Explainer(
         model=model,
         algorithm= GNNExplainer(epochs=200), #AttentionExplainer()
