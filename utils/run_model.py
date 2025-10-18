@@ -6,6 +6,13 @@ import torch
 
 from utils.train_test import train, train_multidata, train_multidata_timed, test, test_multidata
 from utils.lr_sched import HalfCosDecay
+from utils.early_stop import EarlyStopper
+
+def format_outputs(train_losses: list, metric_histories: list[dict]):
+    train_losses = np.array(train_losses)
+    metric_histories = [{crit: np.array(history) for crit, history in hist_dict.items()} for hist_dict in metric_histories]
+
+    return train_losses, *metric_histories
 
 """
 Runs entire training regime for a model
@@ -57,6 +64,8 @@ def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, crit_st
     scheduler_args["max_epochs"] = num_epochs
     scheduler_args["start_lr"] = opt_args["lr"]
     scheduler = HalfCosDecay(**scheduler_args)
+
+    stopper = EarlyStopper(patience=3)
     
     train_losses = []
     train_metrics = {crit: [] for crit in train_crits}
@@ -104,21 +113,22 @@ def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, crit_st
         if wandb_run: wandb_run.log(postfix)
         epoch_tqdm.set_postfix(postfix)
 
-        if epoch % 15 == 0 and trial and pruning: 
+        if stopper.check_stop(train_loss):
+            trial.report(postfix[f"Valid {crit_string}"], epoch)
+            train_losses, train_metrics, val_metrics = format_outputs(train_losses, [train_metrics, val_metrics])
+            return train_losses, train_metrics, val_metrics, False
+
+        elif epoch % 15 == 0 and trial and pruning: 
             trial.report(postfix[f"Valid {crit_string}"], epoch)
             
             if trial.should_prune(): 
-                train_losses = np.array(train_losses)
-                train_metrics = {crit: np.array(history) for crit, history in train_metrics.items()}
-                val_metrics = {crit: np.array(history) for crit, history in val_metrics.items()}
+                train_losses, train_metrics, val_metrics = format_outputs(train_losses, [train_metrics, val_metrics])
                 return train_losses, train_metrics, val_metrics, True
 
     epoch_tqdm.close()
 
     #output formating
-    train_losses = np.array(train_losses)
-    train_metrics = {crit: np.array(history) for crit, history in train_metrics.items()}
-    val_metrics = {crit: np.array(history) for crit, history in val_metrics.items()}
+    train_losses, train_metrics, val_metrics = format_outputs(train_losses, [train_metrics, val_metrics])
 
     #plotting
     if graph_fn is not None: graph_fn(train_losses, train_metrics, val_metrics, wandb_run)
@@ -138,7 +148,7 @@ returns:
     metrics: dictionary of all metrics
             {string of criterion name : float value of criterion per epoch} 
 """
-def eval_model(test_loaders, model, test_crits, wandb_run = None, multi = False):
+def eval_model(test_loaders, model, test_crits, wandb_run = None):
     #setup
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Using", device)
