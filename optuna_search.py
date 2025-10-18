@@ -98,19 +98,19 @@ def objective(trial, data_dirs, layer_dict, args):
         "num_dense": trial.suggest_int("num_dense", 3, 5), 
         "hidden_channels": trial.suggest_int("hidden_size", 64, 256, step=64), 
         "dense_hidden": trial.suggest_int("hidden_size", 64, 256, step=64), 
-        "dropout_p": trial.suggest_float("dropout", 0.1, 0.7),
+        "dropout_p": trial.suggest_float("dropout", 0.4, 0.7),
         "gnn_layer": layer_dict[layer],
         "batch_norm1d": trial.suggest_categorical("Batch Norm 1D in dense", [True, False])
     }
 
     opt_args = {
-        "lr": trial.suggest_float("learning_rate", 0.0001, 0.005, step=0.0001),
-        "weight_decay": trial.suggest_float("l2_penalty", 0, 1e-2, step=5e-5),
-        # "betas": (0.9, 0.95)
+        "lr": trial.suggest_float("learning_rate", 0.0001, 0.005),
+        "weight_decay": trial.suggest_float("l2_penalty", 0, 1e-2),
+        "betas": (0.9, 0.95)
     }
 
     sched_args = {
-        "warmup_epochs": trial.suggest_int("warmup epochs", 0, 40),
+        "warmup_epochs": trial.suggest_int("warmup epochs", 0, 20, step=5),
         "min_lr": trial.suggest_float("minimum lr", 0.0, 1e-4)
     }
 
@@ -123,6 +123,7 @@ def objective(trial, data_dirs, layer_dict, args):
     }
 
     config = {**model_args, **opt_args, **sched_args, **config}
+    del config["gnn_layer"]
     print(f"###############################################################################\n"
             f"{model_args["num_gnn"]} {layer} Layers\t| {model_args["hidden_channels"]} units\n"
             f"{model_args["num_dense"]} Dense Layers\t| {model_args["dense_hidden"]} units\n"
@@ -138,7 +139,7 @@ def objective(trial, data_dirs, layer_dict, args):
     #run
     run = wandb.init(
         entity="bumjin_joo-brown-university", 
-        project=f"qbam-DATA-Graph-{args.pred}-{args.dataset}{"-Multi" if args.multi_opt else ""}", 
+        project=f"qbam-final-Graph-{args.pred}-{args.dataset}{"-Multi" if args.multi_opt else ""}", 
         name=f"{layer}, LR{config["lr"]:.5f}, {feat_norm}", 
         config=config
     )

@@ -65,7 +65,7 @@ def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, crit_st
     scheduler_args["start_lr"] = opt_args["lr"]
     scheduler = HalfCosDecay(**scheduler_args)
 
-    stopper = EarlyStopper(patience=3)
+    stopper = EarlyStopper(patience = 3, direction = "minimize")
     
     train_losses = []
     train_metrics = {crit: [] for crit in train_crits}
