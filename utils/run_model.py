@@ -122,6 +122,7 @@ def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, crit_st
             trial.report(postfix[f"Valid {crit_string}"], epoch)
             
             if trial.should_prune(): 
+                print("Pruned by Optuna")
                 train_losses, train_metrics, val_metrics = format_outputs(train_losses, [train_metrics, val_metrics])
                 return train_losses, train_metrics, val_metrics, True
 
