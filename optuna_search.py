@@ -98,13 +98,13 @@ def objective(trial, data_dirs, layer_dict, args):
         "num_dense": trial.suggest_int("num_dense", 3, 5), 
         "hidden_channels": trial.suggest_int("hidden_size", 64, 256, step=64), 
         "dense_hidden": trial.suggest_int("hidden_size", 64, 256, step=64), 
-        "dropout_p": trial.suggest_float("dropout", 0.4, 0.7),
+        "dropout_p": trial.suggest_float("dropout", 0.4, 0.7, step=0.1),
         "gnn_layer": layer_dict[layer],
         "batch_norm1d": trial.suggest_categorical("Batch Norm 1D in dense", [True, False])
     }
 
     opt_args = {
-        "lr": trial.suggest_float("learning_rate", 0.0001, 0.005),
+        "lr": trial.suggest_float("learning_rate", 0.0001, 0.005, step=1e-5),
         "weight_decay": trial.suggest_float("l2_penalty", 0, 1e-2),
         "betas": (0.9, 0.95)
     }
@@ -145,19 +145,19 @@ def objective(trial, data_dirs, layer_dict, args):
     )
     
     _, _, _, should_prune = train_model(train_loaders, 
-                                     val_loaders, 
-                                     model, 
-                                     opt_args = opt_args,
-                                     num_epochs=config["epochs"], 
-                                     crit_string = "RMSE", 
-                                     train_criterion = RMSELoss(reduction="sum"), 
-                                     train_crits = {}, 
-                                     test_crits = get_test_criteria(args.pred),  
-                                     scheduler_args = sched_args, #  gamma=config["lr_decay"], 
-                                     wandb_run = run, 
-                                     trial = trial, 
-                                     pruning = True if not args.multi_opt else False,
-                                     graph_fn = graph_train_stats)
+                                        val_loaders, 
+                                        model, 
+                                        opt_args = opt_args,
+                                        num_epochs=config["epochs"], 
+                                        crit_string = "RMSE", 
+                                        train_criterion = RMSELoss(reduction="sum"), 
+                                        train_crits = {}, 
+                                        test_crits = get_test_criteria(args.pred),  
+                                        scheduler_args = sched_args, #  gamma=config["lr_decay"], 
+                                        wandb_run = run, 
+                                        trial = trial, 
+                                        pruning = True if not args.multi_opt else False,
+                                        graph_fn = graph_train_stats)
     
     if should_prune:
         run.summary["state"] = "pruned"
