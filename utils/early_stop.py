@@ -20,6 +20,8 @@ class EarlyStopper():
         self.min_delta = min_delta
         self.cumulative_delta = cumulative_delta
 
+        self.best_score = None
+
     def check_stop(self, score) -> bool:
         if not self.maximize: score = score * -1 #convert minimization to maximization :)
 
