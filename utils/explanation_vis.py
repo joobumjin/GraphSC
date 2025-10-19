@@ -1,9 +1,9 @@
 ####
 ### THIS CODE IS TAKEN FROM PYTORCH GEOMETRIC'S explanation.py
-### THIS CODE WAS MODIFIED TO ALLOW FOR DYNAMIC MPL SIZING
+### THIS CODE WAS MODIFIED TO ALLOW FOR DYNAMIC MPL SIZING AND WANDB INTEGRATION
 ###
 import copy
-from typing import Dict, List, Optional, Union
+from typing import List, Optional
 
 import wandb
 

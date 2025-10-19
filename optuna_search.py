@@ -135,29 +135,32 @@ def objective(trial, data_dirs, layer_dict, args):
     #build models
     model = Modular_GNN(**model_args)
 
+    run_name = f"{layer}, LR{config["lr"]:.5f}, {feat_norm}"
+
     #
     #run
     run = wandb.init(
         entity="bumjin_joo-brown-university", 
         project=f"qbam-final-Graph-{args.pred}-{args.dataset}{"-Multi" if args.multi_opt else ""}", 
-        name=f"{layer}, LR{config["lr"]:.5f}, {feat_norm}", 
+        name=run_name,
         config=config
     )
     
-    _, _, _, should_prune = train_model(train_loaders, 
-                                        val_loaders, 
-                                        model, 
-                                        opt_args = opt_args,
-                                        num_epochs=config["epochs"], 
-                                        crit_string = "RMSE", 
-                                        train_criterion = RMSELoss(reduction="sum"), 
-                                        train_crits = {}, 
-                                        test_crits = get_test_criteria(args.pred),  
-                                        scheduler_args = sched_args, #  gamma=config["lr_decay"], 
-                                        wandb_run = run, 
-                                        trial = trial, 
-                                        pruning = True if not args.multi_opt else False,
-                                        graph_fn = graph_train_stats)
+    _, _, _, should_prune, best_model = train_model(train_loaders, 
+                                                    val_loaders, 
+                                                    model, 
+                                                    opt_args = opt_args,
+                                                    num_epochs=config["epochs"], 
+                                                    crit_string = "RMSE", 
+                                                    train_criterion = RMSELoss(reduction="sum"), 
+                                                    train_crits = {}, 
+                                                    test_crits = get_test_criteria(args.pred),  
+                                                    scheduler_args = sched_args, #  gamma=config["lr_decay"], 
+                                                    wandb_run = run, 
+                                                    trial = trial, 
+                                                    pruning = True if not args.multi_opt else False,
+                                                    graph_fn = graph_train_stats,
+                                                    return_best = True)
     
     if should_prune:
         run.summary["state"] = "pruned"
@@ -171,7 +174,7 @@ def objective(trial, data_dirs, layer_dict, args):
 
     global best_rmse
     if args.save_path and (best_rmse is None or test_values["Test RMSE"] < best_rmse):
-        save_model(model, model_args, config, f"{args.save_path}/{layer}_{args.pred}_RMSE{test_values["Test RMSE"]}")
+        save_model(best_model, model_args, config, f"{args.save_path}/{run_name}_{args.pred}_RMSE{test_values["Test RMSE"]}")
         best_rmse = test_values["Test RMSE"]
 
         sample_batch = next(iter(test_loaders[0]))
@@ -215,7 +218,7 @@ def main(args):
         study = optuna.create_study(study_name=f"{time_string}_optimize_{target}", direction="minimize")
         study.set_metric_names(["RMSE"])
 
-    study.optimize(lambda trial: objective(trial, data_dirs, layer_dict, args), n_trials=200)
+    study.optimize(lambda trial: objective(trial, data_dirs, layer_dict, args), n_trials=100)
 
     if args.multi_opt:
         for ind, trial in enumerate(study.best_trials):

@@ -3,7 +3,7 @@ import torch
 from abc import ABC, abstractmethod
 import time
 from torch.nn import BCEWithLogitsLoss
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 
 """
 Simple Accuracy Metric
@@ -59,7 +59,7 @@ class RMSELoss(torch.nn.Module):
 Returns a dictionary of testing time criterion
 Represented as name : loss object
 """
-def get_test_criteria(task = None) -> Dict[str, torch.nn.Module]:
+def get_test_criteria(task: Optional[str] = None) -> Dict[str, torch.nn.Module]:
     if task == "Donor":
         return {"Acc": Accuracy(), "BCE": BCEWithLogitsLoss(reduction='sum')}
 

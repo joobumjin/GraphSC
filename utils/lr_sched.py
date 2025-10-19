@@ -10,9 +10,11 @@
 # LICENSE file in the root directory of this source tree.
 
 import math
+from typing import Optional
 
 class HalfCosDecay:
-    def __init__(self, warmup_epochs = 10, max_epochs = 100, min_lr = 0.0, start_lr = 1e-3):
+    def __init__(self, warmup_epochs: Optional[int] = 10, max_epochs: Optional[int] = 100,
+                 min_lr: Optional[float] = 0.0, start_lr: Optional[float] = 1e-3):
         self.warmup_epochs = warmup_epochs
         self.max_epochs = max_epochs
         self.min_lr = min_lr

@@ -22,7 +22,7 @@ class EarlyStopper():
 
         self.best_score = None
 
-    def check_stop(self, score) -> bool:
+    def check_stop(self, score: float) -> bool:
         if not self.maximize: score = score * -1 #convert minimization to maximization :)
 
         if self.best_score is None:

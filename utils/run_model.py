@@ -1,8 +1,16 @@
 import time
+from typing import Optional, Dict, Callable, Iterator
+import copy
 
 from tqdm import tqdm
 import numpy as np
+
 import torch
+from torch.nn.parameter import Parameter
+import wandb
+import optuna
+import torch.utils.data as torch_data
+import torch_geometric.loader as torch_geom
 
 from utils.train_test import train, train_multidata, train_multidata_timed, test, test_multidata
 from utils.lr_sched import HalfCosDecay
@@ -41,6 +49,9 @@ params:
     graph_fn: The function to be used to graph model performance over time
     timed: Whether or not to use timed training functions
     model_params: Optional specified parameters to be trained
+    return_best: Optional boolean, whether or not a copy of the best performing model should be returned
+    eval_key: Optional string on which best model performance should be determined
+    eval_maximize: Optional boolean on whether larger is better for eval key performance
 returns:
     train_losses: np array of train loss per epoch
     train_metrics: dictionary of all extra training metrics per epoch
@@ -50,13 +61,33 @@ returns:
     pruned: whether or not optuna decided to prune 
             (always false if pruning disabled)
 """
-def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, crit_string, train_criterion, train_crits, test_crits, scheduler_args = {}, wandb_run = None, trial = None, pruning = False, graph_fn = None, timed=False, model_params = None):
+def train_model(train_loaders: torch_data.DataLoader | torch_geom.DataLoader, 
+                val_loaders: torch_data.DataLoader | torch_geom.DataLoader, 
+                model: torch.nn.Module, opt_args: Dict[str, float], 
+                num_epochs: int, 
+                crit_string: str, train_criterion: torch.nn.Module, 
+                train_crits: Dict[str, torch.nn.Module], 
+                test_crits: Dict[str, torch.nn.Module], 
+                scheduler_args: Optional[Dict[str, int|float]] = {}, 
+                wandb_run: Optional[wandb.Run] = None, 
+                trial: Optional[optuna.Trial] = None, pruning: Optional[bool] = False, 
+                graph_fn: Optional[Callable[..., None]] = None, 
+                timed: Optional[bool]=False, 
+                model_params: Optional[Iterator[Parameter]] = None,
+                return_best: Optional[bool] = False,
+                eval_key: Optional[str] = "RMSE",
+                eval_maximize: Optional[bool] = False):
     #setup
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Using", device)
 
     model = model.to(device)
     model.device = device
+
+    best_model = None
+    best_val = None
+    eval_key = f"Valid {eval_key}"
+    compare = lambda x, y: x > y if eval_maximize else lambda x, y: x < y
 
     params = model_params if model_params is not None else model.parameters()
     optimizer = torch.optim.AdamW(params, **opt_args)
@@ -113,6 +144,10 @@ def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, crit_st
         if wandb_run: wandb_run.log(postfix)
         epoch_tqdm.set_postfix(postfix)
 
+        if return_best and (best_val is None or compare(postfix[eval_key], best_val)):
+            best_val = postfix[eval_key]
+            best_model = copy.deepcopy(model)
+
         if stopper.check_stop(train_loss):
             trial.report(postfix[f"Valid {crit_string}"], epoch)
             train_losses, train_metrics, val_metrics = format_outputs(train_losses, [train_metrics, val_metrics])
@@ -134,7 +169,9 @@ def train_model(train_loaders, val_loaders, model, opt_args, num_epochs, crit_st
     #plotting
     if graph_fn is not None: graph_fn(train_losses, train_metrics, val_metrics, wandb_run)
 
-    return train_losses, train_metrics, val_metrics, False
+    best_model_return = [best_model] if return_best else []
+
+    return train_losses, train_metrics, val_metrics, False, *best_model_return
 
 
 """
@@ -149,7 +186,10 @@ returns:
     metrics: dictionary of all metrics
             {string of criterion name : float value of criterion per epoch} 
 """
-def eval_model(test_loaders, model, test_crits, wandb_run = None):
+def eval_model(test_loaders: torch_data.DataLoader | torch_geom.DataLoader, 
+               model: torch.nn.Module, 
+               test_crits: Dict[str, torch.nn.Module],  
+               wandb_run: wandb.Run = None):
     #setup
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Using", device)
