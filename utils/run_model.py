@@ -84,14 +84,14 @@ def train_model(train_loaders: torch_data.DataLoader | torch_geom.DataLoader,
     model = model.to(device)
     model.device = device
 
-    best_model = None
-    best_val = None
-    eval_key = f"Valid {eval_key}"
-    compare = lambda x, y: x > y if eval_maximize else lambda x, y: x < y
+    if return_best:
+        best_model = None
+        best_val = None
+        eval_key = f"Valid {eval_key}"
+        compare = lambda x, y: x > y if eval_maximize else lambda x, y: x < y
 
     params = model_params if model_params is not None else model.parameters()
     optimizer = torch.optim.AdamW(params, **opt_args)
-    # scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma)
     scheduler_args["max_epochs"] = num_epochs
     scheduler_args["start_lr"] = opt_args["lr"]
     scheduler = HalfCosDecay(**scheduler_args)
