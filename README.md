@@ -8,7 +8,7 @@ You can read about this project's results as of May 2025 in a report form throug
 
 Most of the code is run on Brown's Oscar CCV compute cluster using Slurm, as defined by the `.sh` files in the repo.
 
-This particular repository was forked from an older repository, whose work I inherited and significantly expanded upon.
+This particular repository was built from an older repository, whose work I inherited and significantly expanded upon.
 
 All files meant to run the experiments and tasks of the project (*e.g.* optimizing model hyperparameters on TER values) are found in the root directory (*e.g.* `optuna_search.py`)
 
