@@ -84,8 +84,10 @@ def train_model(train_loaders: torch_data.DataLoader | torch_geom.DataLoader,
     model = model.to(device)
     model.device = device
 
+    pruned = False
+
+    best_model = []
     if return_best:
-        best_model = None
         best_val = None
         eval_key = f"Valid {eval_key}"
         compare = lambda x, y: x > y if eval_maximize else lambda x, y: x < y
@@ -145,21 +147,23 @@ def train_model(train_loaders: torch_data.DataLoader | torch_geom.DataLoader,
 
         if return_best and (best_val is None or compare(postfix[eval_key], best_val)):
             best_val = postfix[eval_key]
-            best_model = copy.deepcopy(model)
+            best_model = [copy.deepcopy(model)]
 
-        if stopper.check_stop(train_loss):
-            trial.report(postfix[f"Valid {crit_string}"], epoch)
-            train_losses, train_metrics, val_metrics = format_outputs(train_losses, [train_metrics, val_metrics])
-            return train_losses, train_metrics, val_metrics, False
+        if stopper.check_stop(train_loss): break
+            # trial.report(postfix[f"Valid {crit_string}"], epoch)
+            # train_losses, train_metrics, val_metrics = format_outputs(train_losses, [train_metrics, val_metrics])
+            # return train_losses, train_metrics, val_metrics, False
 
         elif epoch % 15 == 0 and trial and pruning: 
             trial.report(postfix[f"Valid {crit_string}"], epoch)
             
             if trial.should_prune(): 
                 print("Pruned by Optuna")
-                train_losses, train_metrics, val_metrics = format_outputs(train_losses, [train_metrics, val_metrics])
-                return train_losses, train_metrics, val_metrics, True
+                break
+                # train_losses, train_metrics, val_metrics = format_outputs(train_losses, [train_metrics, val_metrics])
+                # return train_losses, train_metrics, val_metrics, True
 
+    trial.report(postfix[f"Valid {crit_string}"], epoch)
     epoch_tqdm.close()
 
     #output formating
@@ -168,10 +172,7 @@ def train_model(train_loaders: torch_data.DataLoader | torch_geom.DataLoader,
     #plotting
     if graph_fn is not None: graph_fn(train_losses, train_metrics, val_metrics, wandb_run)
 
-    best_model_return = [best_model] if return_best else []
-    print(f"Returning model: {len(best_model_return)}")
-
-    return tuple([train_losses, train_metrics, val_metrics, False, *best_model_return])
+    return train_losses, train_metrics, val_metrics, pruned, *best_model
 
 
 """
