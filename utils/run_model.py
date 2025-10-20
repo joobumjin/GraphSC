@@ -122,7 +122,6 @@ def train_model(train_loaders: torch_data.DataLoader | torch_geom.DataLoader,
         #train
         train_loss = train_fn(model, train_loaders, optimizer, train_criterion, scheduler, epoch=epoch)
         if timed: (train_loss, avg_data_time, avg_pred_time) = train_loss
-        # scheduler.step()
 
         train_losses.append(train_loss)
         postfix = {f"Train {crit_string}": train_loss}
@@ -170,6 +169,7 @@ def train_model(train_loaders: torch_data.DataLoader | torch_geom.DataLoader,
     if graph_fn is not None: graph_fn(train_losses, train_metrics, val_metrics, wandb_run)
 
     best_model_return = [best_model] if return_best else []
+    print(f"Returning model: {len(best_model_return)}")
 
     return train_losses, train_metrics, val_metrics, False, *best_model_return
 

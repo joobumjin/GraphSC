@@ -3,8 +3,6 @@
 # See reference code here: https://docs.pytorch.org/ignite/_modules/ignite/handlers/early_stopping.html#EarlyStopping
 ####
 
-import torch
-
 class EarlyStopper():
     """
     params:
