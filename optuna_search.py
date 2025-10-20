@@ -146,7 +146,7 @@ def objective(trial, data_dirs, layer_dict, args):
         config=config
     )
     
-    _, _, _, should_prune, best_model = train_model(train_loaders, 
+    _, _, _, should_prune, model = train_model(train_loaders, 
                                                     val_loaders, 
                                                     model, 
                                                     opt_args = opt_args,
@@ -174,7 +174,7 @@ def objective(trial, data_dirs, layer_dict, args):
 
     global best_rmse
     if args.save_path and (best_rmse is None or test_values["Test RMSE"] < best_rmse):
-        save_model(best_model, model_args, config, f"{args.save_path}/{run_name}_{args.pred}_RMSE{test_values["Test RMSE"]}")
+        save_model(model, model_args, config, f"{args.save_path}/{run_name}_{args.pred}_RMSE{test_values["Test RMSE"]}")
         best_rmse = test_values["Test RMSE"]
 
         sample_batch = next(iter(test_loaders[0]))
