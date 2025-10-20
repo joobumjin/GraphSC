@@ -7,6 +7,8 @@ __pycache__/
 
 Notebook/
 
+__dep/
+
 checkpoints
 graphs
 text_out
