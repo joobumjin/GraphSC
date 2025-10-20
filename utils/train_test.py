@@ -214,7 +214,7 @@ def test(model: torch.nn.Module,
          criterion: torch.nn.Module):
     if len(loaders) > 1: test_fn = test_multidata
     else: 
-        test_fn = test
+        test_fn = test_singledata
         loaders = loaders[0]
     
     return test_fn(model, loaders, criterion)
