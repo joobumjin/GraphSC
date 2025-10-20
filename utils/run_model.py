@@ -79,7 +79,7 @@ def train_model(train_loaders: torch_data.DataLoader | torch_geom.DataLoader,
                 eval_maximize: Optional[bool] = False):
     #setup
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print("Using", device)
+    print("Training using", device)
 
     model = model.to(device)
     model.device = device
@@ -192,7 +192,7 @@ def eval_model(test_loaders: torch_data.DataLoader | torch_geom.DataLoader,
                wandb_run: wandb.Run = None):
     #setup
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print("Using", device)
+    print("Evaluating using", device)
 
     model = model.to(device)
     model.device = device

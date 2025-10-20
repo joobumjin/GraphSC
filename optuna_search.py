@@ -147,20 +147,20 @@ def objective(trial, data_dirs, layer_dict, args):
     )
     
     _, _, _, should_prune, model = train_model(train_loaders, 
-                                                    val_loaders, 
-                                                    model, 
-                                                    opt_args = opt_args,
-                                                    num_epochs=config["epochs"], 
-                                                    crit_string = "RMSE", 
-                                                    train_criterion = RMSELoss(reduction="sum"), 
-                                                    train_crits = {}, 
-                                                    test_crits = get_test_criteria(args.pred),  
-                                                    scheduler_args = sched_args, #  gamma=config["lr_decay"], 
-                                                    wandb_run = run, 
-                                                    trial = trial, 
-                                                    pruning = True if not args.multi_opt else False,
-                                                    graph_fn = graph_train_stats,
-                                                    return_best = True)
+                                               val_loaders, 
+                                               model, 
+                                               opt_args = opt_args,
+                                               num_epochs=config["epochs"], 
+                                               crit_string = "RMSE", 
+                                               train_criterion = RMSELoss(reduction="sum"), 
+                                               train_crits = {}, 
+                                               test_crits = get_test_criteria(args.pred),  
+                                               scheduler_args = sched_args,
+                                               wandb_run = run, 
+                                               trial = trial, 
+                                               pruning = True if not args.multi_opt else False,
+                                               graph_fn = graph_train_stats,
+                                               return_best = True)
     
     if should_prune:
         run.summary["state"] = "pruned"
