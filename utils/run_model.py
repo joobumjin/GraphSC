@@ -16,7 +16,10 @@ from utils.train_test import train, test
 from utils.lr_sched import HalfCosDecay
 from utils.early_stop import EarlyStopper
 
-def format_outputs(train_losses: list, metric_histories: list[dict]):
+"""
+Converts list of floats into np arrays and returns all in same form as input
+"""
+def format_outputs(train_losses: list[float], metric_histories: list[Dict[str, list[float]]]):
     train_losses = np.array(train_losses)
     metric_histories = [{crit: np.array(history) for crit, history in hist_dict.items()} for hist_dict in metric_histories]
 
@@ -101,8 +104,8 @@ def train_model(train_loaders: torch_data.DataLoader | torch_geom.DataLoader,
     stopper = EarlyStopper(patience = 3, direction = "minimize")
     
     train_losses = []
-    train_metrics = {crit: [] for crit in train_crits}
-    val_metrics = {crit: [] for crit in test_crits}
+    train_hist = {crit: [] for crit in train_crits}
+    val_hist   = {crit: [] for crit in test_crits}
 
     #run
     epoch_tqdm = tqdm(range(1, num_epochs + 1), desc="Training Epochs", postfix={})
@@ -118,10 +121,10 @@ def train_model(train_loaders: torch_data.DataLoader | torch_geom.DataLoader,
         postfix = {f"Train {crit_string}": train_loss}
 
         #eval
-        for crit_dict, metric_dict, loader, split in zip([train_crits, test_crits], [train_metrics, val_metrics], [train_loaders, val_loaders], ["Train", "Valid"]):
+        for crit_dict, metric_hist, loader, split in zip([train_crits, test_crits], [train_hist, val_hist], [train_loaders, val_loaders], ["Train", "Valid"]):
             for crit, crit_obj in crit_dict.items():
                 metric = test(model, loader, crit_obj)
-                metric_dict[crit].append(metric)
+                metric_hist[crit].append(metric)
                 postfix[f"{split} {crit}"] = metric
 
         if timed:
@@ -141,24 +144,21 @@ def train_model(train_loaders: torch_data.DataLoader | torch_geom.DataLoader,
 
         if stopper.check_stop(train_loss): break
 
-        elif epoch % 10 == 0 and trial and pruning: 
-            trial.report(postfix[f"Valid {crit_string}"], epoch)
-            
-            if trial.should_prune(): 
-                print("Pruned by Optuna")
-                pruned = True
-                break
+        elif epoch % 10 == 0 and trial and pruning and trial.should_prune(): 
+            print("Pruned by Optuna")
+            pruned = True
+            break
 
     trial.report(postfix[f"Valid {crit_string}"], epoch)
     epoch_tqdm.close()
 
     #output formating
-    train_losses, train_metrics, val_metrics = format_outputs(train_losses, [train_metrics, val_metrics])
+    train_losses, train_hist, val_hist = format_outputs(train_losses, [train_hist, val_hist])
 
     #plotting
-    if graph_fn is not None: graph_fn(train_losses, train_metrics, val_metrics, wandb_run)
+    if graph_fn is not None: graph_fn(train_losses, train_hist, val_hist, wandb_run)
 
-    return train_losses, train_metrics, val_metrics, pruned, *best_model
+    return train_losses, train_hist, val_hist, pruned, *best_model
 
 
 """
@@ -184,13 +184,13 @@ def eval_model(test_loaders: torch_data.DataLoader | torch_geom.DataLoader,
     model = model.to(device)
     model.device = device
 
-    metrics = {}
+    metric_hists = {}
 
     #evaluate
     for crit_dict, loader, split in zip([test_crits], [test_loaders], ["Test"]):
         for crit, crit_obj in crit_dict.items():
             metric_calc = test(model, loader, crit_obj)
-            metrics[f"{split} {crit}"] = metric_calc
+            metric_hists[f"{split} {crit}"] = metric_calc
             if wandb_run: wandb_run.summary[f"{split} {crit}"] = metric_calc
 
-    return metrics
+    return metric_hists
