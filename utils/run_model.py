@@ -171,7 +171,7 @@ def train_model(train_loaders: torch_data.DataLoader | torch_geom.DataLoader,
     best_model_return = [best_model] if return_best else []
     print(f"Returning model: {len(best_model_return)}")
 
-    return train_losses, train_metrics, val_metrics, False, *best_model_return
+    return tuple([train_losses, train_metrics, val_metrics, False, *best_model_return])
 
 
 """
