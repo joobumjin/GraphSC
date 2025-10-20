@@ -12,7 +12,7 @@ import optuna
 import torch.utils.data as torch_data
 import torch_geometric.loader as torch_geom
 
-from utils.train_test import train, train_multidata, train_multidata_timed, test, test_multidata
+from utils.train_test import train, test
 from utils.lr_sched import HalfCosDecay
 from utils.early_stop import EarlyStopper
 
@@ -104,17 +104,6 @@ def train_model(train_loaders: torch_data.DataLoader | torch_geom.DataLoader,
     train_metrics = {crit: [] for crit in train_crits}
     val_metrics = {crit: [] for crit in test_crits}
 
-    #data
-    if len(train_loaders) > 1: train_fn = train_multidata_timed if timed else train_multidata
-    else: 
-        train_fn = train
-        train_loaders = train_loaders[0]
-
-    if len(val_loaders) > 1: test_fn = test_multidata
-    else: 
-        test_fn = test
-        val_loaders = val_loaders[0]
-
     #run
     epoch_tqdm = tqdm(range(1, num_epochs + 1), desc="Training Epochs", postfix={})
 
@@ -122,7 +111,7 @@ def train_model(train_loaders: torch_data.DataLoader | torch_geom.DataLoader,
     
     for epoch in epoch_tqdm:
         #train
-        train_loss = train_fn(model, train_loaders, optimizer, train_criterion, scheduler, epoch=epoch)
+        train_loss = train(model, train_loaders, optimizer, train_criterion, scheduler, epoch=epoch)
         if timed: (train_loss, avg_data_time, avg_pred_time) = train_loss
 
         train_losses.append(train_loss)
@@ -131,7 +120,7 @@ def train_model(train_loaders: torch_data.DataLoader | torch_geom.DataLoader,
         #eval
         for crit_dict, metric_dict, loader, split in zip([train_crits, test_crits], [train_metrics, val_metrics], [train_loaders, val_loaders], ["Train", "Valid"]):
             for crit, crit_obj in crit_dict.items():
-                metric = test_fn(model, loader, crit_obj)
+                metric = test(model, loader, crit_obj)
                 metric_dict[crit].append(metric)
                 postfix[f"{split} {crit}"] = metric
 
@@ -142,6 +131,7 @@ def train_model(train_loaders: torch_data.DataLoader | torch_geom.DataLoader,
 
         postfix["lr"] = optimizer.param_groups[0]["lr"]
 
+        #log
         if wandb_run: wandb_run.log(postfix)
         epoch_tqdm.set_postfix(postfix)
 
@@ -150,18 +140,14 @@ def train_model(train_loaders: torch_data.DataLoader | torch_geom.DataLoader,
             best_model = [copy.deepcopy(model)]
 
         if stopper.check_stop(train_loss): break
-            # trial.report(postfix[f"Valid {crit_string}"], epoch)
-            # train_losses, train_metrics, val_metrics = format_outputs(train_losses, [train_metrics, val_metrics])
-            # return train_losses, train_metrics, val_metrics, False
 
-        elif epoch % 15 == 0 and trial and pruning: 
+        elif epoch % 10 == 0 and trial and pruning: 
             trial.report(postfix[f"Valid {crit_string}"], epoch)
             
             if trial.should_prune(): 
                 print("Pruned by Optuna")
+                pruned = True
                 break
-                # train_losses, train_metrics, val_metrics = format_outputs(train_losses, [train_metrics, val_metrics])
-                # return train_losses, train_metrics, val_metrics, True
 
     trial.report(postfix[f"Valid {crit_string}"], epoch)
     epoch_tqdm.close()
@@ -198,18 +184,12 @@ def eval_model(test_loaders: torch_data.DataLoader | torch_geom.DataLoader,
     model = model.to(device)
     model.device = device
 
-    #data
-    if len(test_loaders) > 1: test_fn = test_multidata
-    else: 
-        test_fn = test
-        test_loaders = test_loaders[0]
-
     metrics = {}
 
     #evaluate
     for crit_dict, loader, split in zip([test_crits], [test_loaders], ["Test"]):
         for crit, crit_obj in crit_dict.items():
-            metric_calc = test_fn(model, loader, crit_obj)
+            metric_calc = test(model, loader, crit_obj)
             metrics[f"{split} {crit}"] = metric_calc
             if wandb_run: wandb_run.summary[f"{split} {crit}"] = metric_calc
 

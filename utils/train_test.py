@@ -1,9 +1,13 @@
 import math
 import torch
+import torch.utils.data as torch_data
+import torch_geometric.loader as torch_geom
 from abc import ABC, abstractmethod
 import time
 from torch.nn import BCEWithLogitsLoss
 from typing import Dict, Tuple, Optional
+from functools import reduce
+from utils.lr_sched import HalfCosDecay
 
 """
 Simple Accuracy Metric
@@ -76,15 +80,32 @@ def get_test_criteria(task: Optional[str] = None) -> Dict[str, torch.nn.Module]:
     return test_crits
 
 """
-Runs training for a single epoch
+Given the loaders, calls the correct train function to train for a single epoch
 """
-def train(model, train_loader, optimizer, criterion, scheduler, epoch = 0) -> float:
+def train(model: torch.nn.Module, 
+          loaders: list[torch_data.DataLoader | torch_geom.DataLoader], 
+          optimizer: torch.optim.Optimizer, 
+          criterion: torch.nn.Module, 
+          scheduler: HalfCosDecay, 
+          epoch: Optional[int] = 0, 
+          timed: Optional[bool] = False):
+    if len(loaders) > 1: train_fn = train_multidata_timed if timed else train_multidata
+    else: 
+        train_fn = train_singledata
+        loaders = loaders[0]
+    
+    return train_fn(model, loaders, optimizer, criterion, scheduler, epoch)
+
+"""
+Runs training for one epoch given a single dataloader
+"""
+def train_singledata(model, loader, optimizer, criterion, scheduler, epoch = 0) -> float:
     model.train()
     total_loss = 0.0
     total_samples = 0
 
-    for ind, data in enumerate(train_loader):
-        scheduler.adjust_learning_rate(optimizer, ind / len(train_loader) + epoch)
+    for ind, data in enumerate(loader):
+        scheduler.adjust_learning_rate(optimizer, ind / len(loader) + epoch)
         
         optimizer.zero_grad()
         data = data.to(model.device)  # Move data to the same device as the model
@@ -108,15 +129,14 @@ def train(model, train_loader, optimizer, criterion, scheduler, epoch = 0) -> fl
 Runs training for a single epoch when given multiple
 training set dataloaders
 """
-def train_multidata(model, train_loaders, optimizer, criterion, scheduler, epoch = 0) -> float:
+def train_multidata(model, loaders, optimizer, criterion, scheduler, epoch = 0) -> float:
     model.train()
     total_loss = 0.0
     total_samples = 0
     processed_batches = 0.0
-    total_batches = 0.0
-    for loader in train_loaders: total_batches += len(loader) 
+    total_batches = reduce(lambda sum, loader: sum + len(loader), loaders, 0.0)
 
-    for train_loader in train_loaders:
+    for train_loader in loaders:
         for data in train_loader:
             scheduler.adjust_learning_rate(optimizer, processed_batches / total_batches + epoch)
             
@@ -147,17 +167,16 @@ training set dataloaders
 Additionally reports the time taken to load the batch,
 and then perform and forward and backward step on the batch
 """
-def train_multidata_timed(model, train_loaders, optimizer, criterion, scheduler, epoch = 0) -> Tuple[float, float, float]:
+def train_multidata_timed(model, loaders, optimizer, criterion, scheduler, epoch = 0) -> Tuple[float, float, float]:
     model.train()
     total_loss = 0.0
     total_samples = 0
     processed_batches = 0.0
-    total_batches = 0.0
-    for loader in train_loaders: total_batches += len(loader) 
+    total_batches = reduce(lambda sum, loader: sum + len(loader), loaders, 0.0)
 
     total_batch_time = 0.0
     total_process_time = 0.0
-    for train_loader in train_loaders:
+    for train_loader in loaders:
         data_start_time = time.time()
         for data in train_loader:
             scheduler.adjust_learning_rate(optimizer, processed_batches / total_batches + epoch)
@@ -187,9 +206,23 @@ def train_multidata_timed(model, train_loaders, optimizer, criterion, scheduler,
     return metric, total_batch_time / total_batches, total_process_time / total_batches
 
 """
-Runs testing for a single criterion
+Given the dataloaders, calls the correct test function 
+Returns calculated criterion value
 """
-def test(model, loader, criterion, log_train = False):
+def test(model: torch.nn.Module, 
+         loaders: list[torch_data.DataLoader | torch_geom.DataLoader], 
+         criterion: torch.nn.Module):
+    if len(loaders) > 1: test_fn = test_multidata
+    else: 
+        test_fn = test
+        loaders = loaders[0]
+    
+    return test_fn(model, loaders, criterion)
+
+"""
+Runs testing with a criterion and a single dataloader
+"""
+def test_singledata(model, loader, criterion, log_train = False):
     model.eval()
     total_loss = 0.0
     total_samples = 0
@@ -219,20 +252,23 @@ def test(model, loader, criterion, log_train = False):
 Runs testing on a single criterion
 when testing split data is contained in multiple dataloaders
 """
-def test_multidata(model, test_loaders, criterion, log_train = False):
+def test_multidata(model, loaders, criterion, log_train = False):
     model.eval()
     total_loss = 0.0
-    total_samples = 0
-    for loader in test_loaders: total_samples += len(loader)
+    total_samples = 0.0
+
     with torch.no_grad(): 
-        for loader in test_loaders:
+        for loader in loaders:
             for data in loader:
                 data = data.to(model.device)
                 out = model(data)
                 if log_train: out = torch.exp(out)
                 loss = criterion(out, data.y)
                 total_loss += loss.item()
-                total_samples += torch.numel(data.y)
+                if not hasattr(criterion, "ratio") or not criterion.ratio:
+                    total_samples += torch.numel(data.y)
+                else:
+                    total_samples += (data.y.shape[0] * (data.y.shape[1] - 1))
     
     metric = total_loss / total_samples
     
