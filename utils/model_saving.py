@@ -1,4 +1,5 @@
 import torch
+from typing import Dict, Tuple
 
 """
 Saves Model
@@ -20,7 +21,7 @@ params:
         "lr_decay": lr decay
     save_dir: path to which the model should be saved
 """
-def save_model(model, model_args, config, save_dir):
+def save_model(model, model_args, config, save_dir) -> None:
     torch.save({"model_args": model_args,
                 "config": config,
                 "model_state_dict": model.state_dict()},
@@ -36,7 +37,7 @@ returns:
     model_args: dictionary describing model (see above)
     config: dictionary describing model training (see above)
 """
-def load_model(model_class, save_dir):
+def load_model(model_class, save_dir) -> Tuple[torch.nn.Module, Dict, Dict]:
     checkpoint = torch.load(save_dir, weights_only=True)
     
     config = checkpoint["config"]

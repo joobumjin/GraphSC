@@ -7,9 +7,9 @@ import seaborn as sns
 import torch
 
 from preprocessing.preprocessing import get_loaders, get_feature_labels
-from utils import SSLELoss, RMSELoss, train_model, eval_model, visualize_feature_importance, get_test_criteria
+from utils import SSLELoss, RMSELoss, train_model, eval_model, visualize_feature_importance, get_test_criteria, load_model
 from torch_geometric.nn import GraphConv, GCNConv, GATConv, GATv2Conv, TransformerConv
-from torch_geometric.explain import Explainer, GNNExplainer, AttentionExplainer
+from torch_geometric.explain import Explainer, GNNExplainer
 from models import Modular_GNN
 
 
@@ -27,6 +27,7 @@ def parse_args(args=None):
     parser.add_argument('--dataset',                                                                        help='Name of Dataset.')
     parser.add_argument('--batch_size',     type=int,               default=20,                             help='Model\'s batch size.')
     parser.add_argument('--multi_opt',      action="store_true",                                            help='Whether or not to optimize against mutliple objectives')
+    parser.add_argument('--model_path',     type=str,                                                       help='Optional path to saved model weights')
 
     if args is None: 
         return parser.parse_args()      ## For calling through command line
@@ -132,7 +133,13 @@ def main(args):
     test_loaders = [test_loader]
 
     #train model
-    model = optimize(data_details, train_loaders, val_loaders, test_loaders, args)
+    if args.model_path is None:
+        model = optimize(data_details, train_loaders, val_loaders, test_loaders, args)
+    else:
+        model, _, _ = load_model(Modular_GNN, args.model_path)
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = model.to(device)
 
     #explain model
     explainer = Explainer(
