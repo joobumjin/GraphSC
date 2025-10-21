@@ -164,6 +164,7 @@ def main(args):
     print(explanation.node_mask)
 
     df = visualize_feature_importance(explanation, f"{args.data}/explanations/feature_importance.png", feat_labels = get_feature_labels())
+    print(df)
 
 ## END UTILITY METHODS
 ##############################################################################
