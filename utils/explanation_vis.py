@@ -67,9 +67,9 @@ def _visualize_score(
 
     score = score.cpu().numpy()
 
-    df = pd.DataFrame({'score': score}, index=labels)
+    # df = pd.DataFrame({'score': score}, index=labels)
+    df = pd.DataFrame({'score': score, "Feature": labels})
     print(f"Vis Columns: {df.columns}")
-    df = df.rename(columns = {"Unnamed: 0": "Feature"})
     df = df.sort_values('score', ascending=False)
     df = df.round(decimals=3)
 
@@ -100,7 +100,7 @@ def _visualize_score(
             legend=False,
         )
         plt.gca().invert_yaxis()
-        ax.bar_label(container=ax.containers[0], label_type='edge')
+        # ax.bar_label(container=ax.containers[0], label_type='edge')
 
         plt.tight_layout()
         plt.savefig(path)

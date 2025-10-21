@@ -164,8 +164,6 @@ def main(args):
     print(explanation.node_mask)
 
     df = visualize_feature_importance(explanation, f"{args.data}/explanations/feature_importance.png", feat_labels = get_feature_labels())
-    df.to_csv(f"{args.data}/explanations/feature_importance.csv")
-    print(f"Cols: {df.columns}")
 
 ## END UTILITY METHODS
 ##############################################################################
