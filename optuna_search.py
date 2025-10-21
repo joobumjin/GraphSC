@@ -218,7 +218,7 @@ def main(args):
         study = optuna.create_study(study_name=f"{time_string}_optimize_{target}", direction="minimize")
         study.set_metric_names(["RMSE"])
 
-    study.optimize(lambda trial: objective(trial, data_dirs, layer_dict, args), n_trials=1)
+    study.optimize(lambda trial: objective(trial, data_dirs, layer_dict, args), n_trials=100)
 
     if args.multi_opt:
         for ind, trial in enumerate(study.best_trials):
