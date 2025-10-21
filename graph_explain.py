@@ -2,6 +2,7 @@ import argparse
 import datetime
 
 from tqdm import tqdm
+import pandas
 import matplotlib.pyplot as plt
 import seaborn as sns
 import torch
@@ -162,7 +163,8 @@ def main(args):
     print(explanation.edge_mask)
     print(explanation.node_mask)
 
-    visualize_feature_importance(explanation, f"{args.data}/explanations/feature_importance.png", feat_labels = get_feature_labels())
+    df = visualize_feature_importance(explanation, f"{args.data}/explanations/feature_importance.png", feat_labels = get_feature_labels())
+    df.to_csv(f"{args.data}/explanations/feature_importance.csv")
 
 ## END UTILITY METHODS
 ##############################################################################
