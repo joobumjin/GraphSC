@@ -68,6 +68,8 @@ def _visualize_score(
     score = score.cpu().numpy()
 
     df = pd.DataFrame({'score': score}, index=labels)
+    print(f"Vis Columns: {df.columns}")
+    df = df.rename(columns = {"Unnamed: 0": "Feature"})
     df = df.sort_values('score', ascending=False)
     df = df.round(decimals=3)
 
@@ -77,24 +79,30 @@ def _visualize_score(
     else:
         title = f"Feature importance for {len(df)} features"
 
-    ax = df.plot(
-        kind='barh',
-        figsize=(14, 16),
-        ylabel='Feature label',
-        xlim=[0, float(df['score'].max()) + 0.3],
-        y="score",
-        x="Feature",
-        title=title,
-        legend=False,
-    )
-    plt.gca().invert_yaxis()
-    # ax.bar_label(container=ax.containers[0], label_type='edge')
-
-    plt.tight_layout()
 
     if run is not None:
-        run.log({"feature importance": plt})
+        import plotly.express as px
+
+        fig = px.bar(df, x = "score", y = "Feature", width=800, height=1500, title="Feature Importances")
+        fig.update_layout(yaxis={"type":'category', 
+                                "categoryorder": "total ascending"},
+                        margin=dict(l=20, r=20, b=20, t=40))
+        run.log({"feature importance": fig})
     if path is not None:
+        ax = df.plot(
+            kind='barh',
+            figsize=(14, 16),
+            ylabel='Feature label',
+            xlim=[0, float(df['score'].max()) + 0.3],
+            title=title,
+            y="score",
+            x="Feature",
+            legend=False,
+        )
+        plt.gca().invert_yaxis()
+        ax.bar_label(container=ax.containers[0], label_type='edge')
+
+        plt.tight_layout()
         plt.savefig(path)
     else:
         plt.show()
