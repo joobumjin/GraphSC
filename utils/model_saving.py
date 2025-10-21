@@ -1,5 +1,9 @@
 import torch
 from typing import Dict, Tuple
+import torch.serialization
+from torch_geometric.nn import GraphConv, GCNConv, GATConv, GATv2Conv, TransformerConv
+
+torch.serialization.add_safe_globals([GraphConv, GCNConv, GATConv, GATv2Conv, TransformerConv])
 
 """
 Saves Model
