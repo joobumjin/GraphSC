@@ -46,10 +46,10 @@ def graph_train_stats(train_losses, train_metrics, val_metrics, wandb_run):
 
     #outoutting
     fig.tight_layout()  
-    plt.title('Training and Validation RMSE')
+    # plt.title('Training and Validation RMSE')
     plt.legend()
 
-    if wandb_run: wandb_run.log({"chart": plt})
+    if wandb_run: wandb_run.log({"train val performance [RMSE]": plt})
 
     plt.close()
 
