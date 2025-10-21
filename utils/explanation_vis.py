@@ -64,6 +64,7 @@ def _visualize_score(
     df = pd.DataFrame({'score': score, "Feature": labels})
     df = df.sort_values('score', ascending=False)
     df = df.round(decimals=3)
+    print(df[df['Feature'] == "THomogeneity_Average"])
 
     if top_k is not None:
         df = df.head(top_k)

@@ -163,8 +163,7 @@ def main(args):
     print(explanation.edge_mask)
     print(explanation.node_mask)
 
-    df = visualize_feature_importance(explanation, f"{args.data}/explanations/feature_importance.png", feat_labels = get_feature_labels())
-    print(df)
+    _ = visualize_feature_importance(explanation, f"{args.data}/explanations/feature_importance.png", feat_labels = get_feature_labels())
 
 ## END UTILITY METHODS
 ##############################################################################
