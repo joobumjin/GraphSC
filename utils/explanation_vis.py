@@ -10,12 +10,6 @@ import wandb
 import torch
 from torch import Tensor
 
-from torch_geometric.data.data import Data, warn_or_raise
-from torch_geometric.data.hetero_data import HeteroData
-from torch_geometric.explain.config import ThresholdConfig, ThresholdType
-from torch_geometric.typing import EdgeType, NodeType
-from torch_geometric.visualization import visualize_graph
-
 def visualize_feature_importance(
     explanation,
     path: Optional[str] = None,
@@ -84,10 +78,13 @@ def _visualize_score(
         import plotly.express as px
 
         fig = px.bar(df, x = "score", y = "Feature", width=800, height=1500, title="Feature Importances")
+        
         fig.update_layout(yaxis={"type":'category', 
                                 "categoryorder": "total ascending"},
-                        margin=dict(l=20, r=20, b=20, t=40))
+                          margin=dict(l=20, r=20, b=20, t=40))
+        
         run.log({"feature importance": fig})
+
     if path is not None:
         ax = df.plot(
             kind='barh',
