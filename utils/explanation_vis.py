@@ -79,14 +79,16 @@ def _visualize_score(
 
     ax = df.plot(
         kind='barh',
-        figsize=(14, 14),
-        title=title,
+        figsize=(14, 16),
         ylabel='Feature label',
         xlim=[0, float(df['score'].max()) + 0.3],
+        y="score",
+        x="Feature",
+        title=title,
         legend=False,
     )
     plt.gca().invert_yaxis()
-    ax.bar_label(container=ax.containers[0], label_type='edge')
+    # ax.bar_label(container=ax.containers[0], label_type='edge')
 
     plt.tight_layout()
 
