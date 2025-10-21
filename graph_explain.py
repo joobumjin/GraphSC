@@ -138,8 +138,8 @@ def main(args):
     else:
         model, _, _ = load_model(Modular_GNN, args.model_path)
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = model.to(device)
+        model.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        model = model.to(model.device)
 
     #explain model
     explainer = Explainer(
