@@ -221,7 +221,7 @@ def gather_preds(all_loaders: Dict[str, list[torch_data.DataLoader | torch_geom.
                 out = model(data).cpu().detach().numpy()
                 label = data.y.cpu().detach().numpy()
                 ter = out[:, 0] if target in ["TER", "Both"] else None
-                gt_ter = data.y[:, 0] if target in ["TER", "Both"] else None
+                gt_ter = label[:, 0] if target in ["TER", "Both"] else None
                 vegf, gt_vegf = None, None
                 if target == "VEGF":
                     vegf, gt_vegf = out[:, 0] / out[:, 1], label[:, 0] / label[:, 1]
