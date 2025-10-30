@@ -229,7 +229,6 @@ def gather_preds(all_loaders: Dict[str, list[torch_data.DataLoader | torch_geom.
                     vegf, gt_vegf = out[:, 1] / out[:, 2], label[:, 1] / label[:, 2]
                 
                 if target in ["TER", "Both"]:
-                    print(ter.shape, gt_ter.shape, len(label))
                     new_entries = pd.DataFrame({"Predicted": ter, "Ground Truth": gt_ter, "Split": [split for _ in range(len(label))]})
                     ters = pd.concat((ters, new_entries)) if len(ters) > 0 else new_entries
                 if target in ["VEGF", "Both"]:
