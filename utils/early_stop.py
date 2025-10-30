@@ -23,9 +23,7 @@ class EarlyStopper():
     def check_stop(self, score: float) -> bool:
         if not self.maximize: score = score * -1 #convert minimization to maximization :)
 
-        if self.best_score is None:
-            self.best_score = score
-        elif score <= self.best_score + self.min_delta: #if worse
+        if self.best_score is not None and score <= self.best_score + self.min_delta: #if worse
             if not self.cumulative_delta and score > self.best_score:
                 self.best_score = score
             self.counter += 1
