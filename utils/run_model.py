@@ -218,21 +218,22 @@ def gather_preds(all_loaders: Dict[str, list[torch_data.DataLoader | torch_geom.
         for loader in loaders:
             for data in loader:
                 data = data.to(model.device)  # Move data to the same device as the model
-                out = model(data).detach()
+                out = model(data).detach().cpu().numpy()
+                label = data.y.detach().cpu().numpy()
                 ter = out[:, 0] if target in ["TER", "Both"] else None
                 gt_ter = data.y[:, 0] if target in ["TER", "Both"] else None
                 vegf, gt_vegf = None, None
                 if target == "VEGF":
-                    vegf, gt_vegf = out[:, 0] / out[:, 1], data.y[:, 0] / data.y[:, 1]
+                    vegf, gt_vegf = out[:, 0] / out[:, 1], label[:, 0] / label[:, 1]
                 elif target == "Both":
-                    vegf, gt_vegf = out[:, 1] / out[:, 2], data.y[:, 1] / data.y[:, 2]
+                    vegf, gt_vegf = out[:, 1] / out[:, 2], label[:, 1] / label[:, 2]
                 
                 if target in ["TER", "Both"]:
-                    print(ter.shape, gt_ter.shape, len(data.y))
-                    new_entries = pd.DataFrame({"Predicted": ter, "Ground Truth": gt_ter, "Split": [split for _ in range(len(data.y))]})
+                    print(ter.shape, gt_ter.shape, len(label))
+                    new_entries = pd.DataFrame({"Predicted": ter, "Ground Truth": gt_ter, "Split": [split for _ in range(len(label))]})
                     ters = pd.concat((ters, new_entries)) if len(ters) > 0 else new_entries
                 if target in ["VEGF", "Both"]:
-                    new_entries = pd.DataFrame({"Predicted": vegf, "Ground Truth": gt_vegf, "Split": [split for _ in range(len(data.x))]})
+                    new_entries = pd.DataFrame({"Predicted": vegf, "Ground Truth": gt_vegf, "Split": [split for _ in range(len(label))]})
                     vegfs = pd.concat((vegfs, new_entries)) if len(vegfs) > 0 else new_entries
 
     scatter_fn(ters, vegfs, wandb_run, save_path)
