@@ -95,7 +95,7 @@ def plot_preds(ter_df, vegf_df, wandb_run, save_path):
 
 ##############################################################################
 
-def objective(trial, data_dirs, layer_dict, args):
+def objective(trial, data_dirs, layer_dict, args, metric_names):
     #
     #hyper params
     layer = trial.suggest_categorical("layer type", layer_dict.keys())
@@ -204,10 +204,12 @@ def objective(trial, data_dirs, layer_dict, args):
     run.summary["state"] = "completed"
     wandb.finish()
 
-    if args.multi_opt:
-        return [test_values[key] for key in test_values if key != "VEGF_RMSE"] #paretto front only supports 3 objectives
 
-    return test_values["Test RMSE"]
+    # if args.multi_opt:
+    #     return [test_values[key] for key in test_values if key != "VEGF_RMSE"] #paretto front only supports 3 objectives
+
+    # return test_values["Test RMSE"]
+    return tuple([test_values[key] for key in metric_names])
 
 ##############################################################################
 
@@ -231,15 +233,16 @@ def main(args):
     #
     # optuna optimization
     time_string = datetime.datetime.now().strftime('%d-%b-%Y-%H%M')
+    opt_targets = set(get_test_criteria(target).keys())
     if args.multi_opt:
-        crits = get_test_criteria(target)
-        study = optuna.create_study(study_name=f"{time_string}_optimize_{target}", directions=["minimize" for _ in crits])
-        metric_names = study.set_metric_names([key for key in crits if key != "VEGF_RMSE"])
+        if args.pred == "Both": opt_targets.remove("VEGF_RMSE")
+        study = optuna.create_study(study_name=f"{time_string}_optimize_{target}", directions=["minimize" for _ in opt_targets])
     else:
         study = optuna.create_study(study_name=f"{time_string}_optimize_{target}", direction="minimize")
-        study.set_metric_names(["RMSE"])
+    metric_names = study.set_metric_names([key for key in opt_targets])
+    metric_keys = [f"Test {name}" for name in metric_names]
 
-    study.optimize(lambda trial: objective(trial, data_dirs, layer_dict, args), n_trials=100)
+    study.optimize(lambda trial: objective(trial, data_dirs, layer_dict, args, metric_keys), n_trials=100)
 
     if args.multi_opt:
         for ind, trial in enumerate(study.best_trials):
