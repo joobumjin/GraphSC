@@ -205,7 +205,7 @@ def gather_preds(all_loaders: Dict[str, list[torch_data.DataLoader | torch_geom.
                  save_path: Optional[str] = None):
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print("Evaluating using", device)
+    print("Gathering preds using", device)
 
     model = model.to(device)
     model.device = device
