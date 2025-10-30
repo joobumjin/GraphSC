@@ -7,7 +7,7 @@ import wandb
 import optuna
 
 from preprocessing.img_preprocessing import get_image_loaders, ImageData
-from utils import SSLELoss, RMSELoss, train_model, eval_model
+from utils import SSLELoss, RMSELoss, train_model, eval_model, gather_preds
 from models import DNN_F, DNN_F_AMD
 
 def parse_args(args=None):
@@ -67,6 +67,20 @@ def graph_train_stats(train_losses, train_metrics, val_metrics, wandb_run):
     plt.close()
     
     return
+
+def plot_preds(ter_df, vegf_df, wandb_run, save_path):
+    for df, target in zip([ter_df, vegf_df], ["TER", "VEGF"]):
+        if len(df) == 0: continue
+
+        if wandb_run:
+            fig = px.scatter(df, x="Ground Truth", y="Predicted", color="Split", title=f"{target} Ground Truth vs Predicted")
+            wandb_run.log({"chart": fig})
+
+        if save_path:
+            ax = sns.scatterplot(data = df, x="Ground Truth", y="Predicted", hue="Split", s=10)
+            ax.set_title(f"{target} Ground Truth vs Predicted")
+            plt.savefig(save_path)
+            plt.close()
 
 ##############################################################################
 
@@ -130,6 +144,12 @@ def objective(trial, data_details, train_loaders, val_loaders, test_loaders, arg
                              model, 
                              get_test_criteria(args.pred),
                              wandb_run = run)
+    
+    gather_preds({"Train": train_loaders, "Valid": val_loaders, "Test": test_loaders},
+                 model,
+                 plot_preds,
+                 target = args.pred,
+                 wandb_run = run)    
 
     run.summary["state"] = "completed"
     wandb.finish()
