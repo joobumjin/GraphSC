@@ -95,7 +95,7 @@ def plot_preds(ter_df, vegf_df, wandb_run, save_path):
 
 ##############################################################################
 
-def objective(trial, data_dirs, layer_dict, args, metric_names):
+def objective(trial, data_dirs, layer_dict, args, metric_keys):
     #
     #hyper params
     layer = trial.suggest_categorical("layer type", layer_dict.keys())
@@ -209,7 +209,7 @@ def objective(trial, data_dirs, layer_dict, args, metric_names):
     #     return [test_values[key] for key in test_values if key != "VEGF_RMSE"] #paretto front only supports 3 objectives
 
     # return test_values["Test RMSE"]
-    return tuple([test_values[key] for key in metric_names])
+    return tuple([test_values[key] for key in metric_keys])
 
 ##############################################################################
 
@@ -239,7 +239,8 @@ def main(args):
         study = optuna.create_study(study_name=f"{time_string}_optimize_{target}", directions=["minimize" for _ in opt_targets])
     else:
         study = optuna.create_study(study_name=f"{time_string}_optimize_{target}", direction="minimize")
-    metric_names = study.set_metric_names([key for key in opt_targets])
+    metric_names = [key for key in opt_targets]
+    study.set_metric_names(metric_names)
     metric_keys = [f"Test {name}" for name in metric_names]
 
     study.optimize(lambda trial: objective(trial, data_dirs, layer_dict, args, metric_keys), n_trials=100)
