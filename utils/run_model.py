@@ -218,8 +218,8 @@ def gather_preds(all_loaders: Dict[str, list[torch_data.DataLoader | torch_geom.
         for loader in loaders:
             for data in loader:
                 data = data.to(model.device)  # Move data to the same device as the model
-                out = model(data).detach().cpu().numpy()
-                label = data.y.detach().cpu().numpy()
+                out = model(data).cpu().detach().numpy()
+                label = data.y.cpu().detach().numpy()
                 ter = out[:, 0] if target in ["TER", "Both"] else None
                 gt_ter = data.y[:, 0] if target in ["TER", "Both"] else None
                 vegf, gt_vegf = None, None
