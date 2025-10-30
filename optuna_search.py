@@ -10,7 +10,7 @@ import optuna
 import wandb
 
 from preprocessing.preprocessing import get_loaders, get_feature_labels
-from utils import SSLELoss, RMSELoss, train_model, eval_model, save_model, visualize_feature_importance, get_test_criteria
+from utils import SSLELoss, RMSELoss, train_model, eval_model, save_model, visualize_feature_importance, get_test_criteria, gather_preds
 from torch_geometric.nn import GraphConv, GCNConv, GATConv, GATv2Conv, TransformerConv
 from models import Modular_GNN, get_layer_dict
 
@@ -77,6 +77,21 @@ def get_explanation(model, data, run):
     explanation = explainer(data.x, data.edge_index, batch_index = data.batch)
 
     visualize_feature_importance(explanation, feat_labels = get_feature_labels(), run=run)
+
+def plot_preds(ter_df, vegf_df, wandb_run, save_path):
+    for df, target in zip([ter_df, vegf_df], ["TER", "VEGF"]):
+        if len(df) == 0: continue
+
+        if wandb_run:
+            fig = px.scatter(df, x="Ground Truth", y="Predicted", color="Split", title=f"{target} Ground Truth vs Predicted")
+            wandb_run.log({"chart": fig})
+
+        if save_path:
+            ax = sns.scatterplot(data = df, x="Ground Truth", y="Predicted", hue="Split", s=10)
+            ax.set_title(f"{target} Ground Truth vs Predicted")
+            plt.savefig(save_path)
+            plt.close()
+            
 
 ##############################################################################
 
@@ -178,7 +193,13 @@ def objective(trial, data_dirs, layer_dict, args):
         best_rmse = test_values["Test RMSE"]
 
         sample_batch = next(iter(test_loaders[0]))
-        get_explanation(model, sample_batch, run)        
+        get_explanation(model, sample_batch, run)    
+
+        gather_preds({"Train": train_loaders, "Valid": val_loaders, "Test": test_loaders},
+                     model,
+                     plot_preds,
+                     target = args.pred,
+                     wandb_run = run)    
 
     run.summary["state"] = "completed"
     wandb.finish()

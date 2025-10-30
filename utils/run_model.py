@@ -4,6 +4,7 @@ import copy
 
 from tqdm import tqdm
 import numpy as np
+import pandas as pd
 
 import torch
 from torch.nn.parameter import Parameter
@@ -138,6 +139,8 @@ def train_model(train_loaders: torch_data.DataLoader | torch_geom.DataLoader,
         if wandb_run: wandb_run.log(postfix)
         epoch_tqdm.set_postfix(postfix)
 
+        if trial and pruning: trial.report(postfix[f"Valid {crit_string}"], epoch)
+
         if return_best and (best_val is None or compare(postfix[eval_key], best_val)):
             best_val = postfix[eval_key]
             best_model = [copy.deepcopy(model)]
@@ -149,7 +152,6 @@ def train_model(train_loaders: torch_data.DataLoader | torch_geom.DataLoader,
             pruned = True
             break
 
-    trial.report(postfix[f"Valid {crit_string}"], epoch)
     epoch_tqdm.close()
 
     #output formating
@@ -194,3 +196,42 @@ def eval_model(test_loaders: torch_data.DataLoader | torch_geom.DataLoader,
             if wandb_run: wandb_run.summary[f"{split} {crit}"] = metric_calc
 
     return metric_hists
+
+def gather_preds(all_loaders: Dict[str, list[torch_data.DataLoader | torch_geom.DataLoader]], 
+                 model: torch.nn.Module, 
+                 scatter_fn,
+                 target: str = "TER",
+                 wandb_run: wandb.Run = None,
+                 save_path: Optional[str] = None):
+    
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print("Evaluating using", device)
+
+    model = model.to(device)
+    model.device = device
+    model.eval()
+
+    ters = pd.DataFrame(columns=["Predicted", "Ground Truth", "Split"])
+    vegfs = pd.DataFrame(columns=["Predicted", "Ground Truth", "Split"])
+
+    for split, loaders in all_loaders.items():
+        for loader in loaders:
+            for data in loader:
+                data = data.to(model.device)  # Move data to the same device as the model
+                out = model(data).detach()
+                ter = out[:, 0] if target in ["TER", "Both"] else None
+                gt_ter = data.y[:, 0] if target in ["TER", "Both"] else None
+                vegf, gt_vegf = None, None
+                if target == "VEGF":
+                    vegf, gt_vegf = out[:, 0] / out[:, 1], data.y[:, 0] / data.y[:, 1]
+                elif target == "Both":
+                    vegf, gt_vegf = out[:, 1] / out[:, 2], data.y[:, 1] / data.y[:, 2]
+                
+                if target in ["TER", "Both"]:
+                    new_entries = pd.DataFrame({"Predicted": ter, "Ground Truth": gt_ter, "Split": [split for _ in range(len(data.x))]})
+                    ters = pd.concat((ters, new_entries)) if len(ters) > 0 else new_entries
+                if target in ["VEGF", "Both"]:
+                    new_entries = pd.DataFrame({"Predicted": vegf, "Ground Truth": gt_vegf, "Split": [split for _ in range(len(data.x))]})
+                    vegfs = pd.concat((vegfs, new_entries)) if len(vegfs) > 0 else new_entries
+
+    scatter_fn(ters, vegfs, wandb_run, save_path)
