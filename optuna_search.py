@@ -5,6 +5,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.express as px
+import plotly.graph_objects as go
 import torch
 import optuna
 import wandb
@@ -82,15 +83,32 @@ def plot_preds(ter_df, vegf_df, wandb_run, save_path):
     for df, target in zip([ter_df, vegf_df], ["TER", "VEGF"]):
         if len(df) == 0: continue
 
+        fig1 = px.scatter(df, x="Ground Truth", y="Predicted", color="Split", title=f"{target} Ground Truth vs Predicted", trendline="ols")
+        for trace in fig1.data:
+            if "lines" in trace.mode: 
+                trace.showlegend = True
+                trace.legendgroup = "Line of Best Fit"
+                trace.name = "Line of Best Fit"
+                trace.marker["color"] = "#1AAE33"
+
+        fig2 = px.line(data_frame = df, x = "Ground Truth", y = "Ground Truth")
+        fig2.data[0].showlegend = True
+        fig2.data[0].legendgroup = "Ground Truth"
+        fig2.data[0].name = "Ground Truth"
+        fig2.data[0].line["color"] = "#1DE991"
+        fig2.data[0].hovertemplate = '<b>Ground Truth Line</b><br>Predicted = Ground Truth<br><br>Ground Truth=%{x}' 
+
+        fig = go.Figure(data = fig1.data + fig2.data)
+
         if wandb_run:
-            fig = px.scatter(df, x="Ground Truth", y="Predicted", color="Split", title=f"{target} Ground Truth vs Predicted")
             wandb_run.log({"chart": fig})
 
         if save_path:
-            ax = sns.scatterplot(data = df, x="Ground Truth", y="Predicted", hue="Split", s=10)
-            ax.set_title(f"{target} Ground Truth vs Predicted")
-            plt.savefig(save_path)
-            plt.close()
+            # ax = sns.scatterplot(data = df, x="Ground Truth", y="Predicted", hue="Split", s=10)
+            # ax.set_title(f"{target} Ground Truth vs Predicted")
+            # plt.savefig(save_path)
+            # plt.close()
+            fig.write_image(save_path)
             
 
 ##############################################################################
