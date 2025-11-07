@@ -217,7 +217,9 @@ def objective(trial, data_dirs, layer_dict, args, metric_keys):
                      model,
                      plot_preds,
                      target = args.pred,
-                     wandb_run = run)    
+                     wandb_run = run) 
+
+        run.log({"Best So Far": True})
 
     run.summary["state"] = "completed"
     wandb.finish()
