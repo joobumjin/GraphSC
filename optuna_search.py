@@ -205,6 +205,8 @@ def objective(trial, data_dirs, layer_dict, args, metric_keys):
                              test_crits = get_test_criteria(args.pred),  
                              wandb_run = run)
 
+    state = "completed"
+
     global best_rmse
     if args.save_path and (best_rmse is None or test_values["Test RMSE"] < best_rmse):
         save_model(model, model_args, config, f"{args.save_path}/{run_name}_{args.pred}_RMSE{test_values["Test RMSE"]}")
@@ -219,10 +221,9 @@ def objective(trial, data_dirs, layer_dict, args, metric_keys):
                      target = args.pred,
                      wandb_run = run) 
 
-        run.config["Best"] = True
-        run.update()
+        state = "best"
 
-    run.summary["state"] = "completed"
+    run.summary["state"] = state
     wandb.finish()
 
 
