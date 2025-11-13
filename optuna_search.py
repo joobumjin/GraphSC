@@ -34,6 +34,7 @@ def parse_args(args=None):
     parser.add_argument('--dataset',                                                                        help='Name of Dataset.')
     parser.add_argument('--batch_size',     type=int,               default=20,                             help='Model\'s batch size.')
     parser.add_argument('--multi_opt',      action="store_true",                                            help='Whether or not to optimize against mutliple objectives')
+    parser.add_argument('--seed',           type=int,               default=0,                              help='Seed randomness.')
     parser.add_argument('--save_path',      type=str,                                                       help='Optional path to save model weights to')
 
     if args is None: 
@@ -174,7 +175,7 @@ def objective(trial, data_dirs, layer_dict, args, metric_keys):
     #run
     run = wandb.init(
         entity="bumjin_joo-brown-university", 
-        project=f"qbam-final-Graph-{args.pred}-{args.dataset}{"-Multi" if args.multi_opt else ""}", 
+        project=f"qbam-huh-Graph-{args.pred}-{args.dataset}", 
         name=run_name,
         config=config
     )
@@ -236,6 +237,8 @@ def objective(trial, data_dirs, layer_dict, args, metric_keys):
 ##############################################################################
 
 def main(args):
+    torch.manual_seed(args.seed)
+    
     sns.set_theme()
 
     #
